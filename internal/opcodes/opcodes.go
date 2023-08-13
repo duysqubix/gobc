@@ -86,4 +86,41 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.PC += 1
 		return 4
 	},
+
+	// LD B, d8 - Load 8-bit immediate into B
+	0x06: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.B = uint8(value)
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// RLCA - Rotate A left. Old bit 7 to Carry flag
+	0x07: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		a := c.Registers.A
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(a, 7) {
+			c.SetFlagC()
+			a = (a << 1) + 1
+		} else {
+			c.ResetFlagC()
+			a = (a << 1)
+		}
+
+		c.Registers.A = a
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD (a16), SP - Save SP at given address
+	0x08: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		mb.SetItem(&value, &c.Registers.SP)
+		c.Registers.PC += 3
+		return 20
+	},
 }
