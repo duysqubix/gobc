@@ -1,5 +1,12 @@
 package cpu
 
+import (
+	"fmt"
+	"math/rand"
+
+	"github.com/duysqubix/gobc/internal"
+)
+
 type flag uint8
 
 const (
@@ -54,6 +61,36 @@ func NewCpu() *Cpu {
 
 }
 
+func (c *Cpu) RandomizeRegisters(seed int64) {
+	r := rand.New(rand.NewSource(seed))
+
+	c.Registers.A = uint8(r.Intn(0xff))
+	c.Registers.B = uint8(r.Intn(0xff))
+	c.Registers.C = uint8(r.Intn(0xff))
+	c.Registers.D = uint8(r.Intn(0xff))
+	c.Registers.E = uint8(r.Intn(0xff))
+	c.Registers.F = 0
+	c.Registers.H = uint8(r.Intn(0xff))
+	c.Registers.L = uint8(r.Intn(0xff))
+	c.Registers.SP = uint16(r.Intn(0xffff))
+	c.Registers.PC = uint16(r.Intn(0xffff))
+}
+
+func (c *Cpu) IsFlagZSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGZ)) }
+func (c *Cpu) IsFlagNSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGN)) }
+func (c *Cpu) IsFlagHSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGH)) }
+func (c *Cpu) IsFlagCSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGC)) }
+
+func (c *Cpu) SetFlagZ() { internal.SetBit(&c.Registers.F, uint8(FLAGZ)) }
+func (c *Cpu) SetFlagN() { internal.SetBit(&c.Registers.F, uint8(FLAGN)) }
+func (c *Cpu) SetFlagH() { internal.SetBit(&c.Registers.F, uint8(FLAGH)) }
+func (c *Cpu) SetFlagC() { internal.SetBit(&c.Registers.F, uint8(FLAGC)) }
+
+func (c *Cpu) ResetFlagZ() { internal.ResetBit(&c.Registers.F, uint8(FLAGZ)) }
+func (c *Cpu) ResetFlagN() { internal.ResetBit(&c.Registers.F, uint8(FLAGN)) }
+func (c *Cpu) ResetFlagH() { internal.ResetBit(&c.Registers.F, uint8(FLAGH)) }
+func (c *Cpu) ResetFlagC() { internal.ResetBit(&c.Registers.F, uint8(FLAGC)) }
+
 func (c *Cpu) SetBC(value uint16) {
 	c.Registers.B = uint8(value >> 8)
 	c.Registers.C = uint8(value & 0xFF)
@@ -62,6 +99,11 @@ func (c *Cpu) SetBC(value uint16) {
 func (c *Cpu) SetDE(value uint16) {
 	c.Registers.D = uint8(value >> 8)
 	c.Registers.E = uint8(value & 0xFF)
+}
+
+func (c *Cpu) SetHL(value uint16) {
+	c.Registers.H = uint8(value >> 8)
+	c.Registers.L = uint8(value & 0xFF)
 }
 
 func (c *Cpu) BC() uint16 {
@@ -74,4 +116,14 @@ func (c *Cpu) DE() uint16 {
 
 func (c *Cpu) HL() uint16 {
 	return (uint16)(c.Registers.H)<<8 | (uint16)(c.Registers.L)
+}
+
+func (cpu *Cpu) Dump(name string) {
+	reg := cpu.Registers
+	fmt.Printf("GOBC -- Starting with: %s\n", name)
+	fmt.Printf("A: %X(%d) F: %X(%d)\n", reg.A, reg.A, reg.F, reg.F)
+	fmt.Printf("B: %X(%d) C: %X(%d)\n", reg.B, reg.B, reg.C, reg.C)
+	fmt.Printf("D: %X(%d)  E: %X(%d)\n", reg.D, reg.D, reg.E, reg.E)
+	fmt.Printf("HL: %X(%d) SP: %X(%d) PC: %X(%d)\n", uint16(reg.H)<<8|uint16(reg.L), uint16(reg.H)<<8|uint16(reg.L), reg.SP, reg.SP, reg.PC, reg.PC)
+	fmt.Println("*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*")
 }
