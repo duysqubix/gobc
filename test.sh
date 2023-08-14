@@ -13,6 +13,8 @@ else
 fi
 
 echo ""
+date +%Y-%m-%d:%H:%M:%S
+echo ""
 for (( i=0; i<$arg3; i++))
 do
     for (( j=$1; j<=$2; j++))
@@ -43,6 +45,7 @@ do
             echo "diff command failed with exit code $?"
             exit 1
         fi
+        echo ""
     done
 done
 

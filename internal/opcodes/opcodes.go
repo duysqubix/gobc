@@ -229,6 +229,14 @@ var OPCODES = map[uint16]OpLogic{
 		return 8
 	},
 
+	// LD H, d8 - Load 8-bit immediate into H (38)
+	0x26: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.H = uint8(value)
+		c.Registers.PC += 2
+		return 8
+	},
+
 	/****************************** 0xn7 **********************/
 	// RLCA - Rotate A left. Old bit 7 to Carry flag (7)
 	0x07: func(mb Motherboard, value uint16) uint8 {
@@ -277,6 +285,37 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// DAA - Decimal adjust A (39)
+	0x27: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		a := uint16(c.Registers.A)
+		c.ResetFlagN()
+
+		if c.IsFlagHSet() || (!c.IsFlagNSet() && (a&0x0F) > 0x09) {
+			a += 0x06
+		}
+
+		if c.IsFlagCSet() || (!c.IsFlagNSet() && a > 0x9F) {
+			a += 0x60
+		}
+
+		if (a & 0x100) == 0x100 {
+			c.SetFlagC()
+		}
+
+		a &= 0xFF
+
+		if a == 0 {
+			c.SetFlagZ()
+		} else {
+			c.ResetFlagZ()
+		}
+
+		c.Registers.A = uint8(a)
+		c.Registers.PC += 1
+		return 4
+	},
+
 	/****************************** 0xn8 **********************/
 	// LD (a16), SP - Save SP at given address (8)
 	// value is the address
@@ -303,6 +342,20 @@ var OPCODES = map[uint16]OpLogic{
 		return 12
 	},
 
+	// JR Z, r8 - Relative jump by signed immediate if Z flag is set (40)
+	0x28: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		v := int16(value^0x80) - 0x80 // convert to signed int
+
+		if c.IsFlagZSet() {
+			c.Registers.PC += (2 + uint16(v)) & 0xffff // add to PC
+			return 12
+		}
+
+		c.Registers.PC += 2
+		return 8
+	},
+
 	/****************************** 0xn9 **********************/
 	// ADD HL, BC - Add BC to HL (9)
 	0x09: func(mb Motherboard, value uint16) uint8 {
@@ -320,6 +373,15 @@ var OPCODES = map[uint16]OpLogic{
 		c := mb.Cpu()
 
 		hl := c.AddSetFlags16(c.HL(), c.DE())
+		c.SetHL(uint16(hl))
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// ADD HL, HL - Add HL to HL (41)
+	0x29: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.AddSetFlags16(c.HL(), c.HL())
 		c.SetHL(uint16(hl))
 		c.Registers.PC += 1
 		return 8
@@ -346,6 +408,18 @@ var OPCODES = map[uint16]OpLogic{
 		return 8
 	},
 
+	// LD A, (HL+) - Load A with data from address pointed to by HL, increment HL (42)
+	0x2A: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		a := mb.GetItem(&hl)
+		c.Registers.A = uint8(a)
+		hl += 1
+		c.SetHL(hl)
+		c.Registers.PC += 1
+		return 8
+	},
+
 	/****************************** 0xnb **********************/
 	// DEC BC - Decrement BC (11)
 	0x0B: func(mb Motherboard, value uint16) uint8 {
@@ -367,6 +441,16 @@ var OPCODES = map[uint16]OpLogic{
 		return 8
 	},
 
+	// DEC HL - Decrement HL (43)
+	0x2B: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		hl -= 1
+		c.SetHL(hl)
+		c.Registers.PC += 1
+		return 8
+	},
+
 	/****************************** 0xnc **********************/
 	// INC C - Increment C (12)
 	0x0C: func(mb Motherboard, value uint16) uint8 {
@@ -380,6 +464,14 @@ var OPCODES = map[uint16]OpLogic{
 	0x1C: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		c.Registers.E = c.Inc(c.Registers.E)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// INC L - Increment L (44)
+	0x2C: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.L = c.Inc(c.Registers.L)
 		c.Registers.PC += 1
 		return 4
 	},
