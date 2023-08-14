@@ -21,7 +21,7 @@ func NewMotherboard() *Motherboard {
 
 func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	// debugging
-	random_8bit := 0x00
+	random_8bit := 0xDA
 
 	switch {
 	case 0x0000 <= *addr && *addr < 0x4000: // ROM bank 0

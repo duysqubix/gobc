@@ -21,15 +21,16 @@ debug_on = True if get_os_env("DEBUG")  else False
 # FUNC_ITR = EXPLICIT if debug_on else dir(opcodes)
 
 class MB:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, mock_return) -> None:
+        self.mock_return = mock_return
+        self.cgb = False
     
     def setitem(self, addr, value):
         print(f"Writing 0x{value:X} to 0x{addr:X}")
         
     def getitem(self, addr):
         print(f"Reading from 0x{addr:X}")
-        return 0
+        return self.mock_return
         
 
 class DummyCPU:
@@ -83,13 +84,23 @@ class DummyCPU:
         self.interrupt_master_enable = False
         self.interrupt_queued = False
 
-        self.mb = MB()
+        self.mb = MB(mock_return=0xDA)
 
         self.halted = False
         self.stopped = False
         self.is_stuck = False
             
     def report(self):
+        self.A &= 0xFF
+        self.B &= 0xFF
+        self.C &= 0xFF
+        self.D &= 0xFF
+        self.E &= 0xFF
+
+        self.HL &= 0xFFFF
+        self.SP &= 0xFFFF
+        self.PC &= 0xFFFF
+        
         return (
             f"PyBoy -- Starting with: {self.func_name}\n" +
             f"A: {self.A:02X}({self.A}) F: {self.F:02X}({self.F})\n" +
@@ -103,6 +114,8 @@ class DummyCPU:
         self.B &= 0xFF
         self.C &= 0xFF
         self.D &= 0xFF
+        self.E &= 0xFF
+
         self.HL &= 0xFFFF
         self.SP &= 0xFFFF
         self.PC &= 0xFFFF
@@ -119,6 +132,15 @@ class DummyCPU:
     
     def dump(self):
         with open("registers-validate.json" , "w") as f:
+            self.A &= 0xFF
+            self.B &= 0xFF
+            self.C &= 0xFF
+            self.D &= 0xFF
+            self.E &= 0xFF
+            self.HL &= 0xFFFF
+            self.SP &= 0xFFFF
+            self.PC &= 0xFFFF
+            
             json.dump({
                 "name": self.Name,
                 "a": self.A,
