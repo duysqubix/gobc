@@ -19,15 +19,3 @@ func SetBit(value *uint8, bit uint8) {
 func ResetBit(value *uint8, bit uint8) {
 	*value &= ^(1 << bit)
 }
-
-func HalfCarryTest(value *uint8) bool {
-	return (*value & 0x0f) == 0x00
-}
-
-func FullCarryTest(value *uint8) bool {
-	return *value == 0xff
-}
-
-func ZeroTest(value *uint8) bool {
-	return *value == 0
-}

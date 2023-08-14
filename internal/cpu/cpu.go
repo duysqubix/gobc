@@ -127,3 +127,87 @@ func (cpu *Cpu) Dump(name string) {
 	fmt.Printf("HL: %X(%d) SP: %X(%d) PC: %X(%d)\n", uint16(reg.H)<<8|uint16(reg.L), uint16(reg.H)<<8|uint16(reg.L), reg.SP, reg.SP, reg.PC, reg.PC)
 	fmt.Println("*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*")
 }
+
+func (c *Cpu) SubSetFlags8(a uint8, b uint8) uint8 {
+	// Check for carry using 16bit arithmetic
+	al := uint16(a)
+	bl := uint16(b)
+
+	r := al - bl
+
+	c.ResetFlagZ()
+	if (r & 0xff) == 0 {
+		c.SetFlagZ()
+	}
+
+	c.SetFlagN()
+
+	c.ResetFlagH()
+	if (al^bl^r)&0x10 != 0 {
+		c.SetFlagH()
+	}
+
+	c.ResetFlagC()
+	if r&0x100 != 0 {
+		c.SetFlagC()
+	}
+
+	return uint8(r)
+}
+
+func (c *Cpu) AddSetFlags16(a uint16, b uint16) uint32 {
+	// widen to 32 bits to get carry
+	a32 := uint32(a)
+	b32 := uint32(b)
+
+	var r uint32 = a32 + b32
+	c.ResetFlagN()
+
+	c.ResetFlagC()
+	if (r & 0x10000) != 0 {
+		c.SetFlagC()
+	}
+
+	c.ResetFlagH()
+	if (a32^b32^r)&0x1000 != 0 {
+		c.SetFlagH()
+	}
+	fmt.Printf("AddSetFlags: %X + %X = %X\n", a, b, r)
+	return r
+}
+
+func (c *Cpu) Inc(v uint8) uint8 {
+	r := (v + 1) & 0xff
+
+	c.ResetFlagZ()
+	if r == 0 {
+		c.SetFlagZ()
+	}
+
+	c.ResetFlagN()
+
+	c.ResetFlagH()
+	if (v & 0xf) == 0xf {
+		c.SetFlagH()
+	}
+
+	return r
+}
+
+func (c *Cpu) Dec(v uint8) uint8 {
+	r := (v - 1) & 0xff
+
+	c.ResetFlagZ()
+	if r == 0 {
+		c.SetFlagZ()
+	}
+
+	c.SetFlagN()
+
+	c.ResetFlagH()
+	if (v & 0xf) == 0 {
+		c.SetFlagH()
+	}
+
+	return r
+}

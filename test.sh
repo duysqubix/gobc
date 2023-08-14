@@ -1,7 +1,8 @@
 #!/bin/bash 
-clear
+# clear
 
 # compile go program first
+rm -f cmd/gobc/main
 go build -o cmd/gobc/main cmd/gobc/main.go
 
 if [ -z "$3" ]
@@ -11,13 +12,19 @@ else
     arg3=$3
 fi
 
+echo ""
 for (( i=0; i<$arg3; i++))
 do
     for (( j=$1; j<=$2; j++))
     do
-        echo "####################${j}######################"
+        echo "*******************-- ${j} --*************************"
 
-        cmd/gobc/main $j 255
+        randValue=$((256 + RANDOM % (65535 - 256 + 1)))
+        opcode=$(printf '%4X' $j)
+        echo "Random value: $randValue"
+        echo "OpCode      : $opcode"
+    
+        cmd/gobc/main $opcode $randValue
         if [ $? -ne 0 ]; then
             echo "go run command failed with exit code $?"
             exit 1
@@ -36,8 +43,6 @@ do
             echo "diff command failed with exit code $?"
             exit 1
         fi
-        echo "############################################"
-
     done
 done
 

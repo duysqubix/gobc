@@ -27,19 +27,20 @@ type Register struct {
 }
 
 func main() {
-	arg := os.Args[1]
+	opcode := os.Args[1]
 	value := os.Args[2]
-	num, err := strconv.ParseUint(arg, 16, 16)
+	opcode_i, err := strconv.ParseUint(opcode, 16, 16)
+	// fmt.Println("opcode: ", opcode, "value: ", value)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	value_n, err := strconv.ParseUint(value, 16, 16)
+	value_n, err := strconv.ParseUint(value, 10, 16)
 	if err != nil {
 		log.Fatal(err)
 	}
-	do_opcodes(uint16(num), uint16(value_n))
+	do_opcodes(uint16(opcode_i), uint16(value_n))
 }
 
 func do_opcodes(opCodeNum uint16, value uint16) {

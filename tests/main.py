@@ -5,6 +5,7 @@ import opcodes
 import os 
 import json 
 import pandas as pd
+import random
 
 # EXPLICIT = ('INC_03', 'INC_04')
 
@@ -18,6 +19,18 @@ def get_os_env(key, default=None):
 debug_on = True if get_os_env("DEBUG")  else False
 
 # FUNC_ITR = EXPLICIT if debug_on else dir(opcodes)
+
+class MB:
+    def __init__(self) -> None:
+        pass
+    
+    def setitem(self, addr, value):
+        print(f"Writing 0x{value:X} to 0x{addr:X}")
+        
+    def getitem(self, addr):
+        print(f"Reading from 0x{addr:X}")
+        return 0
+        
 
 class DummyCPU:
     def set_bc(self, x):
@@ -70,7 +83,7 @@ class DummyCPU:
         self.interrupt_master_enable = False
         self.interrupt_queued = False
 
-        self.mb = Mock()
+        self.mb = MB()
 
         self.halted = False
         self.stopped = False
@@ -145,8 +158,8 @@ if callable(func):
     rows.append(cpu.dump_json())
     cpu.dump()       
         
-df = pd.DataFrame(rows)
-print(df)
+# df = pd.DataFrame(rows)
+# print(df)
 
 # FLAGZ = 0x7
 # FLAGH = 0x5
