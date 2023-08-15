@@ -107,7 +107,7 @@ class DummyCPU:
         
         return (
             f"PyBoy -- Post Instruction [{self.func_name}]\n" +
-            f"A: {self.A:02X}({self.A}) F: {self.F:02X}({self.F})\n" +
+            f"A: {self.A:02X}({self.A}) F: {self.F:02X}({self.F}) <{(self.F>>4):04b}|ZNHC>\n" +
             f"B: {self.B:02X}({self.B}) C: {self.C:02X}({self.C})\n" +
             f"D: {self.D:02X}({self.D})  E: {self.E:02X}({self.E}) \n" +
             f"HL: {self.HL:04X}({self.HL}) SP: {self.SP:04X}({self.SP}) PC: {self.PC:04X}({self.PC})"
@@ -185,22 +185,3 @@ if callable(func):
     rows.append(cpu.dump_json())
     cpu.dump()       
         
-# df = pd.DataFrame(rows)
-# print(df)
-
-# FLAGZ = 0x7
-# FLAGH = 0x5
-# B = 0b0000
-# F = 0b00010000
-
-# for i in range(0x00, 0xFF+1):
-#     t = B + 1
-#     flag = 0b00000000
-#     flag += ((t & 0xFF) == 0) << FLAGZ
-#     flag += (((B & 0xF) + (1 & 0xF)) > 0xF) << FLAGH
-#     F &= 0b00010000
-#     F |= flag
-#     F &= 0xFF
-#     print(B, bin(F))
-#     B += 1
-    

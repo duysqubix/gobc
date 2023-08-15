@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/duysqubix/gobc/internal/motherboard"
 	"github.com/duysqubix/gobc/internal/opcodes"
@@ -60,9 +60,8 @@ func do_opcodes(opCodeNum uint16, value uint16) {
 	// mb := motherboard.NewMotherboard()
 	// spew.Dump(mb)
 	c := mb.m.Cpu()
-	c.RandomizeRegisters(int64(rand.Intn(0xfffffffffffff)))
+	c.RandomizeRegisters(int64(time.Now().UnixNano()))
 	// c.RandomizeRegisters(1600)
-	c.Registers.B = 255
 
 	reg := Register{
 		Name:   int(opCodeNum),

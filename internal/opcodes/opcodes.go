@@ -76,6 +76,32 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// LD H, B - Copy B to H (96)
+	0x60: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.H = c.Registers.B
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD (HL), B - Save B at address pointed to by HL (112)
+	0x70: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		b := uint16(c.Registers.B)
+		mb.SetItem(&hl, &b)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// ADD A, B - Add B to A (128)
+	0x80: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.B)
+		c.Registers.PC += 1
+		return 4
+	},
+
 	/****************************** 0xn1 **********************/
 	// LD BC, d16 - Load 16-bit immediate into BC (1)
 	0x01: func(mb Motherboard, value uint16) uint8 {
@@ -121,6 +147,32 @@ var OPCODES = map[uint16]OpLogic{
 	0x51: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		c.Registers.D = c.Registers.C
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD H, C - Copy C to H (97)
+	0x61: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.H = c.Registers.C
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD (HL), C - Save C at address pointed to by HL (113)
+	0x71: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		cr := uint16(c.Registers.C)
+		mb.SetItem(&hl, &cr)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// ADD A, C - Add C to A (129)
+	0x81: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.C)
 		c.Registers.PC += 1
 		return 4
 	},
@@ -187,6 +239,32 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// LD H, D - Copy D to H (98)
+	0x62: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.H = c.Registers.D
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD (HL), D - Save D at address pointed to by HL (114)
+	0x72: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		d := uint16(c.Registers.D)
+		mb.SetItem(&hl, &d)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// ADD A, D - Add D to A (130)
+	0x82: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.D)
+		c.Registers.PC += 1
+		return 4
+	},
+
 	/****************************** 0xn3 **********************/
 	// // INC BC - Increment BC (3)
 	0x03: func(mb Motherboard, value uint16) uint8 {
@@ -238,6 +316,32 @@ var OPCODES = map[uint16]OpLogic{
 	0x53: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		c.Registers.D = c.Registers.E
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD H, E - Copy E to H (99)
+	0x63: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.H = c.Registers.E
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD (HL), E - Save E at address pointed to by HL (115)
+	0x73: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		e := uint16(c.Registers.E)
+		mb.SetItem(&hl, &e)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// ADD A, E - Add E to A (131)
+	0x83: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.E)
 		c.Registers.PC += 1
 		return 4
 	},
@@ -296,6 +400,32 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// LD H, H - Copy H to H (100)
+	0x64: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.H = c.Registers.H
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD (HL), H - Save H at address pointed to by HL (116)
+	0x74: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		h := uint16(c.Registers.H)
+		mb.SetItem(&hl, &h)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// ADD A, H - Add H to A (132)
+	0x84: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.H)
+		c.Registers.PC += 1
+		return 4
+	},
+
 	/****************************** 0xn5 **********************/
 	// DEC B - Decrement B (5)
 	0x05: func(mb Motherboard, value uint16) uint8 {
@@ -350,6 +480,32 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// LD H, L - Copy L to H (101)
+	0x65: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.H = c.Registers.L
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD (HL), L - Save L at address pointed to by HL (117)
+	0x75: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		l := uint16(c.Registers.L)
+		mb.SetItem(&hl, &l)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// ADD A, L - Add L to A (133)
+	0x85: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.L)
+		c.Registers.PC += 1
+		return 4
+	},
+
 	/****************************** 0xn6 **********************/
 	// LD B, d8 - Load 8-bit immediate into B (6)
 	0x06: func(mb Motherboard, value uint16) uint8 {
@@ -399,6 +555,31 @@ var OPCODES = map[uint16]OpLogic{
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.D = mb.GetItem(&hl)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// LD H, (HL) - Copy value pointed by HL to H (102)
+	0x66: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		c.Registers.H = mb.GetItem(&hl)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// HALT - Power down CPU until an interrupt occurs (118)
+	0x76: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Halted = true
+		return 4
+	},
+
+	// ADD A, (HL) - Add value pointed by HL to A (134)
+	0x86: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		c.Registers.A = c.AddSetFlags8(c.Registers.A, mb.GetItem(&hl))
 		c.Registers.PC += 1
 		return 8
 	},
@@ -522,6 +703,32 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// LD H, A - Copy A to H (103)
+	0x67: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.H = c.Registers.A
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD (HL), A - Save A at address pointed to by HL (119)
+	0x77: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		a := uint16(c.Registers.A)
+		mb.SetItem(&hl, &a)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// ADD A, A - Add A to A (135)
+	0x87: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.A)
+		c.Registers.PC += 1
+		return 4
+	},
+
 	/****************************** 0xn8 **********************/
 	// LD (a16), SP - Save SP at given address (8)
 	// value is the address
@@ -592,6 +799,30 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// LD L, B - Copy B to L (104)
+	0x68: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.L = c.Registers.B
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD A, B - Copy B to A (120)
+	0x78: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.Registers.B
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// ADC A, B - Add B and carry flag to A (136)
+	0x88: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.B)
+		c.Registers.PC += 1
+		return 4
+	},
+
 	/****************************** 0xn9 **********************/
 	// ADD HL, BC - Add BC to HL (9)
 	0x09: func(mb Motherboard, value uint16) uint8 {
@@ -648,6 +879,29 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// LD L, C - Copy C to L (105)
+	0x69: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.L = c.Registers.C
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD A, C - Copy C to A (121)
+	0x79: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.Registers.C
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// ADC A, C - Add C and carry flag to A (137)
+	0x89: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.C)
+		c.Registers.PC += 1
+		return 4
+	},
 	/****************************** 0xna **********************/
 	// LD A, (BC) - Load A from address pointed to by BC (10)
 	0x0A: func(mb Motherboard, value uint16) uint8 {
@@ -709,6 +963,30 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// LD L, D - Copy D to L (106)
+	0x6A: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.L = c.Registers.D
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD A, D - Copy D to A (122)
+	0x7A: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.Registers.D
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// ADC A, D - Add D and carry flag to A (138)
+	0x8A: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.D)
+		c.Registers.PC += 1
+		return 4
+	},
+
 	/****************************** 0xnb **********************/
 	// DEC BC - Decrement BC (11)
 	0x0B: func(mb Motherboard, value uint16) uint8 {
@@ -764,6 +1042,30 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// LD L, E - Copy E to L (107)
+	0x6B: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.L = c.Registers.E
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD A, E - Copy E to A (123)
+	0x7B: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.Registers.E
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// ADC A, E - Add E and carry flag to A (139)
+	0x8B: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.E)
+		c.Registers.PC += 1
+		return 4
+	},
+
 	/****************************** 0xnc **********************/
 	// INC C - Increment C (12)
 	0x0C: func(mb Motherboard, value uint16) uint8 {
@@ -809,6 +1111,30 @@ var OPCODES = map[uint16]OpLogic{
 	0x5C: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		c.Registers.E = c.Registers.H
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD L, H - Copy H to L (108)
+	0x6C: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.L = c.Registers.H
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD A, H - Copy H to A (124)
+	0x7C: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.Registers.H
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// ADC A, H - Add H and carry flag to A (140)
+	0x8C: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.H)
 		c.Registers.PC += 1
 		return 4
 	},
@@ -862,6 +1188,30 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// LD L, L - Copy L to L (109)
+	0x6D: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.L = c.Registers.L
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD A, L - Copy L to A (125)
+	0x7D: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.Registers.L
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// ADC A, L - Add L and carry flag to A (141)
+	0x8D: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.L)
+		c.Registers.PC += 1
+		return 4
+	},
+
 	/****************************** 0xne **********************/
 	// LD C, d8 - Load 8-bit immediate into C (14)
 	0x0E: func(mb Motherboard, value uint16) uint8 {
@@ -909,6 +1259,33 @@ var OPCODES = map[uint16]OpLogic{
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.E = mb.GetItem(&hl)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// LD L, (HL) - Copy value pointed by HL to L (110)
+	0x6E: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		c.Registers.L = mb.GetItem(&hl)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// LD A, (HL) - Copy value pointed by HL to A (126)
+	0x7E: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		c.Registers.A = mb.GetItem(&hl)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// ADC A, (HL) - Add value pointed by HL and carry flag to A (142)
+	0x8E: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		c.Registers.A = c.AdcSetFlags8(c.Registers.A, mb.GetItem(&hl))
 		c.Registers.PC += 1
 		return 8
 	},
@@ -997,6 +1374,30 @@ var OPCODES = map[uint16]OpLogic{
 	0x5F: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		c.Registers.E = c.Registers.A
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD L, A - Copy A to L (111)
+	0x6F: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.L = c.Registers.A
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// LD A, A - Copy A to A (127)
+	0x7F: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.Registers.A
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// ADC A, A - Add A and carry flag to A (143)
+	0x8F: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.A)
 		c.Registers.PC += 1
 		return 4
 	},

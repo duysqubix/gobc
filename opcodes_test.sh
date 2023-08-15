@@ -70,15 +70,19 @@ fi
 
 argvalue=$4
 
+start=$(printf '%d' $1)
+end=$(printf '%d' $2)
+
 echo ""
 date +%Y-%m-%d:%H:%M:%S
 echo ""
-for (( i=0; i<$arg3; i++))
-do
-    for (( j=$1; j<=$2; j++))
-    do
-        echo "*******************-- ${j} [0x$(printf '%X' $j)]--*************************"
 
+for (( j=$start; j<=$end; j++))
+do
+    echo "*******************-- $j [0x$(printf '%X' $j)]--*************************"
+    for (( i=0; i<$arg3; i++))
+    do
+        echo "Test        : $i"
         if [ -z "$argvalue" ]
         then
             randValue=$((256 + RANDOM % (65535 - 256 + 1)))
