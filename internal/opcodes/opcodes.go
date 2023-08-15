@@ -13,6 +13,8 @@ type Motherboard interface {
 
 type OpLogic func(mb Motherboard, value uint16) uint8
 
+var DEBUG bool = true // UNSET THIS BEFORE COMMITTING
+
 // OPCODES is a map of opcodes to their logic
 var OPCODES = map[uint16]OpLogic{
 
@@ -102,6 +104,69 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// SUB B - Subtract B from A (144)
+	0x90: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.B)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// AND B - Logical AND B against A (160)
+	0xa0: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.B)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// OR B - Logical OR B against A (176)
+	0xb0: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.B)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// RET NZ - Return if last result was not zero (192)
+	0xc0: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+
+		var pch, pcl uint8
+		if !c.IsFlagZSet() {
+			spadd1 := c.Registers.SP + 1
+			pch = mb.GetItem(&spadd1, )
+			pcl = mb.GetItem(&c.Registers.SP, )
+
+			c.Registers.PC = (uint16(pch) << 8) | uint16(pcl)
+
+			c.Registers.SP += 2
+			return 20
+		} else {
+			c.Registers.PC += 1
+			return 8
+		}
+	},
+
+	// RET NC - Return if last result did not cause carry (208)
+	0xd0: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+
+		var pch, pcl uint8
+		if !c.IsFlagCSet() {
+			spadd1 := c.Registers.SP + 1
+			pch = mb.GetItem(&spadd1, )
+			pcl = mb.GetItem(&c.Registers.SP, )
+
+			c.Registers.PC = (uint16(pch) << 8) | uint16(pcl)
+
+			c.Registers.SP += 2
+			return 20
+		} else {
+			c.Registers.PC += 1
+			return 8
+		}
+	},
 	/****************************** 0xn1 **********************/
 	// LD BC, d16 - Load 16-bit immediate into BC (1)
 	0x01: func(mb Motherboard, value uint16) uint8 {
@@ -175,6 +240,60 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.C)
 		c.Registers.PC += 1
 		return 4
+	},
+
+	// SUB C - Subtract C from A (145)
+	0x91: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.C)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// AND C - Logical AND C against A (161)
+	0xa1: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.C)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// OR C - Logical OR C against A (177)
+	0xb1: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.C)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// POP BC - Pop two bytes from stack into BC (193)
+	0xc1: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		var pch, pcl uint8
+		spadd1 := c.Registers.SP + 1
+		pch = mb.GetItem(&spadd1, )
+		pcl = mb.GetItem(&c.Registers.SP, )
+
+		c.SetBC((uint16(pch) << 8) | uint16(pcl))
+
+		c.Registers.SP += 2
+		c.Registers.PC += 1
+		return 12
+	},
+
+	// POP DE - Pop two bytes from stack into DE (209)
+	0xd1: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		var pch, pcl uint8
+		spadd1 := c.Registers.SP + 1
+		pch = mb.GetItem(&spadd1, )
+		pcl = mb.GetItem(&c.Registers.SP, )
+
+		c.SetDE((uint16(pch) << 8) | uint16(pcl))
+
+		c.Registers.SP += 2
+		c.Registers.PC += 1
+		return 12
 	},
 
 	/****************************** 0xn2 **********************/
@@ -265,6 +384,52 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// SUB D - Subtract D from A (146)
+	0x92: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.D)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// AND D - Logical AND D against A (162)
+	0xa2: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.D)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// OR D - Logical OR D against A (178)
+	0xb2: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.D)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// JP NZ, a16 - Absolute jump to 16-bit location if last result was not zero (194)
+	0xc2: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		if !c.IsFlagZSet() {
+			c.Registers.PC = value
+			return 16
+		}
+		c.Registers.PC += 3
+		return 12
+	},
+
+	// JP NC, a16 - Absolute jump to 16-bit location if last result caused no carry (210)
+	0xd2: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		if !c.IsFlagCSet() {
+			c.Registers.PC = value
+			return 16
+		}
+		c.Registers.PC += 3
+		return 12
+	},
+
 	/****************************** 0xn3 **********************/
 	// // INC BC - Increment BC (3)
 	0x03: func(mb Motherboard, value uint16) uint8 {
@@ -346,6 +511,39 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// SUB E - Subtract E from A (147)
+	0x93: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.E)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// AND E - Logical AND E against A (163)
+	0xa3: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.E)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// OR E - Logical OR E against A (179)
+	0xb3: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.E)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// JP a16 - Absolute jump to 16-bit location (195)
+	0xc3: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC = value
+		return 16
+	},
+
+	// 0xd3 - Illegal opcode
+
 	/****************************** 0xn4 **********************/
 	// // INC B - Increment B (4)
 	0x04: func(mb Motherboard, value uint16) uint8 {
@@ -375,7 +573,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x34: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		v := mb.GetItem(&hl)
+		v := mb.GetItem(&hl, )
 		v = c.Inc(v)
 
 		v16 := uint16(v)
@@ -426,6 +624,70 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// SUB H - Subtract H from A (148)
+	0x94: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.H)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// AND H - Logical AND H against A (164)
+	0xa4: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.H)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// OR H - Logical OR H against A (180)
+	0xb4: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.H)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// CALL NZ, a16 - Call routine at 16-bit location if last result was not zero (196)
+	0xc4: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 3
+		if !c.IsFlagZSet() {
+			sp1 := c.Registers.SP - 1
+			sp2 := c.Registers.SP - 2
+
+			pch := (c.Registers.PC >> 8) & 0xff
+			pcl := c.Registers.PC & 0xff
+			mb.SetItem(&sp1, &pch)
+			mb.SetItem(&sp2, &pcl)
+			c.Registers.SP -= 2
+			c.Registers.PC = value
+			return 24
+		} else {
+			return 12
+		}
+	},
+
+	// CALL NC, a16 - Call routine at 16-bit location if last result caused no carry (212)
+	0xd4: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 3
+		if !c.IsFlagCSet() {
+			sp1 := c.Registers.SP - 1
+			sp2 := c.Registers.SP - 2
+
+			pch := (c.Registers.PC >> 8) & 0xff
+			pcl := c.Registers.PC & 0xff
+			mb.SetItem(&sp1, &pch)
+			mb.SetItem(&sp2, &pcl)
+			c.Registers.SP -= 2
+			c.Registers.PC = value
+			return 24
+		} else {
+			return 12
+		}
+	},
+
 	/****************************** 0xn5 **********************/
 	// DEC B - Decrement B (5)
 	0x05: func(mb Motherboard, value uint16) uint8 {
@@ -455,7 +717,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x35: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		v := mb.GetItem(&hl)
+		v := mb.GetItem(&hl, )
 		v = c.Dec(v)
 
 		v16 := uint16(v)
@@ -506,6 +768,60 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// SUB L - Subtract L from A (149)
+	0x95: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.L)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// AND L - Logical AND L against A (165)
+	0xa5: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.L)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// OR L - Logical OR L against A (181)
+	0xb5: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.L)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// PUSH BC - Push BC onto stack (197)
+	0xc5: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		br := uint16(c.Registers.B)
+		cr := uint16(c.Registers.C)
+		mb.SetItem(&sp1, &br)
+		mb.SetItem(&sp2, &cr)
+		c.Registers.SP -= 2
+		c.Registers.PC += 1
+		return 16
+	},
+
+	// PUSH DE - Push DE onto stack (213)
+	0xd5: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		dr := uint16(c.Registers.D)
+		er := uint16(c.Registers.E)
+		mb.SetItem(&sp1, &dr)
+		mb.SetItem(&sp2, &er)
+		c.Registers.SP -= 2
+		c.Registers.PC += 1
+		return 16
+	},
+
 	/****************************** 0xn6 **********************/
 	// LD B, d8 - Load 8-bit immediate into B (6)
 	0x06: func(mb Motherboard, value uint16) uint8 {
@@ -545,7 +861,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x46: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.B = mb.GetItem(&hl)
+		c.Registers.B = mb.GetItem(&hl, )
 		c.Registers.PC += 1
 		return 8
 	},
@@ -554,7 +870,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x56: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.D = mb.GetItem(&hl)
+		c.Registers.D = mb.GetItem(&hl, )
 		c.Registers.PC += 1
 		return 8
 	},
@@ -563,7 +879,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x66: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.H = mb.GetItem(&hl)
+		c.Registers.H = mb.GetItem(&hl, )
 		c.Registers.PC += 1
 		return 8
 	},
@@ -579,8 +895,53 @@ var OPCODES = map[uint16]OpLogic{
 	0x86: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.A = c.AddSetFlags8(c.Registers.A, mb.GetItem(&hl))
+		c.Registers.A = c.AddSetFlags8(c.Registers.A, mb.GetItem(&hl, ))
 		c.Registers.PC += 1
+		return 8
+	},
+
+	// SUB (HL) - Subtract value pointed by HL from A (150)
+	0x96: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		c.Registers.A = c.SubSetFlags8(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// AND (HL) - Logical AND value pointed by HL against A (166)
+	0xa6: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		c.Registers.A = c.AndSetFlags(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// OR (HL) - Logical OR value pointed by HL against A (182)
+	0xb6: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		c.Registers.A = c.OrSetFlags(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// ADD, d8 - Add 8-bit immediate to A (198)
+	0xc6: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		v := uint8(value)
+		c.Registers.A = c.AddSetFlags8(c.Registers.A, v)
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// SUB d8 - Subtract 8-bit immediate from A (214)
+	0xd6: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		v := uint8(value)
+		c.Registers.A = c.SubSetFlags8(c.Registers.A, v)
+		c.Registers.PC += 2
 		return 8
 	},
 
@@ -729,6 +1090,62 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// SUB A - Subtract A from A (151)
+	0x97: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.A)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// AND A - Logical AND A against A (167)
+	0xa7: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.A)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// OR A - Logical OR A against A (183)
+	0xb7: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.A)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// RST 00H - Push present address onto stack. Jump to address $0000 (199)
+	0xc7: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 1
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		pch := (c.Registers.PC >> 8) & 0xff
+		pcl := c.Registers.PC & 0xff
+		mb.SetItem(&sp1, &pch)
+		mb.SetItem(&sp2, &pcl)
+		c.Registers.SP -= 2
+		c.Registers.PC = 0x00
+		return 16
+	},
+
+	// RST 10H - Push present address onto stack. Jump to address $0010 (215)
+	0xd7: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 1
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		pch := (c.Registers.PC >> 8) & 0xff
+		pcl := c.Registers.PC & 0xff
+		mb.SetItem(&sp1, &pch)
+		mb.SetItem(&sp2, &pcl)
+		c.Registers.SP -= 2
+		c.Registers.PC = 0x10
+		return 16
+	},
+
 	/****************************** 0xn8 **********************/
 	// LD (a16), SP - Save SP at given address (8)
 	// value is the address
@@ -823,6 +1240,62 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// SBC A, B - Subtract B and carry flag from A (152)
+	0x98: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.B)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// XOR B - Logical XOR B against A (168)
+	0xa8: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.B)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// CP B - Compare B against A (184)
+	0xb8: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.CpSetFlags(c.Registers.A, c.Registers.B)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// RET Z - Return if last result was zero (200)
+	0xc8: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 1
+		if c.IsFlagZSet() {
+			nsp := c.Registers.SP + 1
+			pcl := mb.GetItem(&c.Registers.SP, )
+			pch := mb.GetItem(&nsp, )
+			c.Registers.SP += 2
+			c.Registers.PC = uint16(pch)<<8 | uint16(pcl)
+			return 20
+		} else {
+			return 8
+		}
+	},
+
+	// RET C - Return if last result caused carry (216)
+	0xd8: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 1
+		if c.IsFlagCSet() {
+			nsp := c.Registers.SP + 1
+			pcl := mb.GetItem(&c.Registers.SP, )
+			pch := mb.GetItem(&nsp, )
+			c.Registers.SP += 2
+			c.Registers.PC = uint16(pch)<<8 | uint16(pcl)
+			return 20
+		} else {
+			return 8
+		}
+	},
+
 	/****************************** 0xn9 **********************/
 	// ADD HL, BC - Add BC to HL (9)
 	0x09: func(mb Motherboard, value uint16) uint8 {
@@ -902,12 +1375,60 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.PC += 1
 		return 4
 	},
+
+	// SBC A, C - Subtract C and carry flag from A (153)
+	0x99: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.C)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// XOR C - Logical XOR C against A (169)
+	0xa9: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.C)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// CP C - Compare C against A (185)
+	0xb9: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.CpSetFlags(c.Registers.A, c.Registers.C)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// RET - Pop two bytes from stack & jump to that address (201)
+	0xc9: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		sp2 := c.Registers.SP + 1
+		pcl := mb.GetItem(&c.Registers.SP, )
+		pch := mb.GetItem(&sp2, )
+		c.Registers.SP += 2
+		c.Registers.PC = uint16(pch)<<8 | uint16(pcl)
+		return 16
+	},
+
+	// RETI - Pop two bytes from stack & jump to that address then enable interrupts (217)
+	0xd9: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.IntrMasterEnable = true
+		sp2 := c.Registers.SP + 1
+		pcl := mb.GetItem(&c.Registers.SP, )
+		pch := mb.GetItem(&sp2, )
+		c.Registers.SP += 2
+		c.Registers.PC = uint16(pch)<<8 | uint16(pcl)
+		return 16
+	},
+
 	/****************************** 0xna **********************/
 	// LD A, (BC) - Load A from address pointed to by BC (10)
 	0x0A: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		bc := c.BC()
-		a := mb.GetItem(&bc)
+		a := mb.GetItem(&bc, )
 		c.Registers.A = uint8(a)
 		c.Registers.PC += 1
 		return 8
@@ -917,7 +1438,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x1A: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		de := c.DE()
-		a := mb.GetItem(&de)
+		a := mb.GetItem(&de, )
 		c.Registers.A = uint8(a)
 		c.Registers.PC += 1
 		return 8
@@ -927,7 +1448,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x2A: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		a := mb.GetItem(&hl)
+		a := mb.GetItem(&hl, )
 		c.Registers.A = uint8(a)
 		hl += 1
 		c.SetHL(hl)
@@ -939,7 +1460,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x3A: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		a := mb.GetItem(&hl)
+		a := mb.GetItem(&hl, )
 		c.Registers.A = uint8(a)
 		hl -= 1
 		c.SetHL(hl)
@@ -987,6 +1508,40 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// SBC A, D - Subtract D and carry flag from A (154)
+	0x9A: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.D)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// XOR D - Logical XOR D against A (170)
+	0xaa: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.D)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// CP D - Compare D against A (186)
+	0xba: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.CpSetFlags(c.Registers.A, c.Registers.D)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// JP Z, a16 - Absolute jump to 16-bit location if Z flag is set (202)
+	0xca: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		if c.IsFlagZSet() {
+			c.Registers.PC = value
+			return 16
+		}
+		c.Registers.PC += 3
+		return 12
+	},
 	/****************************** 0xnb **********************/
 	// DEC BC - Decrement BC (11)
 	0x0B: func(mb Motherboard, value uint16) uint8 {
@@ -1066,6 +1621,37 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// SBC A, E - Subtract E and carry flag from A (155)
+	0x9B: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.E)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// XOR E - Logical XOR E against A (171)
+	0xab: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.E)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// CP E - Compare E against A (187)
+	0xbb: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.CpSetFlags(c.Registers.A, c.Registers.E)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// PREFIX CB - CB prefix (203) --- isn't callable
+	0xcb: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 1
+		return 4
+	},
+
 	/****************************** 0xnc **********************/
 	// INC C - Increment C (12)
 	0x0C: func(mb Motherboard, value uint16) uint8 {
@@ -1137,6 +1723,50 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.H)
 		c.Registers.PC += 1
 		return 4
+	},
+
+	// SBC A, H - Subtract H and carry flag from A (156)
+	0x9C: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.H)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// XOR H - Logical XOR H against A (172)
+	0xac: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.H)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// CP H - Compare H against A (188)
+	0xbc: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.CpSetFlags(c.Registers.A, c.Registers.H)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// CALL Z, a16 - Call routine at 16-bit address if Z flag is set (204)
+	0xcc: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		if c.IsFlagZSet() {
+			sp1 := c.Registers.SP - 1
+			sp2 := c.Registers.SP - 2
+
+			pch := (c.Registers.PC >> 8) & 0xff
+			pcl := c.Registers.PC & 0xff
+			mb.SetItem(&sp1, &pch)
+			mb.SetItem(&sp2, &pcl)
+			c.Registers.SP -= 2
+
+			c.Registers.PC = value
+			return 24
+		}
+		c.Registers.PC += 3
+		return 12
 	},
 
 	/****************************** 0xnd **********************/
@@ -1212,6 +1842,47 @@ var OPCODES = map[uint16]OpLogic{
 		return 4
 	},
 
+	// SBC A, L - Subtract L and carry flag from A (157)
+	0x9D: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.L)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// XOR L - Logical XOR L against A (173)
+	0xad: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.L)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// CP L - Compare L against A (189)
+	0xbd: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.CpSetFlags(c.Registers.A, c.Registers.L)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// CALL a16 - Call routine at 16-bit address (205)
+	0xcd: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 3
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		pch := (c.Registers.PC >> 8) & 0xff
+		pcl := c.Registers.PC & 0xff
+		mb.SetItem(&sp1, &pch)
+		mb.SetItem(&sp2, &pcl)
+		c.Registers.SP -= 2
+
+		c.Registers.PC = value
+		return 24
+	},
+
 	/****************************** 0xne **********************/
 	// LD C, d8 - Load 8-bit immediate into C (14)
 	0x0E: func(mb Motherboard, value uint16) uint8 {
@@ -1249,7 +1920,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x4E: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.C = mb.GetItem(&hl)
+		c.Registers.C = mb.GetItem(&hl, )
 		c.Registers.PC += 1
 		return 8
 	},
@@ -1258,7 +1929,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x5E: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.E = mb.GetItem(&hl)
+		c.Registers.E = mb.GetItem(&hl, )
 		c.Registers.PC += 1
 		return 8
 	},
@@ -1267,7 +1938,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x6E: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.L = mb.GetItem(&hl)
+		c.Registers.L = mb.GetItem(&hl, )
 		c.Registers.PC += 1
 		return 8
 	},
@@ -1276,7 +1947,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x7E: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.A = mb.GetItem(&hl)
+		c.Registers.A = mb.GetItem(&hl, )
 		c.Registers.PC += 1
 		return 8
 	},
@@ -1285,8 +1956,43 @@ var OPCODES = map[uint16]OpLogic{
 	0x8E: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.A = c.AdcSetFlags8(c.Registers.A, mb.GetItem(&hl))
+		c.Registers.A = c.AdcSetFlags8(c.Registers.A, mb.GetItem(&hl, ))
 		c.Registers.PC += 1
+		return 8
+	},
+
+	// SBC A, (HL) - Subtract value pointed by HL and carry flag from A (158)
+	0x9E: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		c.Registers.A = c.SbcSetFlags8(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// XOR (HL) - Logical XOR value pointed by HL against A (174)
+	0xae: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		c.Registers.A = c.XorSetFlags(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// CP (HL) - Compare value pointed by HL against A (190)
+	0xbe: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		c.CpSetFlags(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// ADC A, d8 - Add 8-bit immediate and carry flag to A (206)
+	0xce: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.AdcSetFlags8(c.Registers.A, uint8(value))
+		c.Registers.PC += 2
 		return 8
 	},
 
@@ -1400,5 +2106,46 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.A)
 		c.Registers.PC += 1
 		return 4
+	},
+
+	// SBC A, A - Subtract A and carry flag from A (159)
+	0x9F: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.A)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// XOR A - Logical XOR A against A (175)
+	0xaf: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.A)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// CP A - Compare A against A (191)
+	0xbf: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.CpSetFlags(c.Registers.A, c.Registers.A)
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// RST 08H - Push present address onto stack. Jump to address $0008 (207)
+	0xcf: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 1
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		pch := (c.Registers.PC >> 8) & 0xff
+		pcl := c.Registers.PC & 0xff
+		mb.SetItem(&sp1, &pch)
+		mb.SetItem(&sp2, &pcl)
+		c.Registers.SP -= 2
+
+		c.Registers.PC = 0x08
+		return 16
 	},
 }

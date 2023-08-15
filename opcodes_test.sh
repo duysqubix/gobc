@@ -1,38 +1,48 @@
 #!/bin/bash 
 #
-# This bash script is designed to compile and test a Go program, specifically for a range of opcode values. 
-# The script first removes any existing compiled Go binary and then compiles the Go program. It then checks 
-# if the user has requested help, and if so, it displays a help message and exits.
+# Opcode Verification Script
 #
-# If the user has not requested help, the script checks if the user has provided at least two arguments. 
-# If not, it displays an error message and exits. If the user has provided two arguments, the script sets 
-# the third argument to 1 if it was not provided.
-# The script then prints the current date and time, and enters a nested loop. The outer loop runs for the 
-# number of tests specified by the user, and the inner loop runs for each opcode in the range specified by 
-# the user.
+# This script provides the user with the versatility to examine all opcodes, a specific range, an 
+# individual opcode, and/or the capability to test each opcode n times.
 # 
-# For each test, the script generates a random value and runs the Go program with the opcode and random value 
-# as arguments. If the Go program exits with a non-zero status code, the script displays an error message and 
-# exits.
+# The purpose of this script is to verify the correctness and functionality of the emulated LR35902 
+# chipset, ensuring it performs as intended. The benchmark and validation it tests against is the logic 
+# found in PyBoy, (https://github.com/Baekalfen/PyBoy).
 # 
-# The script then runs a Python script in debug mode. If the Python script exits with a non-zero status code, 
-# the script displays an error message and exits.
+# The aforementioned is a functional GB & CGB Emulator written in Python. The script intentionally uses 
+# random values that are passed to both gobc and pyboy for output testing.
 # 
-# The script then compares two JSON files using the diff command. If the diff command exits with a non-zero 
-# status code, the script displays an error message and exits.
-# 
-# If all tests pass, the script displays a success message.
-# Example Usage:
-# To run this script with opcode range from 0 to 10 and run 1 test for each opcode, you would use the following command:
-# 
-#```bash
-#./script.sh 0 10 1
-#```
+# Both programs output to the console and create two distinct json files that are compared using 'diff'. 
+# The data dumped into the json files are the registries from both GoBC and PyBoy.
 ############################################################
 
-# compile go program first
-rm -f cmd/gobc/main
-go build -o cmd/gobc/main cmd/gobc/main.go
+function is_in_array() {
+  local search_term="$1"
+  shift
+  local array=("$@")
+
+  for item in "${array[@]}"; do
+    if [[ $item == $search_term ]]; then
+      echo "True"
+      return 0
+    fi
+  done
+
+  echo "False"
+  return 1
+}
+
+ROOT=`git rev-parse --show-toplevel`
+TEST_DIR=$ROOT/tests/pyboy
+BIN_DIR=$ROOT/bin
+
+
+GOBCBIN=$BIN_DIR/optest
+PYBIN=`which python3`
+
+rm -f $GOBCBIN
+
+go build -o $GOBCBIN $ROOT/cmd/optest/main.go
 
 # CLI help section
 if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
@@ -55,10 +65,19 @@ if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
 fi
 
 # Check if the required arguments are provided
-if [ -z "$1" ] || [ -z "$2" ]; then
-  echo "Error: You must provide at least two arguments."
+if [ -z "$1" ]; then
+  echo "Error: You must provide at least one argument."
   echo "Use `basename $0` -h for help."
   exit 1
+fi
+
+start=$(printf '%d' $1)
+
+if [ -z "$2" ]; then 
+    echo "Second argument not given, defaulting range to ${1}-${1}"
+    end=$(printf '%d' $1)
+else
+    end=$(printf '%d' $2)
 fi
 
 if [ -z "$3" ]
@@ -70,15 +89,20 @@ fi
 
 argvalue=$4
 
-start=$(printf '%d' $1)
-end=$(printf '%d' $2)
-
 echo ""
 date +%Y-%m-%d:%H:%M:%S
 echo ""
 
+ILLEGAL_OPCODES=(D3 DB DD E3 E4 EB EC ED F4 FC FD)
 for (( j=$start; j<=$end; j++))
 do
+    opcode_hex=$(printf '%02X' $j)
+    if [ $(is_in_array $opcode_hex "${ILLEGAL_OPCODES[@]}") == "True" ]; then
+        echo "*==============================================*"
+        echo "| Skipping illegal opcode 0x$opcode_hex "
+        echo "*==============================================*"
+        continue
+    fi
     echo "*******************-- $j [0x$(printf '%X' $j)]--*************************"
     for (( i=0; i<$arg3; i++))
     do
@@ -93,13 +117,13 @@ do
         echo "Value       : $randValue [0x$(printf '%X' $randValue)]"
         echo "OpCode      : $opcode"
     
-        cmd/gobc/main $opcode $randValue
+        $GOBCBIN $opcode $randValue
         if [ $? -ne 0 ]; then
             echo "go run command failed with exit code $?"
             exit 1
         fi
 
-        DEBUG=1 ./.venv/bin/python tests/main.py
+        DEBUG=1 $PYBIN $TEST_DIR/main.py
         if [ $? -ne 0 ]; then
             echo "python command failed with exit code $?"
             exit 1

@@ -2108,11 +2108,14 @@ def PUSH_C5(cpu): # C5 PUSH BC
 
 
 def ADD_C6(cpu, v): # C6 ADD A,d8
+    v &= 0xff
     t = cpu.A + v
     flag = 0b00000000
     flag += ((t & 0xFF) == 0) << FLAGZ
     flag += (((cpu.A & 0xF) + (v & 0xF)) > 0xF) << FLAGH
     flag += (t > 0xFF) << FLAGC
+    print("REGISTERS: ", cpu.A, v, t, hex(t), bin(t))
+
     cpu.F &= 0b00000000
     cpu.F |= flag
     t &= 0xFF
@@ -2197,11 +2200,13 @@ def CALL_CD(cpu, v): # CD CALL a16
 
 
 def ADC_CE(cpu, v): # CE ADC A,d8
+    v &= 0xff
     t = cpu.A + v + cpu.f_c()
     flag = 0b00000000
     flag += ((t & 0xFF) == 0) << FLAGZ
     flag += (((cpu.A & 0xF) + (v & 0xF) + cpu.f_c()) > 0xF) << FLAGH
     flag += (t > 0xFF) << FLAGC
+    print("REGISTERS: ", cpu.A, v, t, hex(t), bin(t))
     cpu.F &= 0b00000000
     cpu.F |= flag
     t &= 0xFF
@@ -2280,6 +2285,7 @@ def PUSH_D5(cpu): # D5 PUSH DE
 
 
 def SUB_D6(cpu, v): # D6 SUB d8
+    v &= 0xff
     t = cpu.A - v
     flag = 0b01000000
     flag += ((t & 0xFF) == 0) << FLAGZ
@@ -6268,6 +6274,7 @@ def execute_opcode(cpu, opcode):
         return SET_1FE(cpu)
     elif opcode == 0x1FF:
         return SET_1FF(cpu)
+
 
 
 OPCODE_LENGTHS = array.array("B", [

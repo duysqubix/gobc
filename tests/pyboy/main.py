@@ -88,7 +88,7 @@ class DummyCPU:
         self.interrupt_master_enable = False
         self.interrupt_queued = False
 
-        self.mb = MB(mock_return=0xDA)
+        self.mb = MB(mock_return=0x01)
 
         self.halted = False
         self.stopped = False

@@ -38,8 +38,9 @@ type Registers struct {
 }
 
 type Cpu struct {
-	Registers *Registers
-	Halted    bool
+	Registers        *Registers
+	Halted           bool
+	IntrMasterEnable bool
 }
 
 func NewCpu() *Cpu {
@@ -56,7 +57,8 @@ func NewCpu() *Cpu {
 			SP: 0,
 			PC: 0,
 		},
-		Halted: false,
+		Halted:           false,
+		IntrMasterEnable: false,
 	}
 
 }
@@ -129,12 +131,105 @@ func (cpu *Cpu) Dump(header string) {
 	fmt.Println("*=============================================*")
 }
 
+func (c *Cpu) CpSetFlags(a uint8, b uint8) {
+
+	// Check for carry using 16bit arithmetic
+	al := uint16(a)
+	bl := uint16(b)
+
+	r := al - bl
+
+	c.ResetFlagZ()
+	if (r & 0xff) == 0 {
+		c.SetFlagZ()
+	}
+
+	c.SetFlagN()
+
+	c.ResetFlagH()
+	if (al^bl^r)&0x10 != 0 {
+		c.SetFlagH()
+	}
+
+	c.ResetFlagC()
+	if r&0x100 != 0 {
+		c.SetFlagC()
+	}
+}
+
+func (c *Cpu) AndSetFlags(a uint8, b uint8) uint8 {
+	r := a & b
+	c.ResetFlagZ()
+	if r == 0 {
+		c.SetFlagZ()
+	}
+	c.ResetFlagN()
+	c.SetFlagH()
+	c.ResetFlagC()
+	return r
+}
+
+func (c *Cpu) OrSetFlags(a uint8, b uint8) uint8 {
+	r := a | b
+	c.ResetFlagZ()
+	if r == 0 {
+		c.SetFlagZ()
+	}
+	c.ResetFlagN()
+	c.ResetFlagH()
+	c.ResetFlagC()
+	return r
+}
+
+func (c *Cpu) XorSetFlags(a uint8, b uint8) uint8 {
+	r := a ^ b
+	c.ResetFlagZ()
+	if r == 0 {
+		c.SetFlagZ()
+	}
+	c.ResetFlagN()
+	c.ResetFlagH()
+	c.ResetFlagC()
+	return r
+}
+
 func (c *Cpu) SubSetFlags8(a uint8, b uint8) uint8 {
 	// Check for carry using 16bit arithmetic
 	al := uint16(a)
 	bl := uint16(b)
 
 	r := al - bl
+
+	c.ResetFlagZ()
+	if (r & 0xff) == 0 {
+		c.SetFlagZ()
+	}
+
+	c.SetFlagN()
+
+	c.ResetFlagH()
+	if (al^bl^r)&0x10 != 0 {
+		c.SetFlagH()
+	}
+
+	c.ResetFlagC()
+	if r&0x100 != 0 {
+		c.SetFlagC()
+	}
+
+	return uint8(r)
+}
+
+func (c *Cpu) SbcSetFlags8(a uint8, b uint8) uint8 {
+	// Check for carry using 16bit arithmetic
+	al := uint16(a)
+	bl := uint16(b)
+
+	var fc uint16 = 0
+	if c.IsFlagCSet() {
+		fc = 1
+	}
+	r := al - bl - fc
 
 	c.ResetFlagZ()
 	if (r & 0xff) == 0 {
@@ -234,6 +329,33 @@ func (c *Cpu) AdcSetFlags8(a uint8, b uint8) uint8 {
 
 	return uint8(r)
 }
+
+// func (c *Cpu) SubSetFlags8(a uint8, b uint8) uint8 {
+// 	// Check for carry using 16bit arithmetic
+// 	al := uint16(a)
+// 	bl := uint16(b)
+
+// 	r := al - bl
+
+// 	c.ResetFlagZ()
+// 	if (r & 0xff) == 0 {
+// 		c.SetFlagZ()
+// 	}
+
+// 	c.SetFlagN()
+
+// 	c.ResetFlagH()
+// 	if (al^bl^r)&0x10 != 0 {
+// 		c.SetFlagH()
+// 	}
+
+// 	c.ResetFlagC()
+// 	if r&0x100 != 0 {
+// 		c.SetFlagC()
+// 	}
+
+// 	return uint8(r)
+// }
 
 func (c *Cpu) Inc(v uint8) uint8 {
 	r := (v + 1) & 0xff
