@@ -26,6 +26,10 @@ class MB:
         self.cgb = False
     
     def setitem(self, addr, value):
+        # this is just so it doesn't complain..
+        value &= 0xFF
+        assert 0 <= value < 0x100, "Memory write error! Can't write %s to %s" % (hex(value), hex(addr))
+
         print(f"Writing 0x{value:X} to 0x{addr:X}")
         
     def getitem(self, addr):
@@ -77,7 +81,7 @@ class DummyCPU:
         self.HL =  int(data["hl"]) & 0xFFFF
         self.SP =  int(data["sp"]) & 0xFFFF
         self.PC = int(data["pc"]) & 0xFFFF
-        self.func_name = f"{self.Name:04X}"
+        self.func_name = f"{self.Name:X}"
 
         self.interrupts_flag_register = 0
         self.interrupts_enabled_register = 0
@@ -102,7 +106,7 @@ class DummyCPU:
         self.PC &= 0xFFFF
         
         return (
-            f"PyBoy -- Starting with: {self.func_name}\n" +
+            f"PyBoy -- Post Instruction [{self.func_name}]\n" +
             f"A: {self.A:02X}({self.A}) F: {self.F:02X}({self.F})\n" +
             f"B: {self.B:02X}({self.B}) C: {self.C:02X}({self.C})\n" +
             f"D: {self.D:02X}({self.D})  E: {self.E:02X}({self.E}) \n" +
@@ -152,7 +156,8 @@ class DummyCPU:
                 "hl": self.HL,
                 "sp": self.SP,
                 "pc": self.PC,
-                "args": str(self.args)
+                "args": str(self.args),
+                "cycles": self.cycles
             }, f, indent=4)
         
 rows = []
@@ -173,9 +178,9 @@ for f in dir(opcodes):
 func = getattr(opcodes, func_name)
 if callable(func):
     try:
-        func(cpu)
+        cpu.cycles = func(cpu)
     except:
-        func(cpu, cpu.args)
+        cpu.cycles = func(cpu, cpu.args)
     print(cpu.report())
     rows.append(cpu.dump_json())
     cpu.dump()       

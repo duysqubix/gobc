@@ -7,19 +7,17 @@ import (
 	"github.com/duysqubix/gobc/internal"
 )
 
-type flag uint8
-
 const (
-	FLAGC flag = 0x04 // Math operation raised carry
-	FLAGH flag = 0x05 // Math operation raised half carry
-	FLAGN flag = 0x06 // Math operation was a subtraction
-	FLAGZ flag = 0x07 // Math operation result was zero
+	FLAGC uint8 = 0x04 // Math operation raised carry
+	FLAGH uint8 = 0x05 // Math operation raised half carry
+	FLAGN uint8 = 0x06 // Math operation was a subtraction
+	FLAGZ uint8 = 0x07 // Math operation result was zero
 
-	INTR_VBLANK    flag = 0x1  // VBlank interrupt
-	INTR_LCDSTAT   flag = 0x2  // LCD status interrupt
-	INTR_TIMER     flag = 0x4  // Timer interrupt
-	INTR_SERIAL    flag = 0x8  // Serial interrupt
-	INTR_HIGHTOLOW flag = 0x10 // Joypad interrupt
+	INTR_VBLANK    uint8 = 0x1  // VBlank interrupt
+	INTR_LCDSTAT   uint8 = 0x2  // LCD status interrupt
+	INTR_TIMER     uint8 = 0x4  // Timer interrupt
+	INTR_SERIAL    uint8 = 0x8  // Serial interrupt
+	INTR_HIGHTOLOW uint8 = 0x10 // Joypad interrupt
 
 	CLOCK_FREQ_GB  uint32 = 4194304 // 4.194304 MHz
 	CLOCK_FREQ_CGB uint32 = 8388608 // 8.388608 MHz
@@ -69,7 +67,7 @@ func (c *Cpu) RandomizeRegisters(seed int64) {
 	c.Registers.C = uint8(r.Intn(0xff))
 	c.Registers.D = uint8(r.Intn(0xff))
 	c.Registers.E = uint8(r.Intn(0xff))
-	c.Registers.F = 0
+	c.Registers.F = uint8((r.Intn(0x0f) << 4))
 	c.Registers.H = uint8(r.Intn(0xff))
 	c.Registers.L = uint8(r.Intn(0xff))
 	c.Registers.SP = uint16(r.Intn(0xffff))
@@ -118,14 +116,14 @@ func (c *Cpu) HL() uint16 {
 	return (uint16)(c.Registers.H)<<8 | (uint16)(c.Registers.L)
 }
 
-func (cpu *Cpu) Dump(name string) {
+func (cpu *Cpu) Dump(header string) {
 	reg := cpu.Registers
-	fmt.Printf("GOBC -- Starting with: %s\n", name)
+	fmt.Printf("GOBC -- %s\n", header)
 	fmt.Printf("A: %X(%d) F: %X(%d)\n", reg.A, reg.A, reg.F, reg.F)
 	fmt.Printf("B: %X(%d) C: %X(%d)\n", reg.B, reg.B, reg.C, reg.C)
 	fmt.Printf("D: %X(%d)  E: %X(%d)\n", reg.D, reg.D, reg.E, reg.E)
 	fmt.Printf("HL: %X(%d) SP: %X(%d) PC: %X(%d)\n", uint16(reg.H)<<8|uint16(reg.L), uint16(reg.H)<<8|uint16(reg.L), reg.SP, reg.SP, reg.PC, reg.PC)
-	fmt.Println("*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*")
+	fmt.Println("*=============================================*")
 }
 
 func (c *Cpu) SubSetFlags8(a uint8, b uint8) uint8 {

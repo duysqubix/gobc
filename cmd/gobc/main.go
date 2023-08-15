@@ -13,17 +13,18 @@ import (
 )
 
 type Register struct {
-	Name int    `json:"name"`
-	A    int    `json:"a"`
-	F    int    `json:"f"`
-	B    int    `json:"b"`
-	C    int    `json:"c"`
-	D    int    `json:"d"`
-	E    int    `json:"e"`
-	HL   int    `json:"hl"`
-	SP   int    `json:"sp"`
-	PC   int    `json:"pc"`
-	ARGS string `json:"args"`
+	Name   int    `json:"name"`
+	A      int    `json:"a"`
+	F      int    `json:"f"`
+	B      int    `json:"b"`
+	C      int    `json:"c"`
+	D      int    `json:"d"`
+	E      int    `json:"e"`
+	HL     int    `json:"hl"`
+	SP     int    `json:"sp"`
+	PC     int    `json:"pc"`
+	ARGS   string `json:"args"`
+	CYCLES uint8  `json:"cycles"`
 }
 
 func main() {
@@ -43,26 +44,39 @@ func main() {
 	do_opcodes(uint16(opcode_i), uint16(value_n))
 }
 
+type MockMB struct {
+	m      *motherboard.Motherboard
+	args   string
+	cycles uint8
+}
+
 func do_opcodes(opCodeNum uint16, value uint16) {
-	mb := motherboard.NewMotherboard()
+	mb := MockMB{
+		m:      motherboard.NewMotherboard(),
+		args:   fmt.Sprint(value),
+		cycles: 0,
+	}
+
+	// mb := motherboard.NewMotherboard()
 	// spew.Dump(mb)
-	c := mb.Cpu()
+	c := mb.m.Cpu()
 	c.RandomizeRegisters(int64(rand.Intn(0xfffffffffffff)))
 	// c.RandomizeRegisters(1600)
 	c.Registers.B = 255
 
 	reg := Register{
-		Name: int(opCodeNum),
-		A:    int(c.Registers.A),
-		F:    int(c.Registers.F),
-		B:    int(c.Registers.B),
-		C:    int(c.Registers.C),
-		D:    int(c.Registers.D),
-		E:    int(c.Registers.E),
-		HL:   int(c.Registers.H)<<8 | int(c.Registers.L),
-		SP:   int(c.Registers.SP),
-		PC:   int(c.Registers.PC),
-		ARGS: fmt.Sprint(value),
+		Name:   int(opCodeNum),
+		A:      int(c.Registers.A),
+		F:      int(c.Registers.F),
+		B:      int(c.Registers.B),
+		C:      int(c.Registers.C),
+		D:      int(c.Registers.D),
+		E:      int(c.Registers.E),
+		HL:     int(c.Registers.H)<<8 | int(c.Registers.L),
+		SP:     int(c.Registers.SP),
+		PC:     int(c.Registers.PC),
+		ARGS:   fmt.Sprint(mb.args),
+		CYCLES: mb.cycles,
 	}
 	jsonData, err := json.MarshalIndent(reg, "", "    ")
 
@@ -70,25 +84,26 @@ func do_opcodes(opCodeNum uint16, value uint16) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	c.Dump("Initial State")
 	op := opcodes.OPCODES[uint16(opCodeNum)]
-	op(mb, value) // INC BC
+	mb.cycles = op(mb.m, value) // INC BC
 
-	name := fmt.Sprintf("%04x", uint16(opCodeNum))
-	c.Dump(name)
+	// name :=
+	c.Dump(fmt.Sprintf("Post Instruction [%X]", uint16(opCodeNum)))
 
 	reg = Register{
-		Name: int(opCodeNum),
-		A:    int(c.Registers.A),
-		F:    int(c.Registers.F),
-		B:    int(c.Registers.B),
-		C:    int(c.Registers.C),
-		D:    int(c.Registers.D),
-		E:    int(c.Registers.E),
-		HL:   int(c.Registers.H)<<8 | int(c.Registers.L),
-		SP:   int(c.Registers.SP),
-		PC:   int(c.Registers.PC),
-		ARGS: fmt.Sprint(value),
+		Name:   int(opCodeNum),
+		A:      int(c.Registers.A),
+		F:      int(c.Registers.F),
+		B:      int(c.Registers.B),
+		C:      int(c.Registers.C),
+		D:      int(c.Registers.D),
+		E:      int(c.Registers.E),
+		HL:     int(c.Registers.H)<<8 | int(c.Registers.L),
+		SP:     int(c.Registers.SP),
+		PC:     int(c.Registers.PC),
+		ARGS:   fmt.Sprint(mb.args),
+		CYCLES: mb.cycles,
 	}
 	jsonData, err = json.MarshalIndent(reg, "", "    ")
 
