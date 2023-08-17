@@ -1,11 +1,8 @@
 from opcodes import *
-from unittest.mock import Mock
 
 import opcodes
 import os 
 import json 
-import pandas as pd
-import random
 
 # EXPLICIT = ('INC_03', 'INC_04')
 
@@ -160,7 +157,6 @@ class DummyCPU:
                 "cycles": self.cycles
             }, f, indent=4)
         
-rows = []
 cpu = DummyCPU()
 func_name = cpu.Name 
 
@@ -174,7 +170,6 @@ for f in dir(opcodes):
         continue
     
 
-# func_name = list(filter(lambda x: f"{cpu.Name:04x}" in x.split('_')[-1], dir(opcodes)))
 func = getattr(opcodes, func_name)
 if callable(func):
     try:
@@ -182,6 +177,5 @@ if callable(func):
     except:
         cpu.cycles = func(cpu, cpu.args)
     print(cpu.report())
-    rows.append(cpu.dump_json())
     cpu.dump()       
         
