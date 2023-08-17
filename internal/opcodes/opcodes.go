@@ -2533,6 +2533,24 @@ var OPCODES = map[uint16]OpLogic{
 	},
 
 	/************************************************************* CB PREFIX *************************************************************/
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	/************************************************************* CB PREFIX *************************************************************/
 
 	/****************************** 0xn0 **********************/
 	// RLC B - Rotate B left. Old bit 7 to Carry flag (256) [minus 0xFF for CB prefix]
@@ -2578,6 +2596,26 @@ var OPCODES = map[uint16]OpLogic{
 			b |= 0x01
 		}
 
+		c.Registers.B = b
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// SLA B - Shift B left into Carry. LSB of B set to 0 (288) [minus 0xFF for CB prefix]
+	0x120: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.B
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		b = (b << 1) & 0xff
 		c.Registers.B = b
 		c.Registers.PC += 2
 		return 8
@@ -2632,6 +2670,26 @@ var OPCODES = map[uint16]OpLogic{
 		return 8
 	},
 
+	// SLA C - Shift C left into Carry. LSB of C set to 0 (289) [minus 0xFF for CB prefix]
+	0x121: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.C
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		b = (b << 1) & 0xff
+		c.Registers.C = b
+		c.Registers.PC += 2
+		return 8
+	},
+
 	/****************************** 0xn2 **********************/
 	// RLC D - Rotate D left. Old bit 7 to Carry flag (258) [minus 0xFF for CB prefix]
 	0x102: func(mb Motherboard, value uint16) uint8 {
@@ -2676,6 +2734,26 @@ var OPCODES = map[uint16]OpLogic{
 			b |= 0x01
 		}
 
+		c.Registers.D = b
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// SLA D - Shift D left into Carry. LSB of D set to 0 (290) [minus 0xFF for CB prefix]
+	0x122: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.D
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		b = (b << 1) & 0xff
 		c.Registers.D = b
 		c.Registers.PC += 2
 		return 8
@@ -2729,6 +2807,26 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.PC += 2
 		return 8
 	},
+
+	// SLA E - Shift E left into Carry. LSB of E set to 0 (291) [minus 0xFF for CB prefix]
+	0x123: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.E
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		b = (b << 1) & 0xff
+		c.Registers.E = b
+		c.Registers.PC += 2
+		return 8
+	},
 	/****************************** 0xn4 **********************/
 	// RLC H - Rotate H left. Old bit 7 to Carry flag (260) [minus 0xFF for CB prefix]
 	0x104: func(mb Motherboard, value uint16) uint8 {
@@ -2773,6 +2871,26 @@ var OPCODES = map[uint16]OpLogic{
 			b |= 0x01
 		}
 
+		c.Registers.H = b
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// SLA H - Shift H left into Carry. LSB of H set to 0 (292) [minus 0xFF for CB prefix]
+	0x124: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.H
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		b = (b << 1) & 0xff
 		c.Registers.H = b
 		c.Registers.PC += 2
 		return 8
@@ -2825,6 +2943,27 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.PC += 2
 		return 8
 	},
+
+	// SLA L - Shift L left into Carry. LSB of L set to 0 (293) [minus 0xFF for CB prefix]
+	0x125: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.L
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		b = (b << 1) & 0xff
+		c.Registers.L = b
+		c.Registers.PC += 2
+		return 8
+	},
+
 	/****************************** 0xn6 **********************/
 	// RLC (HL) - Rotate value pointed by HL left. Old bit 7 to Carry flag (262) [minus 0xFF for CB prefix]
 	0x106: func(mb Motherboard, value uint16) uint8 {
@@ -2872,6 +3011,28 @@ var OPCODES = map[uint16]OpLogic{
 			b |= 0x01
 		}
 
+		b16 := uint16(b)
+		mb.SetItem(&hl, &b16)
+		c.Registers.PC += 2
+		return 16
+	},
+
+	// SLA (HL) - Shift value pointed by HL left into Carry. LSB of value pointed by HL set to 0 (294) [minus 0xFF for CB prefix]
+	0x126: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		b := mb.GetItem(&hl)
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		b = (b << 1) & 0xff
 		b16 := uint16(b)
 		mb.SetItem(&hl, &b16)
 		c.Registers.PC += 2
@@ -2927,6 +3088,26 @@ var OPCODES = map[uint16]OpLogic{
 		return 8
 	},
 
+	// SLA A - Shift A left into Carry. LSB of A set to 0 (295) [minus 0xFF for CB prefix]
+	0x127: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.A
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		b = (b << 1) & 0xff
+		c.Registers.A = b
+		c.Registers.PC += 2
+		return 8
+	},
+
 	/****************************** 0xn8 **********************/
 	// RRC B - Rotate B right. Old bit 0 to Carry flag (264) [minus 0xFF for CB prefix]
 	0x108: func(mb Motherboard, value uint16) uint8 {
@@ -2969,6 +3150,35 @@ var OPCODES = map[uint16]OpLogic{
 		b = (b >> 1) & 0xff
 		if oldCarry {
 			b |= 0x80
+		}
+
+		c.Registers.B = b
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// SRA B - Shift B right into Carry. MSB doesn't change (296) [minus 0xFF for CB prefix]
+	0x128: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.B
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		// shift register B to the right by one bit
+		b = (b >> 1) & 0xff
+		if internal.IsBitSet(c.Registers.B, 7) {
+			b |= 0x80
+		}
+
+		if b == 0 {
+			c.SetFlagZ()
 		}
 
 		c.Registers.B = b
@@ -3025,6 +3235,35 @@ var OPCODES = map[uint16]OpLogic{
 		return 8
 	},
 
+	// SRA C - Shift C right into Carry. MSB doesn't change (297) [minus 0xFF for CB prefix]
+	0x129: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.C
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		// shift register C to the right by one bit
+		b = (b >> 1) & 0xff
+		if internal.IsBitSet(c.Registers.C, 7) {
+			b |= 0x80
+		}
+
+		if b == 0 {
+			c.SetFlagZ()
+		}
+
+		c.Registers.C = b
+		c.Registers.PC += 2
+		return 8
+	},
+
 	/****************************** 0xna **********************/
 	// RRC D - Rotate D right. Old bit 0 to Carry flag (266) [minus 0xFF for CB prefix]
 	0x10a: func(mb Motherboard, value uint16) uint8 {
@@ -3067,6 +3306,36 @@ var OPCODES = map[uint16]OpLogic{
 		b = (b >> 1) & 0xff
 		if oldCarry {
 			b |= 0x80
+		}
+
+		c.Registers.D = b
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// SRA D - Shift D right into Carry. MSB doesn't change (298) [minus 0xFF for CB prefix]
+	0x12a: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.D
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		// shift register D to the right by one bit
+		b = (b >> 1) & 0xff
+		if internal.IsBitSet(c.Registers.D, 7) {
+			b |= 0x80
+		}
+
+
+		if b == 0 {
+			c.SetFlagZ()
 		}
 
 		c.Registers.D = b
@@ -3122,6 +3391,36 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.PC += 2
 		return 8
 	},
+
+	// SRA E - Shift E right into Carry. MSB doesn't change (299) [minus 0xFF for CB prefix]
+	0x12b: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.E
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		// shift register E to the right by one bit
+		b = (b >> 1) & 0xff
+		if internal.IsBitSet(c.Registers.E, 7) {
+			b |= 0x80
+		}
+
+		if b == 0 {
+			c.SetFlagZ()
+		}
+
+		c.Registers.E = b
+		c.Registers.PC += 2
+		return 8
+	},
+
 	/****************************** 0xnc **********************/
 	// RRC H - Rotate H right. Old bit 0 to Carry flag (268) [minus 0xFF for CB prefix]
 	0x10c: func(mb Motherboard, value uint16) uint8 {
@@ -3170,6 +3469,35 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.PC += 2
 		return 8
 	},
+
+	// SRA H - Shift H right into Carry. MSB doesn't change (300) [minus 0xFF for CB prefix]
+	0x12c: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.H
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		// shift register H to the right by one bit
+		b = (b >> 1) & 0xff
+		if internal.IsBitSet(c.Registers.H, 7) {
+			b |= 0x80
+		}
+
+		if b == 0 {
+			c.SetFlagZ()
+		}
+
+		c.Registers.H = b
+		c.Registers.PC += 2
+		return 8
+	},
 	/****************************** 0xnd **********************/
 	// RRC L - Rotate L right. Old bit 0 to Carry flag (269) [minus 0xFF for CB prefix]
 	0x10d: func(mb Motherboard, value uint16) uint8 {
@@ -3212,6 +3540,35 @@ var OPCODES = map[uint16]OpLogic{
 		b = (b >> 1) & 0xff
 		if oldCarry {
 			b |= 0x80
+		}
+
+		c.Registers.L = b
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// SRA L - Shift L right into Carry. MSB doesn't change (301) [minus 0xFF for CB prefix]
+	0x12d: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.L
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		// shift register L to the right by one bit
+		b = (b >> 1) & 0xff
+		if internal.IsBitSet(c.Registers.L, 7) {
+			b |= 0x80
+		}
+
+		if b == 0 {
+			c.SetFlagZ()
 		}
 
 		c.Registers.L = b
@@ -3270,6 +3627,33 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.PC += 2
 		return 16
 	},
+
+	// SRA (HL) - Shift value pointed by HL right into Carry. MSB doesn't change (302) [minus 0xFF for CB prefix]
+	0x12e: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		b := mb.GetItem(&hl)
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		// shift value pointed by HL to the right by one bit
+		b = (b >> 1) & 0xff
+		if internal.IsBitSet(c.Registers.L, 7) {
+			b |= 0x80
+		}
+
+		b16 := uint16(b)
+		mb.SetItem(&hl, &b16)
+		c.Registers.PC += 2
+		return 16
+	},
 	/****************************** 0xnf **********************/
 	// RRC A - Rotate A right. Old bit 0 to Carry flag (271) [minus 0xFF for CB prefix]
 	0x10f: func(mb Motherboard, value uint16) uint8 {
@@ -3312,6 +3696,35 @@ var OPCODES = map[uint16]OpLogic{
 		b = (b >> 1) & 0xff
 		if oldCarry {
 			b |= 0x80
+		}
+
+		c.Registers.A = b
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// SRA A - Shift A right into Carry. MSB doesn't change (303) [minus 0xFF for CB prefix]
+	0x12f: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.A
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(c.Registers.A, 0) {
+			c.SetFlagC()
+		} else {
+			c.ResetFlagC()
+		}
+
+		// shift register A to the right by one bit
+		b = (b >> 1) & 0xff
+		if internal.IsBitSet(c.Registers.A, 7) {
+			b |= 0x80
+		}
+
+		if b == 0 {
+			c.SetFlagZ()
 		}
 
 		c.Registers.A = b
