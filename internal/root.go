@@ -19,3 +19,7 @@ func SetBit(value *uint8, bit uint8) {
 func ResetBit(value *uint8, bit uint8) {
 	*value &= ^(1 << bit)
 }
+
+func ToggleBit(value *uint8, bit uint8) {
+	*value ^= (1 << bit)
+}

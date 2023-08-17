@@ -2358,6 +2358,7 @@ def CALL_DC(cpu, v): # DC CALL C,a16
 
 
 def SBC_DE(cpu, v): # DE SBC A,d8
+    v &= 0xff
     t = cpu.A - v - cpu.f_c()
     flag = 0b01000000
     flag += ((t & 0xFF) == 0) << FLAGZ
@@ -2384,7 +2385,8 @@ def RST_DF(cpu): # DF RST 18H
 
 
 def LDH_E0(cpu, v): # E0 LDH (a8),A
-    cpu.mb.setitem(v + 0xFF00, cpu.A)
+    v = (v + 0xFF00) & 0xffff
+    cpu.mb.setitem(v, cpu.A)
     cpu.PC += 2
     cpu.PC &= 0xFFFF
     return 12
@@ -2441,6 +2443,7 @@ def RST_E7(cpu): # E7 RST 20H
 
 
 def ADD_E8(cpu, v): # E8 ADD SP,r8
+    v &= 0xff
     t = cpu.SP + ((v ^ 0x80) - 0x80)
     flag = 0b00000000
     flag += (((cpu.SP & 0xF) + (v & 0xF)) > 0xF) << FLAGH
@@ -2491,7 +2494,8 @@ def RST_EF(cpu): # EF RST 28H
 
 
 def LDH_F0(cpu, v): # F0 LDH A,(a8)
-    cpu.A = cpu.mb.getitem(v + 0xFF00)
+    v = (v + 0xff00) & 0xffff
+    cpu.A = cpu.mb.getitem(v)
     cpu.PC += 2
     cpu.PC &= 0xFFFF
     return 12
@@ -2556,13 +2560,14 @@ def RST_F7(cpu): # F7 RST 30H
 
 
 def LD_F8(cpu, v): # F8 LD HL,SP+r8
-    cpu.HL = cpu.SP + ((v ^ 0x80) - 0x80)
-    t = cpu.HL
+    v &= 0xff
+    r = cpu.SP + i8
+    cpu.HL = r
     flag = 0b00000000
     flag += (((cpu.SP & 0xF) + (v & 0xF)) > 0xF) << FLAGH
     flag += (((cpu.SP & 0xFF) + (v & 0xFF)) > 0xFF) << FLAGC
     cpu.F &= 0b00000000
-    cpu.F |= flag
+    cpu.F |= (flag <<4)
     cpu.HL &= 0xFFFF
     cpu.PC += 2
     cpu.PC &= 0xFFFF
@@ -2591,6 +2596,7 @@ def EI_FB(cpu): # FB EI
 
 
 def CP_FE(cpu, v): # FE CP d8
+    v &= 0xff
     t = cpu.A - v
     flag = 0b01000000
     flag += ((t & 0xFF) == 0) << FLAGZ

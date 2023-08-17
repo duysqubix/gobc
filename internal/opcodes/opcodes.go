@@ -135,8 +135,8 @@ var OPCODES = map[uint16]OpLogic{
 		var pch, pcl uint8
 		if !c.IsFlagZSet() {
 			spadd1 := c.Registers.SP + 1
-			pch = mb.GetItem(&spadd1, )
-			pcl = mb.GetItem(&c.Registers.SP, )
+			pch = mb.GetItem(&spadd1)
+			pcl = mb.GetItem(&c.Registers.SP)
 
 			c.Registers.PC = (uint16(pch) << 8) | uint16(pcl)
 
@@ -155,8 +155,8 @@ var OPCODES = map[uint16]OpLogic{
 		var pch, pcl uint8
 		if !c.IsFlagCSet() {
 			spadd1 := c.Registers.SP + 1
-			pch = mb.GetItem(&spadd1, )
-			pcl = mb.GetItem(&c.Registers.SP, )
+			pch = mb.GetItem(&spadd1)
+			pcl = mb.GetItem(&c.Registers.SP)
 
 			c.Registers.PC = (uint16(pch) << 8) | uint16(pcl)
 
@@ -167,6 +167,27 @@ var OPCODES = map[uint16]OpLogic{
 			return 8
 		}
 	},
+
+	// LDH (a8), A - Save A at address $FF00 + 8-bit immediate (224)
+	0xe0: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		var addr uint16 = 0xff00 + value
+		a := uint16(c.Registers.A)
+		mb.SetItem(&addr, &a)
+		c.Registers.PC += 2
+		return 12
+	},
+
+	// LDH A, (a8) - Load A with value at address $FF00 + 8-bit immediate (240)
+	0xf0: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		var addr uint16 = 0xff00 + value
+		a := mb.GetItem(&addr)
+		c.Registers.A = a
+		c.Registers.PC += 2
+		return 12
+	},
+
 	/****************************** 0xn1 **********************/
 	// LD BC, d16 - Load 16-bit immediate into BC (1)
 	0x01: func(mb Motherboard, value uint16) uint8 {
@@ -271,8 +292,8 @@ var OPCODES = map[uint16]OpLogic{
 		c := mb.Cpu()
 		var pch, pcl uint8
 		spadd1 := c.Registers.SP + 1
-		pch = mb.GetItem(&spadd1, )
-		pcl = mb.GetItem(&c.Registers.SP, )
+		pch = mb.GetItem(&spadd1)
+		pcl = mb.GetItem(&c.Registers.SP)
 
 		c.SetBC((uint16(pch) << 8) | uint16(pcl))
 
@@ -286,10 +307,37 @@ var OPCODES = map[uint16]OpLogic{
 		c := mb.Cpu()
 		var pch, pcl uint8
 		spadd1 := c.Registers.SP + 1
-		pch = mb.GetItem(&spadd1, )
-		pcl = mb.GetItem(&c.Registers.SP, )
+		pch = mb.GetItem(&spadd1)
+		pcl = mb.GetItem(&c.Registers.SP)
 
 		c.SetDE((uint16(pch) << 8) | uint16(pcl))
+
+		c.Registers.SP += 2
+		c.Registers.PC += 1
+		return 12
+	},
+
+	// POP HL - Pop two bytes from stack into HL (225)
+	0xe1: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		var pch, pcl uint8
+		spadd1 := c.Registers.SP + 1
+		pch = mb.GetItem(&spadd1)
+		pcl = mb.GetItem(&c.Registers.SP)
+
+		c.SetHL((uint16(pch) << 8) | uint16(pcl))
+
+		c.Registers.SP += 2
+		c.Registers.PC += 1
+		return 12
+	},
+
+	// POP AF - Pop two bytes from stack into AF (241)
+	0xf1: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		spadd1 := c.Registers.SP + 1
+		c.Registers.A = mb.GetItem(&spadd1)
+		c.Registers.F = mb.GetItem(&c.Registers.SP) & 0xF0 & 0xF0
 
 		c.Registers.SP += 2
 		c.Registers.PC += 1
@@ -430,6 +478,26 @@ var OPCODES = map[uint16]OpLogic{
 		return 12
 	},
 
+	// LD (C), A - Save A at address $FF00 + register C (226)
+	0xe2: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		var addr uint16 = 0xff00 + uint16(c.Registers.C)
+		a := uint16(c.Registers.A)
+		mb.SetItem(&addr, &a)
+		c.Registers.PC += 1
+		return 8
+	},
+
+	// LD A, (C) - Load A with value at address $FF00 + register C (242)
+	0xf2: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		var addr uint16 = 0xff00 + uint16(c.Registers.C)
+		a := mb.GetItem(&addr)
+		c.Registers.A = a
+		c.Registers.PC += 1
+		return 8
+	},
+
 	/****************************** 0xn3 **********************/
 	// // INC BC - Increment BC (3)
 	0x03: func(mb Motherboard, value uint16) uint8 {
@@ -543,6 +611,15 @@ var OPCODES = map[uint16]OpLogic{
 	},
 
 	// 0xd3 - Illegal opcode
+	// 0xe3 - Illegal opcode
+
+	// DI - Disable interrupts (243)
+	0xf3: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.IntrMasterEnable = false
+		c.Registers.PC += 1
+		return 4
+	},
 
 	/****************************** 0xn4 **********************/
 	// // INC B - Increment B (4)
@@ -573,7 +650,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x34: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		v := mb.GetItem(&hl, )
+		v := mb.GetItem(&hl)
 		v = c.Inc(v)
 
 		v16 := uint16(v)
@@ -688,6 +765,9 @@ var OPCODES = map[uint16]OpLogic{
 		}
 	},
 
+	// 0xe4 - Illegal opcode
+	// 0xf4 - Illegal opcode
+
 	/****************************** 0xn5 **********************/
 	// DEC B - Decrement B (5)
 	0x05: func(mb Motherboard, value uint16) uint8 {
@@ -717,7 +797,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x35: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		v := mb.GetItem(&hl, )
+		v := mb.GetItem(&hl)
 		v = c.Dec(v)
 
 		v16 := uint16(v)
@@ -822,6 +902,36 @@ var OPCODES = map[uint16]OpLogic{
 		return 16
 	},
 
+	// PUSH HL - Push HL onto stack (229)
+	0xe5: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		hr := uint16(c.Registers.H)
+		lr := uint16(c.Registers.L)
+		mb.SetItem(&sp1, &hr)
+		mb.SetItem(&sp2, &lr)
+		c.Registers.SP -= 2
+		c.Registers.PC += 1
+		return 16
+	},
+
+	// PUSH AF - Push AF onto stack (229)
+	0xf5: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		ar := uint16(c.Registers.A)
+		fr := uint16(c.Registers.F)
+		mb.SetItem(&sp1, &ar)
+		mb.SetItem(&sp2, &fr)
+		c.Registers.SP -= 2
+		c.Registers.PC += 1
+		return 16
+	},
+
 	/****************************** 0xn6 **********************/
 	// LD B, d8 - Load 8-bit immediate into B (6)
 	0x06: func(mb Motherboard, value uint16) uint8 {
@@ -861,7 +971,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x46: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.B = mb.GetItem(&hl, )
+		c.Registers.B = mb.GetItem(&hl)
 		c.Registers.PC += 1
 		return 8
 	},
@@ -870,7 +980,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x56: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.D = mb.GetItem(&hl, )
+		c.Registers.D = mb.GetItem(&hl)
 		c.Registers.PC += 1
 		return 8
 	},
@@ -879,7 +989,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x66: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.H = mb.GetItem(&hl, )
+		c.Registers.H = mb.GetItem(&hl)
 		c.Registers.PC += 1
 		return 8
 	},
@@ -895,7 +1005,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x86: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.A = c.AddSetFlags8(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.A = c.AddSetFlags8(c.Registers.A, mb.GetItem(&hl))
 		c.Registers.PC += 1
 		return 8
 	},
@@ -904,7 +1014,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x96: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.A = c.SubSetFlags8(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.A = c.SubSetFlags8(c.Registers.A, mb.GetItem(&hl))
 		c.Registers.PC += 1
 		return 8
 	},
@@ -913,7 +1023,7 @@ var OPCODES = map[uint16]OpLogic{
 	0xa6: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.A = c.AndSetFlags(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.A = c.AndSetFlags(c.Registers.A, mb.GetItem(&hl))
 		c.Registers.PC += 1
 		return 8
 	},
@@ -922,7 +1032,7 @@ var OPCODES = map[uint16]OpLogic{
 	0xb6: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.A = c.OrSetFlags(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.A = c.OrSetFlags(c.Registers.A, mb.GetItem(&hl))
 		c.Registers.PC += 1
 		return 8
 	},
@@ -941,6 +1051,24 @@ var OPCODES = map[uint16]OpLogic{
 		c := mb.Cpu()
 		v := uint8(value)
 		c.Registers.A = c.SubSetFlags8(c.Registers.A, v)
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// AND d8 - Logical AND 8-bit immediate against A (230)
+	0xe6: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		v := uint8(value)
+		c.Registers.A = c.AndSetFlags(c.Registers.A, v)
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// OR d8 - Logical OR 8-bit immediate against A (246)
+	0xf6: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		v := uint8(value)
+		c.Registers.A = c.OrSetFlags(c.Registers.A, v)
 		c.Registers.PC += 2
 		return 8
 	},
@@ -1146,6 +1274,38 @@ var OPCODES = map[uint16]OpLogic{
 		return 16
 	},
 
+	// RST 20 H - Push present address onto stack. Jump to address $0020 (231)
+	0xe7: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 1
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		pch := (c.Registers.PC >> 8) & 0xff
+		pcl := c.Registers.PC & 0xff
+		mb.SetItem(&sp1, &pch)
+		mb.SetItem(&sp2, &pcl)
+		c.Registers.SP -= 2
+		c.Registers.PC = 0x20
+		return 16
+	},
+
+	// RST 30H - Push present address onto stack. Jump to address $0030 (247)
+	0xf7: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 1
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		pch := (c.Registers.PC >> 8) & 0xff
+		pcl := c.Registers.PC & 0xff
+		mb.SetItem(&sp1, &pch)
+		mb.SetItem(&sp2, &pcl)
+		c.Registers.SP -= 2
+		c.Registers.PC = 0x30
+		return 16
+	},
+
 	/****************************** 0xn8 **********************/
 	// LD (a16), SP - Save SP at given address (8)
 	// value is the address
@@ -1270,8 +1430,8 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.PC += 1
 		if c.IsFlagZSet() {
 			nsp := c.Registers.SP + 1
-			pcl := mb.GetItem(&c.Registers.SP, )
-			pch := mb.GetItem(&nsp, )
+			pcl := mb.GetItem(&c.Registers.SP)
+			pch := mb.GetItem(&nsp)
 			c.Registers.SP += 2
 			c.Registers.PC = uint16(pch)<<8 | uint16(pcl)
 			return 20
@@ -1286,14 +1446,88 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.PC += 1
 		if c.IsFlagCSet() {
 			nsp := c.Registers.SP + 1
-			pcl := mb.GetItem(&c.Registers.SP, )
-			pch := mb.GetItem(&nsp, )
+			pcl := mb.GetItem(&c.Registers.SP)
+			pch := mb.GetItem(&nsp)
 			c.Registers.SP += 2
 			c.Registers.PC = uint16(pch)<<8 | uint16(pcl)
 			return 20
 		} else {
 			return 8
 		}
+	},
+
+	// ADD SP, r8 - Add signed 8-bit immediate to SP (232)
+	0xe8: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+
+		value &= 0xff
+		var i8 int8 = int8((value ^ 0x80) - 0x80)
+		sp := int32(c.Registers.SP)
+		r := sp + int32(i8)
+		i8_32 := int32(i8)
+
+		c.ClearAllFlags()
+
+		if ((sp&0xf)+(i8_32&0xf))&0x10 > 0xf {
+			c.SetFlagH()
+		}
+
+		if (sp^i8_32^r)&0x100 == 0x100 {
+			c.SetFlagC()
+		}
+
+		// var i8 int8 = int8((value ^ 0x80) - 0x80)
+		// r := int32(c.Registers.SP) + int32(i8)
+		// sp := int32(c.Registers.SP)
+
+		// c.ClearAllFlags()
+		// if (sp^int32(i8)^r)&0x100 == 0x100 {
+		// 	c.SetFlagC()
+		// }
+
+		// // if (int32(c.Registers.SP)^int32(i8)^r)&0x10 != 0x0 {
+		// // 	c.SetFlagH()
+		// // }
+
+		// if (sp&0xf)+(int32(i8)&0xf)&0x10 == 0x10 {
+		// 	c.SetFlagH()
+		// }
+		c.Registers.SP = uint16(r)
+		c.Registers.PC += 2
+		return 16
+	},
+
+	// LD HL, SP+r8 - Add signed 8-bit immediate to SP (232)
+	0xf8: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		value &= 0xff
+		var i8 int8 = int8((value ^ 0x80) - 0x80)
+		// var i8 int8 = int8(value)
+		sp := int32(c.Registers.SP)
+		i8_32 := int32(i8)
+		r := sp + i8_32
+
+		c.SetHL(uint16(r))
+
+		c.ClearAllFlags()
+		if ((sp&0xf)+(i8_32&0xf))&0x10 > 0xf {
+					c.SetFlagH()
+		}
+
+		if (sp^i8_32^r)&0x100 == 0x100 {
+			c.SetFlagC()
+		}
+
+		// if (int32(c.Registers.SP)^int32(i8)^r)&0x10 == 0x10 {
+		// 	c.SetFlagC()
+		// }
+
+		// if (int32(c.Registers.SP)^int32(i8)^r)&0x100 == 0x100 {
+		// 	c.SetFlagH()
+		// }
+
+		c.Registers.PC += 2
+		return 12
 	},
 
 	/****************************** 0xn9 **********************/
@@ -1404,8 +1638,8 @@ var OPCODES = map[uint16]OpLogic{
 	0xc9: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		sp2 := c.Registers.SP + 1
-		pcl := mb.GetItem(&c.Registers.SP, )
-		pch := mb.GetItem(&sp2, )
+		pcl := mb.GetItem(&c.Registers.SP)
+		pch := mb.GetItem(&sp2)
 		c.Registers.SP += 2
 		c.Registers.PC = uint16(pch)<<8 | uint16(pcl)
 		return 16
@@ -1416,11 +1650,19 @@ var OPCODES = map[uint16]OpLogic{
 		c := mb.Cpu()
 		c.IntrMasterEnable = true
 		sp2 := c.Registers.SP + 1
-		pcl := mb.GetItem(&c.Registers.SP, )
-		pch := mb.GetItem(&sp2, )
+		pcl := mb.GetItem(&c.Registers.SP)
+		pch := mb.GetItem(&sp2)
 		c.Registers.SP += 2
 		c.Registers.PC = uint16(pch)<<8 | uint16(pcl)
 		return 16
+	},
+
+	// LD SP, HL - Copy HL to SP (233)
+	0xf9: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.SP = c.HL()
+		c.Registers.PC += 1
+		return 8
 	},
 
 	/****************************** 0xna **********************/
@@ -1428,7 +1670,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x0A: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		bc := c.BC()
-		a := mb.GetItem(&bc, )
+		a := mb.GetItem(&bc)
 		c.Registers.A = uint8(a)
 		c.Registers.PC += 1
 		return 8
@@ -1438,7 +1680,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x1A: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		de := c.DE()
-		a := mb.GetItem(&de, )
+		a := mb.GetItem(&de)
 		c.Registers.A = uint8(a)
 		c.Registers.PC += 1
 		return 8
@@ -1448,7 +1690,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x2A: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		a := mb.GetItem(&hl, )
+		a := mb.GetItem(&hl)
 		c.Registers.A = uint8(a)
 		hl += 1
 		c.SetHL(hl)
@@ -1460,7 +1702,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x3A: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		a := mb.GetItem(&hl, )
+		a := mb.GetItem(&hl)
 		c.Registers.A = uint8(a)
 		hl -= 1
 		c.SetHL(hl)
@@ -1542,6 +1784,36 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.PC += 3
 		return 12
 	},
+
+	// JP C, a16 - Absolute jump to 16-bit location if C flag is set (218)
+	0xda: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		if c.IsFlagCSet() {
+			c.Registers.PC = value
+			return 16
+		}
+		c.Registers.PC += 3
+		return 12
+	},
+
+	// LD (a16), A - Save A at given address (234)
+	0xea: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		a := uint16(c.Registers.A)
+		mb.SetItem(&value, &a)
+		c.Registers.PC += 3
+		return 16
+	},
+
+	// LD A, (a16) - Load A from given address (250)
+	0xfa: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		a := mb.GetItem(&value)
+		c.Registers.A = uint8(a)
+		c.Registers.PC += 3
+		return 16
+	},
+
 	/****************************** 0xnb **********************/
 	// DEC BC - Decrement BC (11)
 	0x0B: func(mb Motherboard, value uint16) uint8 {
@@ -1648,6 +1920,16 @@ var OPCODES = map[uint16]OpLogic{
 	// PREFIX CB - CB prefix (203) --- isn't callable
 	0xcb: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
+		c.Registers.PC += 1
+		return 4
+	},
+
+	// 0xdb - Illegal instruction
+	// 0xeb - Illegal instruction
+	// EI - Enable interrupts (235)
+	0xfb: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.IntrMasterEnable = true
 		c.Registers.PC += 1
 		return 4
 	},
@@ -1769,6 +2051,30 @@ var OPCODES = map[uint16]OpLogic{
 		return 12
 	},
 
+	// CALL C, a16 - Call routine at 16-bit address if C flag is set (220)
+	0xdc: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 3
+
+		if c.IsFlagCSet() {
+			sp1 := c.Registers.SP - 1
+			sp2 := c.Registers.SP - 2
+
+			pch := (c.Registers.PC >> 8) & 0xff
+			pcl := c.Registers.PC & 0xff
+			mb.SetItem(&sp1, &pch)
+			mb.SetItem(&sp2, &pcl)
+			c.Registers.SP -= 2
+
+			c.Registers.PC = value
+			return 24
+		}
+		return 12
+	},
+
+	// 0xec - Illegal instruction
+	// 0xfc - Illegal instruction
+
 	/****************************** 0xnd **********************/
 	// DEC C - Decrement C (13)
 	0x0D: func(mb Motherboard, value uint16) uint8 {
@@ -1883,6 +2189,8 @@ var OPCODES = map[uint16]OpLogic{
 		return 24
 	},
 
+	// 0xdd - Illegal instruction
+
 	/****************************** 0xne **********************/
 	// LD C, d8 - Load 8-bit immediate into C (14)
 	0x0E: func(mb Motherboard, value uint16) uint8 {
@@ -1920,7 +2228,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x4E: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.C = mb.GetItem(&hl, )
+		c.Registers.C = mb.GetItem(&hl)
 		c.Registers.PC += 1
 		return 8
 	},
@@ -1929,7 +2237,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x5E: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.E = mb.GetItem(&hl, )
+		c.Registers.E = mb.GetItem(&hl)
 		c.Registers.PC += 1
 		return 8
 	},
@@ -1938,7 +2246,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x6E: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.L = mb.GetItem(&hl, )
+		c.Registers.L = mb.GetItem(&hl)
 		c.Registers.PC += 1
 		return 8
 	},
@@ -1947,7 +2255,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x7E: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.A = mb.GetItem(&hl, )
+		c.Registers.A = mb.GetItem(&hl)
 		c.Registers.PC += 1
 		return 8
 	},
@@ -1956,7 +2264,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x8E: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.A = c.AdcSetFlags8(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.A = c.AdcSetFlags8(c.Registers.A, mb.GetItem(&hl))
 		c.Registers.PC += 1
 		return 8
 	},
@@ -1965,7 +2273,7 @@ var OPCODES = map[uint16]OpLogic{
 	0x9E: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.A = c.SbcSetFlags8(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.A = c.SbcSetFlags8(c.Registers.A, mb.GetItem(&hl))
 		c.Registers.PC += 1
 		return 8
 	},
@@ -1974,7 +2282,7 @@ var OPCODES = map[uint16]OpLogic{
 	0xae: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.Registers.A = c.XorSetFlags(c.Registers.A, mb.GetItem(&hl, ))
+		c.Registers.A = c.XorSetFlags(c.Registers.A, mb.GetItem(&hl))
 		c.Registers.PC += 1
 		return 8
 	},
@@ -1983,7 +2291,7 @@ var OPCODES = map[uint16]OpLogic{
 	0xbe: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		hl := c.HL()
-		c.CpSetFlags(c.Registers.A, mb.GetItem(&hl, ))
+		c.CpSetFlags(c.Registers.A, mb.GetItem(&hl))
 		c.Registers.PC += 1
 		return 8
 	},
@@ -1992,6 +2300,30 @@ var OPCODES = map[uint16]OpLogic{
 	0xce: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
 		c.Registers.A = c.AdcSetFlags8(c.Registers.A, uint8(value))
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// SBC A, d8 - Subtract 8-bit immediate and carry flag from A (222)
+	0xde: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.SbcSetFlags8(c.Registers.A, uint8(value))
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// XOR d8 - Logical XOR n against A (236)
+	0xee: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.A = c.XorSetFlags(c.Registers.A, uint8(value))
+		c.Registers.PC += 2
+		return 8
+	},
+
+	// CP d8 - Compare n against A (252)
+	0xfe: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.CpSetFlags(c.Registers.A, uint8(value))
 		c.Registers.PC += 2
 		return 8
 	},
@@ -2146,6 +2478,57 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.SP -= 2
 
 		c.Registers.PC = 0x08
+		return 16
+	},
+
+	// RST 18H - Push present address onto stack. Jump to address $0018 (223)
+	0xdf: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 1
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		pch := (c.Registers.PC >> 8) & 0xff
+		pcl := c.Registers.PC & 0xff
+		mb.SetItem(&sp1, &pch)
+		mb.SetItem(&sp2, &pcl)
+		c.Registers.SP -= 2
+
+		c.Registers.PC = 0x18
+		return 16
+	},
+
+	// RST 28H - Push present address onto stack. Jump to address $0028 (239)
+	0xef: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 1
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		pch := (c.Registers.PC >> 8) & 0xff
+		pcl := c.Registers.PC & 0xff
+		mb.SetItem(&sp1, &pch)
+		mb.SetItem(&sp2, &pcl)
+		c.Registers.SP -= 2
+
+		c.Registers.PC = 0x28
+		return 16
+	},
+
+	// RST 38H - Push present address onto stack. Jump to address $0038 (255)
+	0xff: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		c.Registers.PC += 1
+		sp1 := c.Registers.SP - 1
+		sp2 := c.Registers.SP - 2
+
+		pch := (c.Registers.PC >> 8) & 0xff
+		pcl := c.Registers.PC & 0xff
+		mb.SetItem(&sp1, &pch)
+		mb.SetItem(&sp2, &pcl)
+		c.Registers.SP -= 2
+
+		c.Registers.PC = 0x38
 		return 16
 	},
 }

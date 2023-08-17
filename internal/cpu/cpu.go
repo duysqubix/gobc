@@ -79,10 +79,17 @@ func (c *Cpu) RandomizeRegisters(seed int64) {
 
 }
 
+func (c *Cpu) ClearAllFlags() {c.Registers.F = 0}
+
 func (c *Cpu) IsFlagZSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGZ)) }
 func (c *Cpu) IsFlagNSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGN)) }
 func (c *Cpu) IsFlagHSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGH)) }
 func (c *Cpu) IsFlagCSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGC)) }
+
+func (c *Cpu) ToggleFlagC() { internal.ToggleBit(&c.Registers.F, uint8(FLAGC)) }
+func (c *Cpu) ToggleFlagH() { internal.ToggleBit(&c.Registers.F, uint8(FLAGH)) }
+func (c *Cpu) ToggleFlagN() { internal.ToggleBit(&c.Registers.F, uint8(FLAGN)) }
+func (c *Cpu) ToggleFlagZ() { internal.ToggleBit(&c.Registers.F, uint8(FLAGZ)) }
 
 func (c *Cpu) SetFlagZ() { internal.SetBit(&c.Registers.F, uint8(FLAGZ)) }
 func (c *Cpu) SetFlagN() { internal.SetBit(&c.Registers.F, uint8(FLAGN)) }
@@ -107,6 +114,11 @@ func (c *Cpu) SetDE(value uint16) {
 func (c *Cpu) SetHL(value uint16) {
 	c.Registers.H = uint8(value >> 8)
 	c.Registers.L = uint8(value & 0xFF)
+}
+
+func (c *Cpu) SetAF(value uint16) {
+	c.Registers.A = uint8(value >> 8)
+	c.Registers.F = uint8(value & 0xFF)
 }
 
 func (c *Cpu) BC() uint16 {
