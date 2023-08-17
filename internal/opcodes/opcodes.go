@@ -13,8 +13,6 @@ type Motherboard interface {
 
 type OpLogic func(mb Motherboard, value uint16) uint8
 
-var DEBUG bool = true // UNSET THIS BEFORE COMMITTING
-
 // OPCODES is a map of opcodes to their logic
 var OPCODES = map[uint16]OpLogic{
 
@@ -65,7 +63,7 @@ var OPCODES = map[uint16]OpLogic{
 	// LD B, B - Copy B to B (64)
 	0x40: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
-		c.Registers.B = c.Registers.B
+		// c.Registers.B = c.Registers.B
 		c.Registers.PC += 1
 		return 4
 	},
@@ -401,7 +399,7 @@ var OPCODES = map[uint16]OpLogic{
 	// LD D, D - Copy D to D (82)
 	0x52: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
-		c.Registers.D = c.Registers.D
+		// c.Registers.D = c.Registers.D
 		c.Registers.PC += 1
 		return 4
 	},
@@ -678,7 +676,7 @@ var OPCODES = map[uint16]OpLogic{
 	// LD H, H - Copy H to H (100)
 	0x64: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
-		c.Registers.H = c.Registers.H
+		// c.Registers.H = c.Registers.H
 		c.Registers.PC += 1
 		return 4
 	},
@@ -1573,7 +1571,7 @@ var OPCODES = map[uint16]OpLogic{
 	// LD C, C - Copy C to C (73)
 	0x49: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
-		c.Registers.C = c.Registers.C
+		// c.Registers.C = c.Registers.C
 		c.Registers.PC += 1
 		return 4
 	},
@@ -1864,7 +1862,7 @@ var OPCODES = map[uint16]OpLogic{
 	// LD E, E - Copy E to E (91)
 	0x5B: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
-		c.Registers.E = c.Registers.E
+		// c.Registers.E = c.Registers.E
 		c.Registers.PC += 1
 		return 4
 	},
@@ -2127,7 +2125,7 @@ var OPCODES = map[uint16]OpLogic{
 	// LD L, L - Copy L to L (109)
 	0x6D: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
-		c.Registers.L = c.Registers.L
+		// c.Registers.L = c.Registers.L
 		c.Registers.PC += 1
 		return 4
 	},
@@ -2427,7 +2425,7 @@ var OPCODES = map[uint16]OpLogic{
 	// LD A, A - Copy A to A (127)
 	0x7F: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
-		c.Registers.A = c.Registers.A
+		// c.Registers.A = c.Registers.A
 		c.Registers.PC += 1
 		return 4
 	},
@@ -3629,8 +3627,6 @@ var OPCODES = map[uint16]OpLogic{
 		c.Registers.PC += 2
 		return 8
 	},
-
-
 
 	// SRA E - Shift E right into Carry. MSB doesn't change (299) [minus 0xFF for CB prefix]
 	0x12b: func(mb Motherboard, value uint16) uint8 {
