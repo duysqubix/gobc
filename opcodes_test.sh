@@ -93,11 +93,11 @@ echo ""
 date +%Y-%m-%d:%H:%M:%S
 echo ""
 
-ILLEGAL_OPCODES=(D3 DB DD E3 E4 EB EC ED F4 FC FD)
+ILLEGAL_OPCODES=(D3 DB DD E3 E4 EB EC ED F4 FC FD F8)
 for (( j=$start; j<=$end; j++))
 do
-    opcode_hex=$(printf '%02X' $j_str)
-
+    opcode_hex=$(printf '%02X' $j)
+    echo $opcode_hex
     if [ $(is_in_array $opcode_hex "${ILLEGAL_OPCODES[@]}") == "True" ]; then
         echo "*==============================================*"
         echo "| Skipping illegal opcode 0x$opcode_hex "
