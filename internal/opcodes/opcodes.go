@@ -11,10 +11,15 @@ type Motherboard interface {
 	Cpu() *cpu.Cpu
 }
 
+type OpCode uint16
+type OpCycles uint8
 type OpLogic func(mb Motherboard, value uint16) uint8
+type OpCodeMap map[OpCode]OpLogic
+
+var IllegalOpCodes = []OpCode{0xd3, 0xdb, 0xdd, 0xe3, 0xe4, 0xeb, 0xec, 0xed, 0xf4, 0xfc, 0xfd}
 
 // OPCODES is a map of opcodes to their logic
-var OPCODES = map[uint16]OpLogic{
+var OPCODES = OpCodeMap{
 
 	/****************************** 0xn0 **********************/
 	// NOP - No operation (0)
@@ -4168,7 +4173,7 @@ var OPCODES = map[uint16]OpLogic{
 
 		// shift register A to the left by one bit
 		b = (b << 1) & 0xff
-	
+
 		if oldCarry {
 			b |= 0x01
 		}

@@ -84,7 +84,7 @@ func do_opcodes(opCodeNum uint16, value uint16) {
 		log.Fatal(err)
 	}
 	c.Dump("Initial State")
-	op := opcodes.OPCODES[uint16(opCodeNum)]
+	op := opcodes.OPCODES[opcodes.OpCode(opCodeNum)]
 	mb.cycles = op(mb.m, value) // INC BC
 
 	// name :=
