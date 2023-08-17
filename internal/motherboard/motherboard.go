@@ -63,7 +63,7 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 		internal.Panicf("Memory read error! Can't read from %#x\n", *addr)
 	}
 
-	return 0x01
+	return 0xFF
 }
 
 func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
