@@ -2561,13 +2561,13 @@ def RST_F7(cpu): # F7 RST 30H
 
 def LD_F8(cpu, v): # F8 LD HL,SP+r8
     v &= 0xff
+    i8 = ((v ^ 0x80) - 0x80)
     r = cpu.SP + i8
     cpu.HL = r
     flag = 0b00000000
     flag += (((cpu.SP & 0xF) + (v & 0xF)) > 0xF) << FLAGH
     flag += (((cpu.SP & 0xFF) + (v & 0xFF)) > 0xFF) << FLAGC
     cpu.F &= 0b00000000
-    cpu.F |= (flag <<4)
     cpu.HL &= 0xFFFF
     cpu.PC += 2
     cpu.PC &= 0xFFFF
