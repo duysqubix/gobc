@@ -1511,7 +1511,7 @@ var OPCODES = map[uint16]OpLogic{
 
 		c.ClearAllFlags()
 		if ((sp&0xf)+(i8_32&0xf))&0x10 > 0xf {
-					c.SetFlagH()
+			c.SetFlagH()
 		}
 
 		if (sp^i8_32^r)&0x100 == 0x100 {
@@ -2530,5 +2530,353 @@ var OPCODES = map[uint16]OpLogic{
 
 		c.Registers.PC = 0x38
 		return 16
+	},
+
+	/************************************************************* CB PREFIX *************************************************************/
+
+	/****************************** 0xn0 **********************/
+	// RLC B - Rotate B left. Old bit 7 to Carry flag (256) [minus 0xFF for CB prefix]
+	0x100: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.B
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+			b = (b << 1) + 0x01
+		} else {
+			c.ResetFlagC()
+			b = (b << 1)
+		}
+
+		c.Registers.B = b
+		c.Registers.PC += 2
+		return 8
+	},
+
+	/****************************** 0xn1 **********************/
+	// RLC C - Rotate C left. Old bit 7 to Carry flag (257) [minus 0xFF for CB prefix]
+	0x101: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.C
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+			b = (b << 1) + 0x01
+		} else {
+			c.ResetFlagC()
+			b = (b << 1)
+		}
+
+		c.Registers.C = b
+		c.Registers.PC += 2
+		return 8
+	},
+
+	/****************************** 0xn2 **********************/
+	// RLC D - Rotate D left. Old bit 7 to Carry flag (258) [minus 0xFF for CB prefix]
+	0x102: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.D
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+			b = (b << 1) + 0x01
+		} else {
+			c.ResetFlagC()
+			b = (b << 1)
+		}
+
+		c.Registers.D = b
+		c.Registers.PC += 2
+		return 8
+	},
+	/****************************** 0xn3 **********************/
+	// RLC E - Rotate E left. Old bit 7 to Carry flag (259) [minus 0xFF for CB prefix]
+	0x103: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.E
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+			b = (b << 1) + 0x01
+		} else {
+			c.ResetFlagC()
+			b = (b << 1)
+		}
+
+		c.Registers.E = b
+		c.Registers.PC += 2
+		return 8
+	},
+	/****************************** 0xn4 **********************/
+	// RLC H - Rotate H left. Old bit 7 to Carry flag (260) [minus 0xFF for CB prefix]
+	0x104: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.H
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+			b = (b << 1) + 0x01
+		} else {
+			c.ResetFlagC()
+			b = (b << 1)
+		}
+
+		c.Registers.H = b
+		c.Registers.PC += 2
+		return 8
+	},
+	/****************************** 0xn5 **********************/
+	// RLC L - Rotate L left. Old bit 7 to Carry flag (261) [minus 0xFF for CB prefix]
+	0x105: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.L
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+			b = (b << 1) + 0x01
+		} else {
+			c.ResetFlagC()
+			b = (b << 1)
+		}
+
+		c.Registers.L = b
+		c.Registers.PC += 2
+		return 8
+	},
+	/****************************** 0xn6 **********************/
+	// RLC (HL) - Rotate value pointed by HL left. Old bit 7 to Carry flag (262) [minus 0xFF for CB prefix]
+	0x106: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		b := mb.GetItem(&hl)
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+			b = (b << 1) + 0x01
+		} else {
+			c.ResetFlagC()
+			b = (b << 1)
+		}
+
+		b16 := uint16(b)
+		mb.SetItem(&hl, &b16)
+		c.Registers.PC += 2
+		return 16
+	},
+
+	/****************************** 0xn7 **********************/
+	// RLC A - Rotate A left. Old bit 7 to Carry flag (263) [minus 0xFF for CB prefix]
+	0x107: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.A
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 7) {
+			c.SetFlagC()
+			b = (b << 1) + 0x01
+		} else {
+			c.ResetFlagC()
+			b = (b << 1)
+		}
+
+		c.Registers.A = b
+		c.Registers.PC += 2
+		return 8
+	},
+
+	/****************************** 0xn8 **********************/
+	// RRC B - Rotate B right. Old bit 0 to Carry flag (264) [minus 0xFF for CB prefix]
+	0x108: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.B
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+			b = (b >> 1) + 0x80
+		} else {
+			c.ResetFlagC()
+			b = (b >> 1)
+		}
+
+		c.Registers.B = b
+		c.Registers.PC += 2
+		return 8
+	},
+
+	/****************************** 0xn9 **********************/
+	// RRC C - Rotate C right. Old bit 0 to Carry flag (265) [minus 0xFF for CB prefix]
+	0x109: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.C
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+			b = (b >> 1) + 0x80
+		} else {
+			c.ResetFlagC()
+			b = (b >> 1)
+		}
+
+		c.Registers.C = b
+		c.Registers.PC += 2
+		return 8
+	},
+	/****************************** 0xna **********************/
+	// RRC D - Rotate D right. Old bit 0 to Carry flag (266) [minus 0xFF for CB prefix]
+	0x10a: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.D
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+			b = (b >> 1) + 0x80
+		} else {
+			c.ResetFlagC()
+			b = (b >> 1)
+		}
+
+		c.Registers.D = b
+		c.Registers.PC += 2
+		return 8
+	},
+	/****************************** 0xnb **********************/
+	// RRC E - Rotate E right. Old bit 0 to Carry flag (267) [minus 0xFF for CB prefix]
+	0x10b: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.E
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+			b = (b >> 1) + 0x80
+		} else {
+			c.ResetFlagC()
+			b = (b >> 1)
+		}
+
+		c.Registers.E = b
+		c.Registers.PC += 2
+		return 8
+	},
+	/****************************** 0xnc **********************/
+	// RRC H - Rotate H right. Old bit 0 to Carry flag (268) [minus 0xFF for CB prefix]
+	0x10c: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.H
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+			b = (b >> 1) + 0x80
+		} else {
+			c.ResetFlagC()
+			b = (b >> 1)
+		}
+
+		c.Registers.H = b
+		c.Registers.PC += 2
+		return 8
+	},
+	/****************************** 0xnd **********************/
+	// RRC L - Rotate L right. Old bit 0 to Carry flag (269) [minus 0xFF for CB prefix]
+	0x10d: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.L
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+			b = (b >> 1) + 0x80
+		} else {
+			c.ResetFlagC()
+			b = (b >> 1)
+		}
+
+		c.Registers.L = b
+		c.Registers.PC += 2
+		return 8
+	},
+	/****************************** 0xne **********************/
+	// RRC (HL) - Rotate value pointed by HL right. Old bit 0 to Carry flag (270) [minus 0xFF for CB prefix]
+	0x10e: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		hl := c.HL()
+		b := mb.GetItem(&hl)
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+			b = (b >> 1) + 0x80
+		} else {
+			c.ResetFlagC()
+			b = (b >> 1)
+		}
+
+		b16 := uint16(b)
+		mb.SetItem(&hl, &b16)
+		c.Registers.PC += 2
+		return 16
+	},
+	/****************************** 0xnf **********************/
+	// RRC A - Rotate A right. Old bit 0 to Carry flag (271) [minus 0xFF for CB prefix]
+	0x10f: func(mb Motherboard, value uint16) uint8 {
+		c := mb.Cpu()
+		b := c.Registers.A
+		c.ResetFlagZ()
+		c.ResetFlagN()
+		c.ResetFlagH()
+
+		if internal.IsBitSet(b, 0) {
+			c.SetFlagC()
+			b = (b >> 1) + 0x80
+		} else {
+			c.ResetFlagC()
+			b = (b >> 1)
+		}
+
+		c.Registers.A = b
+		c.Registers.PC += 2
+		return 8
 	},
 }

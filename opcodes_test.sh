@@ -96,14 +96,27 @@ echo ""
 ILLEGAL_OPCODES=(D3 DB DD E3 E4 EB EC ED F4 FC FD)
 for (( j=$start; j<=$end; j++))
 do
-    opcode_hex=$(printf '%02X' $j)
+    opcode_hex=$(printf '%02X' $j_str)
+
     if [ $(is_in_array $opcode_hex "${ILLEGAL_OPCODES[@]}") == "True" ]; then
         echo "*==============================================*"
         echo "| Skipping illegal opcode 0x$opcode_hex "
         echo "*==============================================*"
         continue
     fi
-    echo "*******************-- $j [0x$(printf '%X' $j)]--*************************"
+
+    if [ $j -gt 255 ]; then 
+        echo "CB Prefix Command"
+
+        # substract j by 255 to get the correct opcode
+        j_str=$(($j-255))
+        echo $j_str
+        opcode_hex=$(printf 'CB %02X' $j_str)
+    else
+        opcode_hex=$(printf '%02X' $j_str)
+    fi 
+
+    echo "*******************-- $j [$opcode_hex]--*************************"
     for (( i=0; i<$arg3; i++))
     do
         echo "Test        : $i"
