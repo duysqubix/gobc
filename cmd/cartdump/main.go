@@ -55,5 +55,11 @@ func main() {
 	fmt.Println("Reading ROM file: ", filename)
 	// create cartridge
 	cart := cartridge.NewCartridge(obj)
-	cart.Dump()
+
+	// check if flag --raw is set
+	if internal.IsInStrArray("--raw", os.Args) {
+		cart.RawHeaderDump()
+	} else {
+		cart.Dump()
+	}
 }

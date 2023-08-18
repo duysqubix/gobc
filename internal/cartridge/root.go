@@ -4,12 +4,19 @@ package cartridge
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
+	"github.com/olekukonko/tablewriter"
 )
 
 const (
+
+	// Header Range
+	HEADER_START_ADDR uint16 = 0x0100
+	HEADER_END_ADDR   uint16 = 0x014F
+
 	// Entry Point
 	ENTRY_POINT_START_ADDR uint16 = 0x0100
 	ENTRY_POINT_END_ADDR   uint16 = 0x0103
@@ -26,7 +33,7 @@ const (
 	$80 = Game supports CGB functions, but works on old gameboys also.
 	$C0 = Game works on CGB only (physically the same as $80), hardware ignores bit 6.
 	*/
-	CBG_FLAG uint16 = 0x0143
+	CBG_FLAG_ADDR uint16 = 0x0143
 
 	// Manufacturer Code
 	MANUFACTURER_CODE_START_ADDR uint16 = 0x013F
@@ -137,8 +144,8 @@ const (
 )
 
 type Cartridge struct {
-	filename string   // filename of the ROM
-	RomBanks [][]byte // slice of ROM banks
+	filename string    // filename of the ROM
+	RomBanks [][]uint8 // slice of ROM banks
 }
 
 func NewCartridge(filename *pathlib.Path) *Cartridge {
@@ -183,5 +190,93 @@ func (c *Cartridge) ValidateChecksum() (uint8, bool) {
 }
 
 func (c *Cartridge) Dump() {
-	fmt.Println("Filename: ", c.filename)
+	title := c.RomBanks[0][TITLE_START_ADDR : TITLE_END_ADDR+1]
+	license1 := NewLicenseeCodeMap[c.RomBanks[0][NEW_LICENSEE_CODE_START_ADDR]]
+	license2 := NewLicenseeCodeMap[c.RomBanks[0][NEW_LICENSEE_CODE_END_ADDR]]
+
+	cartridge_type := CartridgeTypeMap[c.RomBanks[0][CARTRIDGE_TYPE_ADDR]]
+	rom_size := RomSizeMap[c.RomBanks[0][ROM_SIZE_ADDR]]
+	ram_size := RamSizeMap[c.RomBanks[0][SRAM_SIZE_ADDR]]
+
+	oldlicense1 := OldLicenseeCodeMap[c.RomBanks[0][OLD_LICENSEE_CODE_ADDR]]
+
+	sbg_mode_enabled := "No"
+	if c.RomBanks[0][SGB_FLAG_ADDR] == 0x03 {
+		sbg_mode_enabled = "Yes"
+	}
+
+	_, valid := c.ValidateChecksum()
+	report := [][]string{
+		{"Filename", c.filename},
+		{"Title", string(title)},
+		{"CBG Mode", CbgFlagMap[c.RomBanks[0][CBG_FLAG_ADDR]]},
+		{"SBG Mode", sbg_mode_enabled},
+		{"New Licensee Code", fmt.Sprintf("%s, %s", license1, license2)},
+		{"Cartridge Type", cartridge_type},
+		{"ROM Size", rom_size.String()},
+		{"RAM Size", ram_size.String()},
+		{"Old Licensee Code", oldlicense1},
+		{"Header Checksum", fmt.Sprintf("$%02X", c.RomBanks[0][HEADER_CHECKSUM_ADDR])},
+		{"Header Checksum Valid", fmt.Sprintf("%t", valid)},
+		{"Global Checksum", fmt.Sprintf("$%02X", c.RomBanks[0][GLOBAL_CHECKSUM_START_ADDR])},
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Attribute", "Value"})
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+
+	for _, v := range report {
+		table.Append(v)
+	}
+
+	table.Render()
+}
+
+func (c *Cartridge) RawHeaderDump() {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Address", "Value", "Description"})
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+
+	for _i, v := range c.RomBanks[0][HEADER_START_ADDR : HEADER_END_ADDR+1] {
+		var desc string
+		i := uint16(_i) + HEADER_START_ADDR
+		switch {
+		case i >= ENTRY_POINT_START_ADDR && i <= ENTRY_POINT_END_ADDR:
+			desc = "Entry Point"
+		case i >= NINTENDO_LOGO_START_ADDR && i <= NINTENDO_LOGO_END_ADDR:
+			desc = "Nintendo Logo"
+		case i >= TITLE_START_ADDR && i <= TITLE_END_ADDR:
+			desc = "Title"
+		case i == CBG_FLAG_ADDR:
+			desc = "CBG Flag"
+		case i >= MANUFACTURER_CODE_START_ADDR && i <= MANUFACTURER_CODE_END_ADDR:
+			desc = "Manufacturer Code"
+		case i >= NEW_LICENSEE_CODE_START_ADDR && i <= NEW_LICENSEE_CODE_END_ADDR:
+			desc = "New Licensee Code"
+		case i == SGB_FLAG_ADDR:
+			desc = "SGB Flag"
+		case i == CARTRIDGE_TYPE_ADDR:
+			desc = "Cartridge Type"
+		case i == ROM_SIZE_ADDR:
+			desc = "ROM Size"
+		case i == SRAM_SIZE_ADDR:
+			desc = "SRAM Size"
+		case i == DESTINATION_CODE_ADDR:
+			desc = "Destination Code"
+		case i == OLD_LICENSEE_CODE_ADDR:
+			desc = "Old Licensee Code"
+		case i == MASK_ROM_VERSION_NUMBER_ADDR:
+			desc = "Mask ROM Version Number"
+		case i == HEADER_CHECKSUM_ADDR:
+			desc = "Header Checksum"
+		case i >= GLOBAL_CHECKSUM_START_ADDR && i <= GLOBAL_CHECKSUM_END_ADDR:
+			desc = "Global Checksum"
+		default:
+			desc = "Unkown"
+		}
+
+		table.Append([]string{fmt.Sprintf("$%04X", i), fmt.Sprintf("$%02X", v), desc})
+	}
+
+	table.Render()
 }
