@@ -21,6 +21,13 @@ var SUPPORTED_ROMS = []string{".gbc", ".gb"}
 
 func main() {
 
+	if internal.IsInStrArray("--help", os.Args) || internal.IsInStrArray("-h", os.Args) {
+		fmt.Println("Usage: cartdump [options] <path to ROM cartridge>")
+		fmt.Println("Options:")
+		fmt.Println("  --raw: Dump raw header")
+		os.Exit(0)
+	}
+
 	if len(os.Args) < 2 {
 		fmt.Println("Please provide path to ROM cartridge")
 		os.Exit(1)
