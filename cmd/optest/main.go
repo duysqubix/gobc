@@ -25,6 +25,9 @@ type Register struct {
 	PC     int    `json:"pc"`
 	ARGS   string `json:"args"`
 	CYCLES uint8  `json:"cycles"`
+	IME    bool   `json:"ime"`
+	IF     uint8  `json:"if"`
+	IE     uint8  `json:"ie"`
 }
 
 func main() {
@@ -76,6 +79,9 @@ func do_opcodes(opCodeNum uint16, value uint16) {
 		PC:     int(c.Registers.PC),
 		ARGS:   fmt.Sprint(mb.args),
 		CYCLES: mb.cycles,
+		IME:    c.Interrupts.Master_Enable,
+		IF:     c.Interrupts.IF,
+		IE:     c.Interrupts.IE,
 	}
 	jsonData, err := json.MarshalIndent(reg, "", "    ")
 
@@ -103,6 +109,9 @@ func do_opcodes(opCodeNum uint16, value uint16) {
 		PC:     int(c.Registers.PC),
 		ARGS:   fmt.Sprint(mb.args),
 		CYCLES: mb.cycles,
+		IME:    c.Interrupts.Master_Enable,
+		IF:     c.Interrupts.IF,
+		IE:     c.Interrupts.IE,
 	}
 	jsonData, err = json.MarshalIndent(reg, "", "    ")
 

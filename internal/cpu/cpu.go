@@ -37,10 +37,17 @@ type Registers struct {
 	PC uint16 // Program counter
 }
 
+type Interrupts struct {
+	Master_Enable bool  // Master interrupt enable
+	IE            uint8 // Interrupt enable register
+	IF            uint8 // Interrupt flag register
+
+}
+
 type Cpu struct {
-	Registers        *Registers
-	Halted           bool
-	IntrMasterEnable bool
+	Registers               *Registers
+	Halted                  bool
+	Interrupts              *Interrupts
 }
 
 func NewCpu() *Cpu {
@@ -57,8 +64,12 @@ func NewCpu() *Cpu {
 			SP: 0,
 			PC: 0,
 		},
-		Halted:           false,
-		IntrMasterEnable: false,
+		Halted:                  false,
+		Interrupts: &Interrupts{
+			Master_Enable: false,
+			IE:            0,
+			IF:            0,
+		},
 	}
 
 }
@@ -79,7 +90,7 @@ func (c *Cpu) RandomizeRegisters(seed int64) {
 
 }
 
-func (c *Cpu) ClearAllFlags() {c.Registers.F = 0}
+func (c *Cpu) ClearAllFlags() { c.Registers.F = 0 }
 
 func (c *Cpu) IsFlagZSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGZ)) }
 func (c *Cpu) IsFlagNSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGN)) }

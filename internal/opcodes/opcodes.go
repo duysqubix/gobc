@@ -619,7 +619,7 @@ var OPCODES = OpCodeMap{
 	// DI - Disable interrupts (243)
 	0xf3: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
-		c.IntrMasterEnable = false
+		c.Interrupts.Master_Enable = false
 		c.Registers.PC += 1
 		return 4
 	},
@@ -1651,7 +1651,7 @@ var OPCODES = OpCodeMap{
 	// RETI - Pop two bytes from stack & jump to that address then enable interrupts (217)
 	0xd9: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
-		c.IntrMasterEnable = true
+		c.Interrupts.Master_Enable = true
 		sp2 := c.Registers.SP + 1
 		pcl := mb.GetItem(&c.Registers.SP)
 		pch := mb.GetItem(&sp2)
@@ -1939,7 +1939,7 @@ var OPCODES = OpCodeMap{
 	// EI - Enable interrupts (235)
 	0xfb: func(mb Motherboard, value uint16) uint8 {
 		c := mb.Cpu()
-		c.IntrMasterEnable = true
+		c.Interrupts.Master_Enable = true
 		c.Registers.PC += 1
 		return 4
 	},

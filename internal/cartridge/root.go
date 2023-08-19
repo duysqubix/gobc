@@ -141,11 +141,71 @@ const (
 
 	// Memory Bank Size
 	MEMORY_BANK_SIZE uint16 = 16_384 // 16 KiB (1024*16)
+
+	// Cartridge Types
+	ROM_ONLY uint8 = 0x00
+	MBC1     uint8 = 0x01
+	MBC2     uint8 = 0x02
+	MBC3     uint8 = 0x03
+	MBC5     uint8 = 0x05
 )
+
+// CartridgeTable is a table of cartridge types
+// type CartridgeType struct {
+// 	MBC     uint8
+// 	SRAM    bool
+// 	Battery bool
+// 	RTC     bool
+// }
+
+type CartridgeType interface {
+	SetItem(uint16, uint8)
+	GetItem(uint16) uint8
+}
+
+// var CARTRIDGE_TABLE = map[uint8]CartridgeType{
+// 	// #    MBC     SRAM    Battery RTC
+// 	0x00: {ROM_ONLY, false, false, false}, // ROM ONLY
+// 0x01: {MBC1, false, false, false},     // MBC1
+// 0x02: {MBC1, true, false, false},      // MBC1+RAM
+// 0x03: {MBC1, true, true, false},       // MBC1+RAM+BATTERY
+// 0x05: {MBC2, false, false, false},     // MBC2
+// 0x06: {MBC2, false, true, false},      // MBC2+BATTERY
+// 0x08: {ROM_ONLY, true, false, false},  // ROM+RAM
+// 0x09: {ROM_ONLY, true, true, false},   // ROM+RAM+BATTERY
+// 0x0F: {MBC3, false, true, true},       // MBC3+TIMER+BATTERY
+// 0x10: {MBC3, true, true, true},        // MBC3+TIMER+RAM+BATTERY
+// 0x11: {MBC3, false, false, false},     // MBC3
+// 0x12: {MBC3, true, false, false},      // MBC3+RAM
+// 0x13: {MBC3, true, true, false},       // MBC3+RAM+BATTERY
+// 0x19: {MBC5, false, false, false},     // MBC5
+// 0x1A: {MBC5, true, false, false},      // MBC5+RAM
+// 0x1B: {MBC5, true, true, false},       // MBC5+RAM+BATTERY
+// 0x1C: {MBC5, false, false, true},      // MBC5+RUMBLE
+// 0x1D: {MBC5, true, false, true},       // MBC5+RUMBLE+RAM
+// 0x1E: {MBC5, true, true, false},       // MBC5+RUMBLE+RAM+BATTERY
+// }
+
+var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
+	// ROM ONLY
+	0x00: func(c *Cartridge) CartridgeType {
+		return &RomOnlyCartridge{parent: c, sram: false, battery: false, rtc: false}
+	},
+
+	// MBC3+TIMER+RAM+BATTERY
+	0x10: func(c *Cartridge) CartridgeType {
+		return &Mbc3Cartridge{parent: c, sram: true, battery: true, rtc: true}
+	},
+	// MBC3+RAM+BATTERY
+	0x13: func(c *Cartridge) CartridgeType {
+		return &Mbc3Cartridge{parent: c, sram: true, battery: true, rtc: false}
+	},
+}
 
 type Cartridge struct {
 	filename string    // filename of the ROM
 	RomBanks [][]uint8 // slice of ROM banks
+	cartType CartridgeType
 }
 
 func NewCartridge(filename *pathlib.Path) *Cartridge {
@@ -156,20 +216,30 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 
 	var rom_banks [][]uint8
 
-	for i := 0; i < len(rom_data); i += int(MEMORY_BANK_SIZE) {
+	rom_len := len(rom_data)
+	for i := 0; i < rom_len; i += int(MEMORY_BANK_SIZE) {
 		end := i + int(MEMORY_BANK_SIZE)
 
 		// prevent exceeding slice bounds
-		if end > len(rom_data) {
-			end = len(rom_data)
+		if end > rom_len {
+			end = rom_len
 		}
 
 		rom_banks = append(rom_banks, rom_data[i:end])
 	}
+
 	cart := Cartridge{
 		RomBanks: rom_banks,
 		filename: filename.Name(),
 	}
+
+	cart_type_addr := rom_banks[0][CARTRIDGE_TYPE_ADDR]
+	cartTypeConstructor := CARTRIDGE_TABLE[rom_banks[0][CARTRIDGE_TYPE_ADDR]]
+
+	if cartTypeConstructor == nil {
+		internal.Panicf("Cartridge type not supported: %02X", cart_type_addr)
+	}
+	cart.cartType = cartTypeConstructor(&cart)
 
 	calc_checksum, valid := cart.ValidateChecksum()
 	if !valid {

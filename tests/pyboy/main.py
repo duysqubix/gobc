@@ -154,7 +154,10 @@ class DummyCPU:
                 "sp": self.SP,
                 "pc": self.PC,
                 "args": str(self.args),
-                "cycles": self.cycles
+                "cycles": self.cycles,
+                "ime": self.interrupt_master_enable,
+                "if": self.interrupts_flag_register,
+                "ie": self.interrupts_enabled_register,
             }, f, indent=4)
         
 cpu = DummyCPU()
