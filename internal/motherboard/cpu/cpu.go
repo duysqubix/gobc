@@ -2,9 +2,12 @@ package cpu
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
+	"os"
 
 	"github.com/duysqubix/gobc/internal"
+	"github.com/olekukonko/tablewriter"
 )
 
 const (
@@ -14,6 +17,8 @@ const (
 	FLAGZ uint8 = 0x07 // Math operation result was zero
 
 )
+
+type Cycles uint8
 
 type Motherboard interface {
 	SetItem(addr *uint16, value *uint16)
@@ -41,6 +46,8 @@ type Cpu struct {
 	Halted     bool        // CPU halted
 	Interrupts *Interrupts // Interrupts
 	Mb         Motherboard // Motherboard
+	IsStuck    bool        // CPU is stuck
+	Stopped    bool        // CPU is stopped
 }
 
 func NewCpu(mb Motherboard) *Cpu {
@@ -69,9 +76,9 @@ func NewCpu(mb Motherboard) *Cpu {
 
 }
 
-func (c *Cpu) Tick() uint8 {
+func (c *Cpu) Tick() Cycles {
 	if c.CheckForInterrupts() {
-		// TODO: We return with the number of cycles it took to handle interrupt
+		// TODO: We return with the number of Cycles it took to handle interrupt
 		c.Halted = false
 		return 0
 	}
@@ -92,15 +99,21 @@ func (c *Cpu) Tick() uint8 {
 	default:
 	}
 
-	// old_pc := c.Registers.PC
-	// old_sp := c.Registers.SP
-	// _ := c.ExecuteInstruction()
+	old_pc := c.Registers.PC
+	old_sp := c.Registers.SP
+	cycles := c.ExecuteInstruction()
+
+	if !c.Halted && (old_pc == c.Registers.PC) && (old_sp == c.Registers.SP) && !c.IsStuck {
+		log.Fatalf("CPU is stuck at PC: %#x SP: %#x", c.Registers.PC, c.Registers.SP)
+		c.DumpState()
+		c.IsStuck = true
+	}
 
 	c.Interrupts.Queued = false
-	return 0
+	return cycles
 }
 
-func (c *Cpu) ExecuteInstruction() uint8 {
+func (c *Cpu) ExecuteInstruction() Cycles {
 	var value uint16
 
 	opcode := OpCode(c.Mb.GetItem(&c.Registers.PC))
@@ -111,11 +124,15 @@ func (c *Cpu) ExecuteInstruction() uint8 {
 	}
 	pc := c.Registers.PC
 	switch OPCODE_LENGTHS[opcode] {
+
+	// 8 bit immediate
 	case 2:
 		pc += 1
 		value = uint16(c.Mb.GetItem(&pc))
 
+	// 16 bit immediate
 	case 3:
+		pc += 1
 		b := uint16(c.Mb.GetItem(&pc))
 		pc += 1
 		a := uint16(c.Mb.GetItem(&pc))
@@ -205,6 +222,53 @@ func (cpu *Cpu) Dump(header string) {
 	fmt.Printf("D: %X(%d)  E: %X(%d)\n", reg.D, reg.D, reg.E, reg.E)
 	fmt.Printf("HL: %X(%d) SP: %X(%d) PC: %X(%d)\n", uint16(reg.H)<<8|uint16(reg.L), uint16(reg.H)<<8|uint16(reg.L), reg.SP, reg.SP, reg.PC, reg.PC)
 	fmt.Println("*=============================================*")
+}
+
+func (cpu *Cpu) DumpState() {
+	pc := cpu.Registers.PC
+	pc2 := pc + 1
+	pc3 := pc + 2
+	opdata := []OpCode{
+		OpCode(cpu.Mb.GetItem(&pc)),
+		OpCode(cpu.Mb.GetItem(&pc2)),
+		OpCode(cpu.Mb.GetItem(&pc3)),
+	}
+
+	opdata1 := opdata[0]
+	var op_code_str string = fmt.Sprintf("OpCode: $%X", opdata1)
+	if opdata1.CBPrefix() {
+		op_code_str += fmt.Sprintf(" $%X", opdata[1])
+	} else {
+		op_code_str += fmt.Sprintf(" $%X $%X", opdata[1], opdata[2])
+	}
+
+	var report [][]string = [][]string{
+		{"OpCode", op_code_str},
+		{"A", fmt.Sprintf("$%X", cpu.Registers.A)},
+		{"F", fmt.Sprintf("$%X", cpu.Registers.F)},
+		{"B", fmt.Sprintf("$%X", cpu.Registers.B)},
+		{"C", fmt.Sprintf("$%X", cpu.Registers.C)},
+		{"D", fmt.Sprintf("$%X", cpu.Registers.D)},
+		{"E", fmt.Sprintf("$%X", cpu.Registers.E)},
+		{"H", fmt.Sprintf("$%X", cpu.Registers.H)},
+		{"L", fmt.Sprintf("$%X", cpu.Registers.L)},
+		{"SP", fmt.Sprintf("$%X", cpu.Registers.SP)},
+		{"PC", fmt.Sprintf("$%X", cpu.Registers.PC)},
+		{"IME", fmt.Sprintf("%t", cpu.Interrupts.Master_Enable)},
+		{"IE", fmt.Sprintf("%0b", cpu.Interrupts.IE)},
+		{"IF", fmt.Sprintf("%0b", cpu.Interrupts.IF)},
+		{"Halted", fmt.Sprintf("%t", cpu.Halted)},
+		{"Interrupts Queued", fmt.Sprintf("%t", cpu.Interrupts.Queued)},
+		{"Stopped", fmt.Sprintf("%t", cpu.Stopped)},
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	for _, v := range report {
+		table.Append(v)
+	}
+
+	table.Render()
 }
 
 func (c *Cpu) CpSetFlags(a uint8, b uint8) {

@@ -6,7 +6,7 @@ import (
 
 type OpCode uint16
 type OpCycles uint8
-type OpLogic func(mb Motherboard, value uint16) uint8
+type OpLogic func(mb Motherboard, value uint16) Cycles
 type OpCodeMap map[OpCode]OpLogic
 
 const (
@@ -66,14 +66,14 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn0 **********************/
 	// NOP - No operation (0)
-	0x00: func(mb Motherboard, value uint16) uint8 {
+	0x00: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 1
 		return 4
 	},
 
 	// STOP 0 - Stop CPU & LCD display until button pressed (16)
-	0x10: func(mb Motherboard, value uint16) uint8 {
+	0x10: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 
 		// TODO: Implement
@@ -88,7 +88,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// JR NZ, r8 - Relative jump if last result was not zero (32)
-	0x20: func(mb Motherboard, value uint16) uint8 {
+	0x20: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		if !c.IsFlagZSet() {
 			c.Registers.PC += (2 + (uint16(value^0x80) - 0x80)) & 0xffff
@@ -99,7 +99,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// JR NC, r8 - Relative jump if last result caused no carry (48)
-	0x30: func(mb Motherboard, value uint16) uint8 {
+	0x30: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		if !c.IsFlagCSet() {
 			c.Registers.PC += (2 + (uint16(value^0x80) - 0x80)) & 0xffff
@@ -110,7 +110,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD B, B - Copy B to B (64)
-	0x40: func(mb Motherboard, value uint16) uint8 {
+	0x40: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		// c.Registers.B = c.Registers.B
 		c.Registers.PC += 1
@@ -118,7 +118,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD D, B - Copy B to D (80)
-	0x50: func(mb Motherboard, value uint16) uint8 {
+	0x50: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.D = c.Registers.B
 		c.Registers.PC += 1
@@ -126,7 +126,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD H, B - Copy B to H (96)
-	0x60: func(mb Motherboard, value uint16) uint8 {
+	0x60: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.H = c.Registers.B
 		c.Registers.PC += 1
@@ -134,7 +134,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (HL), B - Save B at address pointed to by HL (112)
-	0x70: func(mb Motherboard, value uint16) uint8 {
+	0x70: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := uint16(c.Registers.B)
@@ -144,7 +144,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADD A, B - Add B to A (128)
-	0x80: func(mb Motherboard, value uint16) uint8 {
+	0x80: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.B)
 		c.Registers.PC += 1
@@ -152,7 +152,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SUB B - Subtract B from A (144)
-	0x90: func(mb Motherboard, value uint16) uint8 {
+	0x90: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.B)
 		c.Registers.PC += 1
@@ -160,7 +160,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// AND B - Logical AND B against A (160)
-	0xa0: func(mb Motherboard, value uint16) uint8 {
+	0xa0: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.B)
 		c.Registers.PC += 1
@@ -168,7 +168,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// OR B - Logical OR B against A (176)
-	0xb0: func(mb Motherboard, value uint16) uint8 {
+	0xb0: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.B)
 		c.Registers.PC += 1
@@ -176,7 +176,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RET NZ - Return if last result was not zero (192)
-	0xc0: func(mb Motherboard, value uint16) uint8 {
+	0xc0: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 
 		var pch, pcl uint8
@@ -196,7 +196,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RET NC - Return if last result did not cause carry (208)
-	0xd0: func(mb Motherboard, value uint16) uint8 {
+	0xd0: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 
 		var pch, pcl uint8
@@ -216,7 +216,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LDH (a8), A - Save A at address $FF00 + 8-bit immediate (224)
-	0xe0: func(mb Motherboard, value uint16) uint8 {
+	0xe0: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		var addr uint16 = 0xff00 + value
 		a := uint16(c.Registers.A)
@@ -226,7 +226,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LDH A, (a8) - Load A with value at address $FF00 + 8-bit immediate (240)
-	0xf0: func(mb Motherboard, value uint16) uint8 {
+	0xf0: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		var addr uint16 = 0xff00 + value
 		a := mb.GetItem(&addr)
@@ -237,7 +237,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn1 **********************/
 	// LD BC, d16 - Load 16-bit immediate into BC (1)
-	0x01: func(mb Motherboard, value uint16) uint8 {
+	0x01: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.SetBC(value)
 		c.Registers.PC += 3
@@ -245,7 +245,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD DE, d16 - Load 16-bit immediate into DE (17)
-	0x11: func(mb Motherboard, value uint16) uint8 {
+	0x11: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.SetDE(value)
 		c.Registers.PC += 3
@@ -253,7 +253,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD HL, d16 - Load 16-bit immediate into HL (33)
-	0x21: func(mb Motherboard, value uint16) uint8 {
+	0x21: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.SetHL(value)
 		c.Registers.PC += 3
@@ -261,7 +261,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD SP, d16 - Load 16-bit immediate into SP (49)
-	0x31: func(mb Motherboard, value uint16) uint8 {
+	0x31: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.SP = value
 		c.Registers.PC += 3
@@ -269,7 +269,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD B, C - Copy C to B (65)
-	0x41: func(mb Motherboard, value uint16) uint8 {
+	0x41: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.B = c.Registers.C
 		c.Registers.PC += 1
@@ -277,7 +277,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD D, C - Copy C to D (81)
-	0x51: func(mb Motherboard, value uint16) uint8 {
+	0x51: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.D = c.Registers.C
 		c.Registers.PC += 1
@@ -285,7 +285,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD H, C - Copy C to H (97)
-	0x61: func(mb Motherboard, value uint16) uint8 {
+	0x61: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.H = c.Registers.C
 		c.Registers.PC += 1
@@ -293,7 +293,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (HL), C - Save C at address pointed to by HL (113)
-	0x71: func(mb Motherboard, value uint16) uint8 {
+	0x71: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		cr := uint16(c.Registers.C)
@@ -303,7 +303,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADD A, C - Add C to A (129)
-	0x81: func(mb Motherboard, value uint16) uint8 {
+	0x81: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.C)
 		c.Registers.PC += 1
@@ -311,7 +311,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SUB C - Subtract C from A (145)
-	0x91: func(mb Motherboard, value uint16) uint8 {
+	0x91: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.C)
 		c.Registers.PC += 1
@@ -319,7 +319,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// AND C - Logical AND C against A (161)
-	0xa1: func(mb Motherboard, value uint16) uint8 {
+	0xa1: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.C)
 		c.Registers.PC += 1
@@ -327,7 +327,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// OR C - Logical OR C against A (177)
-	0xb1: func(mb Motherboard, value uint16) uint8 {
+	0xb1: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.C)
 		c.Registers.PC += 1
@@ -335,7 +335,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// POP BC - Pop two bytes from stack into BC (193)
-	0xc1: func(mb Motherboard, value uint16) uint8 {
+	0xc1: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		var pch, pcl uint8
 		spadd1 := c.Registers.SP + 1
@@ -350,7 +350,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// POP DE - Pop two bytes from stack into DE (209)
-	0xd1: func(mb Motherboard, value uint16) uint8 {
+	0xd1: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		var pch, pcl uint8
 		spadd1 := c.Registers.SP + 1
@@ -365,7 +365,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// POP HL - Pop two bytes from stack into HL (225)
-	0xe1: func(mb Motherboard, value uint16) uint8 {
+	0xe1: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		var pch, pcl uint8
 		spadd1 := c.Registers.SP + 1
@@ -380,7 +380,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// POP AF - Pop two bytes from stack into AF (241)
-	0xf1: func(mb Motherboard, value uint16) uint8 {
+	0xf1: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		spadd1 := c.Registers.SP + 1
 		c.Registers.A = mb.GetItem(&spadd1)
@@ -393,7 +393,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn2 **********************/
 	// LD (BC), A - Save A to address pointed by BC (2)
-	0x02: func(mb Motherboard, value uint16) uint8 {
+	0x02: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 
 		bc := c.BC()
@@ -404,7 +404,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (DE), A - Save A at address pointed to by DE (18)
-	0x12: func(mb Motherboard, value uint16) uint8 {
+	0x12: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		de := c.DE()
 		a := uint16(c.Registers.A)
@@ -414,7 +414,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (HL+), A - Save A at address pointed by HL, increment HL (34)
-	0x22: func(mb Motherboard, value uint16) uint8 {
+	0x22: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		a := uint16(c.Registers.A)
@@ -426,7 +426,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (HL-), A - Save A at address pointed by HL, decrement HL (50)
-	0x32: func(mb Motherboard, value uint16) uint8 {
+	0x32: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		a := uint16(c.Registers.A)
@@ -438,7 +438,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD B, D - Copy D to B (66)
-	0x42: func(mb Motherboard, value uint16) uint8 {
+	0x42: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.B = c.Registers.D
 		c.Registers.PC += 1
@@ -446,7 +446,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD D, D - Copy D to D (82)
-	0x52: func(mb Motherboard, value uint16) uint8 {
+	0x52: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		// c.Registers.D = c.Registers.D
 		c.Registers.PC += 1
@@ -454,7 +454,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD H, D - Copy D to H (98)
-	0x62: func(mb Motherboard, value uint16) uint8 {
+	0x62: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.H = c.Registers.D
 		c.Registers.PC += 1
@@ -462,7 +462,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (HL), D - Save D at address pointed to by HL (114)
-	0x72: func(mb Motherboard, value uint16) uint8 {
+	0x72: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		d := uint16(c.Registers.D)
@@ -472,7 +472,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADD A, D - Add D to A (130)
-	0x82: func(mb Motherboard, value uint16) uint8 {
+	0x82: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.D)
 		c.Registers.PC += 1
@@ -480,7 +480,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SUB D - Subtract D from A (146)
-	0x92: func(mb Motherboard, value uint16) uint8 {
+	0x92: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.D)
 		c.Registers.PC += 1
@@ -488,7 +488,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// AND D - Logical AND D against A (162)
-	0xa2: func(mb Motherboard, value uint16) uint8 {
+	0xa2: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.D)
 		c.Registers.PC += 1
@@ -496,7 +496,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// OR D - Logical OR D against A (178)
-	0xb2: func(mb Motherboard, value uint16) uint8 {
+	0xb2: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.D)
 		c.Registers.PC += 1
@@ -504,7 +504,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// JP NZ, a16 - Absolute jump to 16-bit location if last result was not zero (194)
-	0xc2: func(mb Motherboard, value uint16) uint8 {
+	0xc2: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		if !c.IsFlagZSet() {
 			c.Registers.PC = value
@@ -515,7 +515,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// JP NC, a16 - Absolute jump to 16-bit location if last result caused no carry (210)
-	0xd2: func(mb Motherboard, value uint16) uint8 {
+	0xd2: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		if !c.IsFlagCSet() {
 			c.Registers.PC = value
@@ -526,7 +526,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (C), A - Save A at address $FF00 + register C (226)
-	0xe2: func(mb Motherboard, value uint16) uint8 {
+	0xe2: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		var addr uint16 = 0xff00 + uint16(c.Registers.C)
 		a := uint16(c.Registers.A)
@@ -536,7 +536,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, (C) - Load A with value at address $FF00 + register C (242)
-	0xf2: func(mb Motherboard, value uint16) uint8 {
+	0xf2: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		var addr uint16 = 0xff00 + uint16(c.Registers.C)
 		a := mb.GetItem(&addr)
@@ -547,7 +547,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn3 **********************/
 	// // INC BC - Increment BC (3)
-	0x03: func(mb Motherboard, value uint16) uint8 {
+	0x03: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		bc := c.BC()
 		bc += 1
@@ -557,7 +557,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// INC DE - Increment DE (19)
-	0x13: func(mb Motherboard, value uint16) uint8 {
+	0x13: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		de := c.DE()
 		de += 1
@@ -567,7 +567,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// INC HL - Increment HL (35)
-	0x23: func(mb Motherboard, value uint16) uint8 {
+	0x23: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		hl += 1
@@ -577,7 +577,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// INC SP - Increment SP (51)
-	0x33: func(mb Motherboard, value uint16) uint8 {
+	0x33: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.SP += 1
 		c.Registers.PC += 1
@@ -585,7 +585,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD B, E - Copy E to B (67)
-	0x43: func(mb Motherboard, value uint16) uint8 {
+	0x43: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.B = c.Registers.E
 		c.Registers.PC += 1
@@ -593,7 +593,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD D, E - Copy E to D (83)
-	0x53: func(mb Motherboard, value uint16) uint8 {
+	0x53: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.D = c.Registers.E
 		c.Registers.PC += 1
@@ -601,7 +601,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD H, E - Copy E to H (99)
-	0x63: func(mb Motherboard, value uint16) uint8 {
+	0x63: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.H = c.Registers.E
 		c.Registers.PC += 1
@@ -609,7 +609,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (HL), E - Save E at address pointed to by HL (115)
-	0x73: func(mb Motherboard, value uint16) uint8 {
+	0x73: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		e := uint16(c.Registers.E)
@@ -619,7 +619,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADD A, E - Add E to A (131)
-	0x83: func(mb Motherboard, value uint16) uint8 {
+	0x83: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.E)
 		c.Registers.PC += 1
@@ -627,7 +627,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SUB E - Subtract E from A (147)
-	0x93: func(mb Motherboard, value uint16) uint8 {
+	0x93: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.E)
 		c.Registers.PC += 1
@@ -635,7 +635,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// AND E - Logical AND E against A (163)
-	0xa3: func(mb Motherboard, value uint16) uint8 {
+	0xa3: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.E)
 		c.Registers.PC += 1
@@ -643,7 +643,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// OR E - Logical OR E against A (179)
-	0xb3: func(mb Motherboard, value uint16) uint8 {
+	0xb3: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.E)
 		c.Registers.PC += 1
@@ -651,7 +651,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// JP a16 - Absolute jump to 16-bit location (195)
-	0xc3: func(mb Motherboard, value uint16) uint8 {
+	0xc3: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC = value
 		return 16
@@ -661,7 +661,7 @@ var OPCODES = OpCodeMap{
 	// 0xe3 - Illegal opcode
 
 	// DI - Disable interrupts (243)
-	0xf3: func(mb Motherboard, value uint16) uint8 {
+	0xf3: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Interrupts.Master_Enable = false
 		c.Registers.PC += 1
@@ -670,7 +670,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn4 **********************/
 	// // INC B - Increment B (4)
-	0x04: func(mb Motherboard, value uint16) uint8 {
+	0x04: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.B = c.Inc(c.Registers.B)
 		c.Registers.PC += 1
@@ -678,7 +678,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// INC D - Increment D (20)
-	0x14: func(mb Motherboard, value uint16) uint8 {
+	0x14: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.D = c.Inc(c.Registers.D)
 		c.Registers.PC += 1
@@ -686,7 +686,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// INC H - Increment H (36)
-	0x24: func(mb Motherboard, value uint16) uint8 {
+	0x24: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.H = c.Inc(c.Registers.H)
 		c.Registers.PC += 1
@@ -694,7 +694,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// INC (HL) - Increment value pointed by HL (52)
-	0x34: func(mb Motherboard, value uint16) uint8 {
+	0x34: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		v := mb.GetItem(&hl)
@@ -707,7 +707,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD B, H - Copy H to B (68)
-	0x44: func(mb Motherboard, value uint16) uint8 {
+	0x44: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.B = c.Registers.H
 		c.Registers.PC += 1
@@ -715,7 +715,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD D, H - Copy H to D (84)
-	0x54: func(mb Motherboard, value uint16) uint8 {
+	0x54: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.D = c.Registers.H
 		c.Registers.PC += 1
@@ -723,7 +723,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD H, H - Copy H to H (100)
-	0x64: func(mb Motherboard, value uint16) uint8 {
+	0x64: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		// c.Registers.H = c.Registers.H
 		c.Registers.PC += 1
@@ -731,7 +731,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (HL), H - Save H at address pointed to by HL (116)
-	0x74: func(mb Motherboard, value uint16) uint8 {
+	0x74: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		h := uint16(c.Registers.H)
@@ -741,7 +741,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADD A, H - Add H to A (132)
-	0x84: func(mb Motherboard, value uint16) uint8 {
+	0x84: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.H)
 		c.Registers.PC += 1
@@ -749,7 +749,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SUB H - Subtract H from A (148)
-	0x94: func(mb Motherboard, value uint16) uint8 {
+	0x94: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.H)
 		c.Registers.PC += 1
@@ -757,7 +757,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// AND H - Logical AND H against A (164)
-	0xa4: func(mb Motherboard, value uint16) uint8 {
+	0xa4: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.H)
 		c.Registers.PC += 1
@@ -765,7 +765,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// OR H - Logical OR H against A (180)
-	0xb4: func(mb Motherboard, value uint16) uint8 {
+	0xb4: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.H)
 		c.Registers.PC += 1
@@ -773,7 +773,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CALL NZ, a16 - Call routine at 16-bit location if last result was not zero (196)
-	0xc4: func(mb Motherboard, value uint16) uint8 {
+	0xc4: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 3
 		if !c.IsFlagZSet() {
@@ -793,7 +793,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CALL NC, a16 - Call routine at 16-bit location if last result caused no carry (212)
-	0xd4: func(mb Motherboard, value uint16) uint8 {
+	0xd4: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 3
 		if !c.IsFlagCSet() {
@@ -817,7 +817,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn5 **********************/
 	// DEC B - Decrement B (5)
-	0x05: func(mb Motherboard, value uint16) uint8 {
+	0x05: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.B = c.Dec(c.Registers.B)
 		c.Registers.PC += 1
@@ -825,7 +825,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// DEC D - Decrement D (21)
-	0x15: func(mb Motherboard, value uint16) uint8 {
+	0x15: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.D = c.Dec(c.Registers.D)
 		c.Registers.PC += 1
@@ -833,7 +833,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// DEC H - Decrement H (37)
-	0x25: func(mb Motherboard, value uint16) uint8 {
+	0x25: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.H = c.Dec(c.Registers.H)
 		c.Registers.PC += 1
@@ -841,7 +841,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// DEC (HL) - Decrement value pointed by HL (53)
-	0x35: func(mb Motherboard, value uint16) uint8 {
+	0x35: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		v := mb.GetItem(&hl)
@@ -854,7 +854,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD B, L - Copy L to B (69)
-	0x45: func(mb Motherboard, value uint16) uint8 {
+	0x45: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.B = c.Registers.L
 		c.Registers.PC += 1
@@ -862,7 +862,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD D, L - Copy L to D (85)
-	0x55: func(mb Motherboard, value uint16) uint8 {
+	0x55: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.D = c.Registers.L
 		c.Registers.PC += 1
@@ -870,7 +870,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD H, L - Copy L to H (101)
-	0x65: func(mb Motherboard, value uint16) uint8 {
+	0x65: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.H = c.Registers.L
 		c.Registers.PC += 1
@@ -878,7 +878,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (HL), L - Save L at address pointed to by HL (117)
-	0x75: func(mb Motherboard, value uint16) uint8 {
+	0x75: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		l := uint16(c.Registers.L)
@@ -888,7 +888,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADD A, L - Add L to A (133)
-	0x85: func(mb Motherboard, value uint16) uint8 {
+	0x85: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.L)
 		c.Registers.PC += 1
@@ -896,7 +896,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SUB L - Subtract L from A (149)
-	0x95: func(mb Motherboard, value uint16) uint8 {
+	0x95: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.L)
 		c.Registers.PC += 1
@@ -904,7 +904,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// AND L - Logical AND L against A (165)
-	0xa5: func(mb Motherboard, value uint16) uint8 {
+	0xa5: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.L)
 		c.Registers.PC += 1
@@ -912,7 +912,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// OR L - Logical OR L against A (181)
-	0xb5: func(mb Motherboard, value uint16) uint8 {
+	0xb5: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.L)
 		c.Registers.PC += 1
@@ -920,7 +920,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// PUSH BC - Push BC onto stack (197)
-	0xc5: func(mb Motherboard, value uint16) uint8 {
+	0xc5: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		sp1 := c.Registers.SP - 1
 		sp2 := c.Registers.SP - 2
@@ -935,7 +935,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// PUSH DE - Push DE onto stack (213)
-	0xd5: func(mb Motherboard, value uint16) uint8 {
+	0xd5: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		sp1 := c.Registers.SP - 1
 		sp2 := c.Registers.SP - 2
@@ -950,7 +950,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// PUSH HL - Push HL onto stack (229)
-	0xe5: func(mb Motherboard, value uint16) uint8 {
+	0xe5: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		sp1 := c.Registers.SP - 1
 		sp2 := c.Registers.SP - 2
@@ -965,7 +965,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// PUSH AF - Push AF onto stack (229)
-	0xf5: func(mb Motherboard, value uint16) uint8 {
+	0xf5: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		sp1 := c.Registers.SP - 1
 		sp2 := c.Registers.SP - 2
@@ -981,7 +981,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn6 **********************/
 	// LD B, d8 - Load 8-bit immediate into B (6)
-	0x06: func(mb Motherboard, value uint16) uint8 {
+	0x06: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.B = uint8(value)
 		c.Registers.PC += 2
@@ -989,7 +989,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD D, d8 - Load 8-bit immediate into D (22)
-	0x16: func(mb Motherboard, value uint16) uint8 {
+	0x16: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.D = uint8(value)
 		c.Registers.PC += 2
@@ -997,7 +997,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD H, d8 - Load 8-bit immediate into H (38)
-	0x26: func(mb Motherboard, value uint16) uint8 {
+	0x26: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.H = uint8(value)
 		c.Registers.PC += 2
@@ -1005,7 +1005,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (HL), d8 - Save 8-bit immediate to address pointed by HL (54)
-	0x36: func(mb Motherboard, value uint16) uint8 {
+	0x36: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		value &= 0xff
@@ -1015,7 +1015,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD B, (HL) - Copy value pointed by HL to B (70)
-	0x46: func(mb Motherboard, value uint16) uint8 {
+	0x46: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.B = mb.GetItem(&hl)
@@ -1024,7 +1024,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD D, (HL) - Copy value pointed by HL to D (86)
-	0x56: func(mb Motherboard, value uint16) uint8 {
+	0x56: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.D = mb.GetItem(&hl)
@@ -1033,7 +1033,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD H, (HL) - Copy value pointed by HL to H (102)
-	0x66: func(mb Motherboard, value uint16) uint8 {
+	0x66: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.H = mb.GetItem(&hl)
@@ -1042,14 +1042,14 @@ var OPCODES = OpCodeMap{
 	},
 
 	// HALT - Power down CPU until an interrupt occurs (118)
-	0x76: func(mb Motherboard, value uint16) uint8 {
+	0x76: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Halted = true
 		return 4
 	},
 
 	// ADD A, (HL) - Add value pointed by HL to A (134)
-	0x86: func(mb Motherboard, value uint16) uint8 {
+	0x86: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.A = c.AddSetFlags8(c.Registers.A, mb.GetItem(&hl))
@@ -1058,7 +1058,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SUB (HL) - Subtract value pointed by HL from A (150)
-	0x96: func(mb Motherboard, value uint16) uint8 {
+	0x96: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.A = c.SubSetFlags8(c.Registers.A, mb.GetItem(&hl))
@@ -1067,7 +1067,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// AND (HL) - Logical AND value pointed by HL against A (166)
-	0xa6: func(mb Motherboard, value uint16) uint8 {
+	0xa6: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.A = c.AndSetFlags(c.Registers.A, mb.GetItem(&hl))
@@ -1076,7 +1076,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// OR (HL) - Logical OR value pointed by HL against A (182)
-	0xb6: func(mb Motherboard, value uint16) uint8 {
+	0xb6: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.A = c.OrSetFlags(c.Registers.A, mb.GetItem(&hl))
@@ -1085,7 +1085,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADD, d8 - Add 8-bit immediate to A (198)
-	0xc6: func(mb Motherboard, value uint16) uint8 {
+	0xc6: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		v := uint8(value)
 		c.Registers.A = c.AddSetFlags8(c.Registers.A, v)
@@ -1094,7 +1094,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SUB d8 - Subtract 8-bit immediate from A (214)
-	0xd6: func(mb Motherboard, value uint16) uint8 {
+	0xd6: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		v := uint8(value)
 		c.Registers.A = c.SubSetFlags8(c.Registers.A, v)
@@ -1103,7 +1103,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// AND d8 - Logical AND 8-bit immediate against A (230)
-	0xe6: func(mb Motherboard, value uint16) uint8 {
+	0xe6: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		v := uint8(value)
 		c.Registers.A = c.AndSetFlags(c.Registers.A, v)
@@ -1112,7 +1112,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// OR d8 - Logical OR 8-bit immediate against A (246)
-	0xf6: func(mb Motherboard, value uint16) uint8 {
+	0xf6: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		v := uint8(value)
 		c.Registers.A = c.OrSetFlags(c.Registers.A, v)
@@ -1122,7 +1122,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn7 **********************/
 	// RLCA - Rotate A left. Old bit 7 to Carry flag (7)
-	0x07: func(mb Motherboard, value uint16) uint8 {
+	0x07: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		a := c.Registers.A
 		c.ResetFlagZ()
@@ -1143,7 +1143,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RLA - Rotate A left through Carry flag (23)
-	0x17: func(mb Motherboard, value uint16) uint8 {
+	0x17: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		a := c.Registers.A
 		c.ResetFlagZ()
@@ -1169,7 +1169,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// DAA - Decimal adjust A (39)
-	0x27: func(mb Motherboard, value uint16) uint8 {
+	0x27: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		a := int16(c.Registers.A)
 
@@ -1214,7 +1214,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SCF - Set carry flag (55)
-	0x37: func(mb Motherboard, value uint16) uint8 {
+	0x37: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.SetFlagC()
 		c.ResetFlagN()
@@ -1224,7 +1224,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD B, A - Copy A to B (71)
-	0x47: func(mb Motherboard, value uint16) uint8 {
+	0x47: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.B = c.Registers.A
 		c.Registers.PC += 1
@@ -1232,7 +1232,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD D, A - Copy A to D (87)
-	0x57: func(mb Motherboard, value uint16) uint8 {
+	0x57: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.D = c.Registers.A
 		c.Registers.PC += 1
@@ -1240,7 +1240,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD H, A - Copy A to H (103)
-	0x67: func(mb Motherboard, value uint16) uint8 {
+	0x67: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.H = c.Registers.A
 		c.Registers.PC += 1
@@ -1248,7 +1248,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (HL), A - Save A at address pointed to by HL (119)
-	0x77: func(mb Motherboard, value uint16) uint8 {
+	0x77: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		a := uint16(c.Registers.A)
@@ -1258,7 +1258,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADD A, A - Add A to A (135)
-	0x87: func(mb Motherboard, value uint16) uint8 {
+	0x87: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AddSetFlags8(c.Registers.A, c.Registers.A)
 		c.Registers.PC += 1
@@ -1266,7 +1266,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SUB A - Subtract A from A (151)
-	0x97: func(mb Motherboard, value uint16) uint8 {
+	0x97: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SubSetFlags8(c.Registers.A, c.Registers.A)
 		c.Registers.PC += 1
@@ -1274,7 +1274,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// AND A - Logical AND A against A (167)
-	0xa7: func(mb Motherboard, value uint16) uint8 {
+	0xa7: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AndSetFlags(c.Registers.A, c.Registers.A)
 		c.Registers.PC += 1
@@ -1282,7 +1282,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// OR A - Logical OR A against A (183)
-	0xb7: func(mb Motherboard, value uint16) uint8 {
+	0xb7: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.OrSetFlags(c.Registers.A, c.Registers.A)
 		c.Registers.PC += 1
@@ -1290,7 +1290,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RST 00H - Push present address onto stack. Jump to address $0000 (199)
-	0xc7: func(mb Motherboard, value uint16) uint8 {
+	0xc7: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 1
 		sp1 := c.Registers.SP - 1
@@ -1306,7 +1306,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RST 10H - Push present address onto stack. Jump to address $0010 (215)
-	0xd7: func(mb Motherboard, value uint16) uint8 {
+	0xd7: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 1
 		sp1 := c.Registers.SP - 1
@@ -1322,7 +1322,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RST 20 H - Push present address onto stack. Jump to address $0020 (231)
-	0xe7: func(mb Motherboard, value uint16) uint8 {
+	0xe7: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 1
 		sp1 := c.Registers.SP - 1
@@ -1338,7 +1338,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RST 30H - Push present address onto stack. Jump to address $0030 (247)
-	0xf7: func(mb Motherboard, value uint16) uint8 {
+	0xf7: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 1
 		sp1 := c.Registers.SP - 1
@@ -1356,7 +1356,7 @@ var OPCODES = OpCodeMap{
 	/****************************** 0xn8 **********************/
 	// LD (a16), SP - Save SP at given address (8)
 	// value is the address
-	0x08: func(mb Motherboard, value uint16) uint8 {
+	0x08: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		addr1 := value
 		value1 := c.Registers.SP & 0xFF
@@ -1372,7 +1372,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// JR r8 - Relative jump by signed immediate (24)
-	0x18: func(mb Motherboard, value uint16) uint8 {
+	0x18: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		v := int16(value^0x80) - 0x80              // convert to signed int
 		c.Registers.PC += (2 + uint16(v)) & 0xffff // add to PC
@@ -1380,7 +1380,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// JR Z, r8 - Relative jump by signed immediate if Z flag is set (40)
-	0x28: func(mb Motherboard, value uint16) uint8 {
+	0x28: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		v := int16(value^0x80) - 0x80 // convert to signed int
 
@@ -1394,7 +1394,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// JR C, r8 - Relative jump by signed immediate if C flag is set (56)
-	0x38: func(mb Motherboard, value uint16) uint8 {
+	0x38: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		v := int16(value^0x80) - 0x80 // convert to signed int
 
@@ -1408,7 +1408,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD C, B - Copy B to C (72)
-	0x48: func(mb Motherboard, value uint16) uint8 {
+	0x48: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.C = c.Registers.B
 		c.Registers.PC += 1
@@ -1416,7 +1416,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD E, B - Copy B to E (88)
-	0x58: func(mb Motherboard, value uint16) uint8 {
+	0x58: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.E = c.Registers.B
 		c.Registers.PC += 1
@@ -1424,7 +1424,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD L, B - Copy B to L (104)
-	0x68: func(mb Motherboard, value uint16) uint8 {
+	0x68: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.L = c.Registers.B
 		c.Registers.PC += 1
@@ -1432,7 +1432,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, B - Copy B to A (120)
-	0x78: func(mb Motherboard, value uint16) uint8 {
+	0x78: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.Registers.B
 		c.Registers.PC += 1
@@ -1440,7 +1440,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADC A, B - Add B and carry flag to A (136)
-	0x88: func(mb Motherboard, value uint16) uint8 {
+	0x88: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.B)
 		c.Registers.PC += 1
@@ -1448,7 +1448,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SBC A, B - Subtract B and carry flag from A (152)
-	0x98: func(mb Motherboard, value uint16) uint8 {
+	0x98: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.B)
 		c.Registers.PC += 1
@@ -1456,7 +1456,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// XOR B - Logical XOR B against A (168)
-	0xa8: func(mb Motherboard, value uint16) uint8 {
+	0xa8: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.B)
 		c.Registers.PC += 1
@@ -1464,7 +1464,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CP B - Compare B against A (184)
-	0xb8: func(mb Motherboard, value uint16) uint8 {
+	0xb8: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.CpSetFlags(c.Registers.A, c.Registers.B)
 		c.Registers.PC += 1
@@ -1472,7 +1472,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RET Z - Return if last result was zero (200)
-	0xc8: func(mb Motherboard, value uint16) uint8 {
+	0xc8: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 1
 		if c.IsFlagZSet() {
@@ -1488,7 +1488,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RET C - Return if last result caused carry (216)
-	0xd8: func(mb Motherboard, value uint16) uint8 {
+	0xd8: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 1
 		if c.IsFlagCSet() {
@@ -1504,7 +1504,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADD SP, r8 - Add signed 8-bit immediate to SP (232)
-	0xe8: func(mb Motherboard, value uint16) uint8 {
+	0xe8: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 
 		value &= 0xff
@@ -1545,7 +1545,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD HL, SP+r8 - Add signed 8-bit immediate to SP (232)
-	0xf8: func(mb Motherboard, value uint16) uint8 {
+	0xf8: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		value &= 0xff
 		var i8 int8 = int8((value ^ 0x80) - 0x80)
@@ -1579,7 +1579,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn9 **********************/
 	// ADD HL, BC - Add BC to HL (9)
-	0x09: func(mb Motherboard, value uint16) uint8 {
+	0x09: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 
 		hl := c.AddSetFlags16(c.HL(), c.BC())
@@ -1590,7 +1590,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADD HL, DE - Add DE to HL (25)
-	0x19: func(mb Motherboard, value uint16) uint8 {
+	0x19: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 
 		hl := c.AddSetFlags16(c.HL(), c.DE())
@@ -1600,7 +1600,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADD HL, HL - Add HL to HL (41)
-	0x29: func(mb Motherboard, value uint16) uint8 {
+	0x29: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.AddSetFlags16(c.HL(), c.HL())
 		c.SetHL(uint16(hl))
@@ -1609,7 +1609,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADD HL, SP - Add SP to HL (57)
-	0x39: func(mb Motherboard, value uint16) uint8 {
+	0x39: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.AddSetFlags16(c.HL(), c.Registers.SP)
 		c.SetHL(uint16(hl))
@@ -1618,7 +1618,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD C, C - Copy C to C (73)
-	0x49: func(mb Motherboard, value uint16) uint8 {
+	0x49: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		// c.Registers.C = c.Registers.C
 		c.Registers.PC += 1
@@ -1626,7 +1626,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD E, C - Copy C to E (89)
-	0x59: func(mb Motherboard, value uint16) uint8 {
+	0x59: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.E = c.Registers.C
 		c.Registers.PC += 1
@@ -1634,7 +1634,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD L, C - Copy C to L (105)
-	0x69: func(mb Motherboard, value uint16) uint8 {
+	0x69: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.L = c.Registers.C
 		c.Registers.PC += 1
@@ -1642,7 +1642,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, C - Copy C to A (121)
-	0x79: func(mb Motherboard, value uint16) uint8 {
+	0x79: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.Registers.C
 		c.Registers.PC += 1
@@ -1650,7 +1650,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADC A, C - Add C and carry flag to A (137)
-	0x89: func(mb Motherboard, value uint16) uint8 {
+	0x89: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.C)
 		c.Registers.PC += 1
@@ -1658,7 +1658,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SBC A, C - Subtract C and carry flag from A (153)
-	0x99: func(mb Motherboard, value uint16) uint8 {
+	0x99: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.C)
 		c.Registers.PC += 1
@@ -1666,7 +1666,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// XOR C - Logical XOR C against A (169)
-	0xa9: func(mb Motherboard, value uint16) uint8 {
+	0xa9: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.C)
 		c.Registers.PC += 1
@@ -1674,7 +1674,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CP C - Compare C against A (185)
-	0xb9: func(mb Motherboard, value uint16) uint8 {
+	0xb9: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.CpSetFlags(c.Registers.A, c.Registers.C)
 		c.Registers.PC += 1
@@ -1682,7 +1682,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RET - Pop two bytes from stack & jump to that address (201)
-	0xc9: func(mb Motherboard, value uint16) uint8 {
+	0xc9: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		sp2 := c.Registers.SP + 1
 		pcl := mb.GetItem(&c.Registers.SP)
@@ -1693,7 +1693,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RETI - Pop two bytes from stack & jump to that address then enable interrupts (217)
-	0xd9: func(mb Motherboard, value uint16) uint8 {
+	0xd9: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Interrupts.Master_Enable = true
 		sp2 := c.Registers.SP + 1
@@ -1705,14 +1705,14 @@ var OPCODES = OpCodeMap{
 	},
 
 	// JP (HL) - Jump to address contained in HL (233)
-	0xe9: func(mb Motherboard, value uint16) uint8 {
+	0xe9: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC = c.HL()
 		return 4
 	},
 
 	// LD SP, HL - Copy HL to SP (233)
-	0xf9: func(mb Motherboard, value uint16) uint8 {
+	0xf9: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.SP = c.HL()
 		c.Registers.PC += 1
@@ -1721,7 +1721,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xna **********************/
 	// LD A, (BC) - Load A from address pointed to by BC (10)
-	0x0A: func(mb Motherboard, value uint16) uint8 {
+	0x0A: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		bc := c.BC()
 		a := mb.GetItem(&bc)
@@ -1731,7 +1731,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, (DE) - Load A with data from address pointed to by DE (26)
-	0x1A: func(mb Motherboard, value uint16) uint8 {
+	0x1A: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		de := c.DE()
 		a := mb.GetItem(&de)
@@ -1741,7 +1741,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, (HL+) - Load A with data from address pointed to by HL, increment HL (42)
-	0x2A: func(mb Motherboard, value uint16) uint8 {
+	0x2A: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		a := mb.GetItem(&hl)
@@ -1753,7 +1753,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, (HL-) - Load A with data from address pointed to by HL, decrement HL (58)
-	0x3A: func(mb Motherboard, value uint16) uint8 {
+	0x3A: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		a := mb.GetItem(&hl)
@@ -1765,7 +1765,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD C, D - Copy D to C (74)
-	0x4A: func(mb Motherboard, value uint16) uint8 {
+	0x4A: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.C = c.Registers.D
 		c.Registers.PC += 1
@@ -1773,7 +1773,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD E, D - Copy D to E (90)
-	0x5A: func(mb Motherboard, value uint16) uint8 {
+	0x5A: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.E = c.Registers.D
 		c.Registers.PC += 1
@@ -1781,7 +1781,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD L, D - Copy D to L (106)
-	0x6A: func(mb Motherboard, value uint16) uint8 {
+	0x6A: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.L = c.Registers.D
 		c.Registers.PC += 1
@@ -1789,7 +1789,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, D - Copy D to A (122)
-	0x7A: func(mb Motherboard, value uint16) uint8 {
+	0x7A: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.Registers.D
 		c.Registers.PC += 1
@@ -1797,7 +1797,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADC A, D - Add D and carry flag to A (138)
-	0x8A: func(mb Motherboard, value uint16) uint8 {
+	0x8A: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.D)
 		c.Registers.PC += 1
@@ -1805,7 +1805,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SBC A, D - Subtract D and carry flag from A (154)
-	0x9A: func(mb Motherboard, value uint16) uint8 {
+	0x9A: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.D)
 		c.Registers.PC += 1
@@ -1813,7 +1813,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// XOR D - Logical XOR D against A (170)
-	0xaa: func(mb Motherboard, value uint16) uint8 {
+	0xaa: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.D)
 		c.Registers.PC += 1
@@ -1821,7 +1821,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CP D - Compare D against A (186)
-	0xba: func(mb Motherboard, value uint16) uint8 {
+	0xba: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.CpSetFlags(c.Registers.A, c.Registers.D)
 		c.Registers.PC += 1
@@ -1829,7 +1829,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// JP Z, a16 - Absolute jump to 16-bit location if Z flag is set (202)
-	0xca: func(mb Motherboard, value uint16) uint8 {
+	0xca: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		if c.IsFlagZSet() {
 			c.Registers.PC = value
@@ -1840,7 +1840,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// JP C, a16 - Absolute jump to 16-bit location if C flag is set (218)
-	0xda: func(mb Motherboard, value uint16) uint8 {
+	0xda: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		if c.IsFlagCSet() {
 			c.Registers.PC = value
@@ -1851,7 +1851,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD (a16), A - Save A at given address (234)
-	0xea: func(mb Motherboard, value uint16) uint8 {
+	0xea: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		a := uint16(c.Registers.A)
 		mb.SetItem(&value, &a)
@@ -1860,7 +1860,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, (a16) - Load A from given address (250)
-	0xfa: func(mb Motherboard, value uint16) uint8 {
+	0xfa: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		a := mb.GetItem(&value)
 		c.Registers.A = uint8(a)
@@ -1870,7 +1870,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xnb **********************/
 	// DEC BC - Decrement BC (11)
-	0x0B: func(mb Motherboard, value uint16) uint8 {
+	0x0B: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		bc := c.BC()
 		bc -= 1
@@ -1880,7 +1880,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// DEC DE - Decrement DE (27)
-	0x1B: func(mb Motherboard, value uint16) uint8 {
+	0x1B: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		de := c.DE()
 		de -= 1
@@ -1890,7 +1890,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// DEC HL - Decrement HL (43)
-	0x2B: func(mb Motherboard, value uint16) uint8 {
+	0x2B: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		hl -= 1
@@ -1900,7 +1900,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// DEC SP - Decrement SP (59)
-	0x3B: func(mb Motherboard, value uint16) uint8 {
+	0x3B: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.SP -= 1
 		c.Registers.PC += 1
@@ -1908,7 +1908,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD C, E - Copy E to C (75)
-	0x4B: func(mb Motherboard, value uint16) uint8 {
+	0x4B: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.C = c.Registers.E
 		c.Registers.PC += 1
@@ -1916,7 +1916,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD E, E - Copy E to E (91)
-	0x5B: func(mb Motherboard, value uint16) uint8 {
+	0x5B: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		// c.Registers.E = c.Registers.E
 		c.Registers.PC += 1
@@ -1924,7 +1924,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD L, E - Copy E to L (107)
-	0x6B: func(mb Motherboard, value uint16) uint8 {
+	0x6B: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.L = c.Registers.E
 		c.Registers.PC += 1
@@ -1932,7 +1932,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, E - Copy E to A (123)
-	0x7B: func(mb Motherboard, value uint16) uint8 {
+	0x7B: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.Registers.E
 		c.Registers.PC += 1
@@ -1940,7 +1940,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADC A, E - Add E and carry flag to A (139)
-	0x8B: func(mb Motherboard, value uint16) uint8 {
+	0x8B: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.E)
 		c.Registers.PC += 1
@@ -1948,7 +1948,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SBC A, E - Subtract E and carry flag from A (155)
-	0x9B: func(mb Motherboard, value uint16) uint8 {
+	0x9B: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.E)
 		c.Registers.PC += 1
@@ -1956,7 +1956,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// XOR E - Logical XOR E against A (171)
-	0xab: func(mb Motherboard, value uint16) uint8 {
+	0xab: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.E)
 		c.Registers.PC += 1
@@ -1964,7 +1964,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CP E - Compare E against A (187)
-	0xbb: func(mb Motherboard, value uint16) uint8 {
+	0xbb: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.CpSetFlags(c.Registers.A, c.Registers.E)
 		c.Registers.PC += 1
@@ -1972,7 +1972,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// PREFIX CB - CB prefix (203) --- isn't callable
-	0xcb: func(mb Motherboard, value uint16) uint8 {
+	0xcb: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 1
 		return 4
@@ -1981,7 +1981,7 @@ var OPCODES = OpCodeMap{
 	// 0xdb - Illegal instruction
 	// 0xeb - Illegal instruction
 	// EI - Enable interrupts (235)
-	0xfb: func(mb Motherboard, value uint16) uint8 {
+	0xfb: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Interrupts.Master_Enable = true
 		c.Registers.PC += 1
@@ -1990,7 +1990,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xnc **********************/
 	// INC C - Increment C (12)
-	0x0C: func(mb Motherboard, value uint16) uint8 {
+	0x0C: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.C = c.Inc(c.Registers.C)
 		c.Registers.PC += 1
@@ -1998,7 +1998,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// INC E - Increment E (28)
-	0x1C: func(mb Motherboard, value uint16) uint8 {
+	0x1C: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.E = c.Inc(c.Registers.E)
 		c.Registers.PC += 1
@@ -2006,7 +2006,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// INC L - Increment L (44)
-	0x2C: func(mb Motherboard, value uint16) uint8 {
+	0x2C: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.L = c.Inc(c.Registers.L)
 		c.Registers.PC += 1
@@ -2014,7 +2014,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// INC A - Increment A (60)
-	0x3C: func(mb Motherboard, value uint16) uint8 {
+	0x3C: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.Inc(c.Registers.A)
 		c.Registers.PC += 1
@@ -2022,7 +2022,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD C, H - Copy H to C (76)
-	0x4C: func(mb Motherboard, value uint16) uint8 {
+	0x4C: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.C = c.Registers.H
 		c.Registers.PC += 1
@@ -2030,7 +2030,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD E, H - Copy H to E (92)
-	0x5C: func(mb Motherboard, value uint16) uint8 {
+	0x5C: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.E = c.Registers.H
 		c.Registers.PC += 1
@@ -2038,7 +2038,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD L, H - Copy H to L (108)
-	0x6C: func(mb Motherboard, value uint16) uint8 {
+	0x6C: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.L = c.Registers.H
 		c.Registers.PC += 1
@@ -2046,7 +2046,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, H - Copy H to A (124)
-	0x7C: func(mb Motherboard, value uint16) uint8 {
+	0x7C: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.Registers.H
 		c.Registers.PC += 1
@@ -2054,7 +2054,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADC A, H - Add H and carry flag to A (140)
-	0x8C: func(mb Motherboard, value uint16) uint8 {
+	0x8C: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.H)
 		c.Registers.PC += 1
@@ -2062,7 +2062,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SBC A, H - Subtract H and carry flag from A (156)
-	0x9C: func(mb Motherboard, value uint16) uint8 {
+	0x9C: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.H)
 		c.Registers.PC += 1
@@ -2070,7 +2070,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// XOR H - Logical XOR H against A (172)
-	0xac: func(mb Motherboard, value uint16) uint8 {
+	0xac: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.H)
 		c.Registers.PC += 1
@@ -2078,7 +2078,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CP H - Compare H against A (188)
-	0xbc: func(mb Motherboard, value uint16) uint8 {
+	0xbc: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.CpSetFlags(c.Registers.A, c.Registers.H)
 		c.Registers.PC += 1
@@ -2086,7 +2086,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CALL Z, a16 - Call routine at 16-bit address if Z flag is set (204)
-	0xcc: func(mb Motherboard, value uint16) uint8 {
+	0xcc: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		if c.IsFlagZSet() {
 			sp1 := c.Registers.SP - 1
@@ -2106,7 +2106,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CALL C, a16 - Call routine at 16-bit address if C flag is set (220)
-	0xdc: func(mb Motherboard, value uint16) uint8 {
+	0xdc: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 3
 
@@ -2131,7 +2131,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xnd **********************/
 	// DEC C - Decrement C (13)
-	0x0D: func(mb Motherboard, value uint16) uint8 {
+	0x0D: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.C = c.Dec(c.Registers.C)
 		c.Registers.PC += 1
@@ -2139,7 +2139,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// DEC E - Decrement E (29)
-	0x1D: func(mb Motherboard, value uint16) uint8 {
+	0x1D: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.E = c.Dec(c.Registers.E)
 		c.Registers.PC += 1
@@ -2147,7 +2147,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// DEC L - Decrement L (45)
-	0x2D: func(mb Motherboard, value uint16) uint8 {
+	0x2D: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.L = c.Dec(c.Registers.L)
 		c.Registers.PC += 1
@@ -2155,7 +2155,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// DEC A - Decrement A (61)
-	0x3D: func(mb Motherboard, value uint16) uint8 {
+	0x3D: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.Dec(c.Registers.A)
 		c.Registers.PC += 1
@@ -2163,7 +2163,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD C, L - Copy L to C (77)
-	0x4D: func(mb Motherboard, value uint16) uint8 {
+	0x4D: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.C = c.Registers.L
 		c.Registers.PC += 1
@@ -2171,7 +2171,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD E, L - Copy L to E (93)
-	0x5D: func(mb Motherboard, value uint16) uint8 {
+	0x5D: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.E = c.Registers.L
 		c.Registers.PC += 1
@@ -2179,7 +2179,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD L, L - Copy L to L (109)
-	0x6D: func(mb Motherboard, value uint16) uint8 {
+	0x6D: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		// c.Registers.L = c.Registers.L
 		c.Registers.PC += 1
@@ -2187,7 +2187,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, L - Copy L to A (125)
-	0x7D: func(mb Motherboard, value uint16) uint8 {
+	0x7D: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.Registers.L
 		c.Registers.PC += 1
@@ -2195,7 +2195,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADC A, L - Add L and carry flag to A (141)
-	0x8D: func(mb Motherboard, value uint16) uint8 {
+	0x8D: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.L)
 		c.Registers.PC += 1
@@ -2203,7 +2203,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SBC A, L - Subtract L and carry flag from A (157)
-	0x9D: func(mb Motherboard, value uint16) uint8 {
+	0x9D: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.L)
 		c.Registers.PC += 1
@@ -2211,7 +2211,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// XOR L - Logical XOR L against A (173)
-	0xad: func(mb Motherboard, value uint16) uint8 {
+	0xad: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.L)
 		c.Registers.PC += 1
@@ -2219,7 +2219,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CP L - Compare L against A (189)
-	0xbd: func(mb Motherboard, value uint16) uint8 {
+	0xbd: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.CpSetFlags(c.Registers.A, c.Registers.L)
 		c.Registers.PC += 1
@@ -2227,7 +2227,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CALL a16 - Call routine at 16-bit address (205)
-	0xcd: func(mb Motherboard, value uint16) uint8 {
+	0xcd: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 3
 		sp1 := c.Registers.SP - 1
@@ -2247,7 +2247,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xne **********************/
 	// LD C, d8 - Load 8-bit immediate into C (14)
-	0x0E: func(mb Motherboard, value uint16) uint8 {
+	0x0E: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.C = uint8(value)
 		c.Registers.PC += 2
@@ -2255,7 +2255,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD E, d8 - Load 8-bit immediate into E (30)
-	0x1E: func(mb Motherboard, value uint16) uint8 {
+	0x1E: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.E = uint8(value)
 		c.Registers.PC += 2
@@ -2263,7 +2263,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD L, d8 - Load 8-bit immediate into L (46)
-	0x2E: func(mb Motherboard, value uint16) uint8 {
+	0x2E: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.L = uint8(value)
 		c.Registers.PC += 2
@@ -2271,7 +2271,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, d8 - Load 8-bit immediate into A (62)
-	0x3E: func(mb Motherboard, value uint16) uint8 {
+	0x3E: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = uint8(value)
 		c.Registers.PC += 2
@@ -2279,7 +2279,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD C, (HL) - Copy value pointed by HL to C (78)
-	0x4E: func(mb Motherboard, value uint16) uint8 {
+	0x4E: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.C = mb.GetItem(&hl)
@@ -2288,7 +2288,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD E, (HL) - Copy value pointed by HL to E (94)
-	0x5E: func(mb Motherboard, value uint16) uint8 {
+	0x5E: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.E = mb.GetItem(&hl)
@@ -2297,7 +2297,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD L, (HL) - Copy value pointed by HL to L (110)
-	0x6E: func(mb Motherboard, value uint16) uint8 {
+	0x6E: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.L = mb.GetItem(&hl)
@@ -2306,7 +2306,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, (HL) - Copy value pointed by HL to A (126)
-	0x7E: func(mb Motherboard, value uint16) uint8 {
+	0x7E: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.A = mb.GetItem(&hl)
@@ -2315,7 +2315,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADC A, (HL) - Add value pointed by HL and carry flag to A (142)
-	0x8E: func(mb Motherboard, value uint16) uint8 {
+	0x8E: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.A = c.AdcSetFlags8(c.Registers.A, mb.GetItem(&hl))
@@ -2324,7 +2324,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SBC A, (HL) - Subtract value pointed by HL and carry flag from A (158)
-	0x9E: func(mb Motherboard, value uint16) uint8 {
+	0x9E: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.A = c.SbcSetFlags8(c.Registers.A, mb.GetItem(&hl))
@@ -2333,7 +2333,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// XOR (HL) - Logical XOR value pointed by HL against A (174)
-	0xae: func(mb Motherboard, value uint16) uint8 {
+	0xae: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.Registers.A = c.XorSetFlags(c.Registers.A, mb.GetItem(&hl))
@@ -2342,7 +2342,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CP (HL) - Compare value pointed by HL against A (190)
-	0xbe: func(mb Motherboard, value uint16) uint8 {
+	0xbe: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		c.CpSetFlags(c.Registers.A, mb.GetItem(&hl))
@@ -2351,7 +2351,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADC A, d8 - Add 8-bit immediate and carry flag to A (206)
-	0xce: func(mb Motherboard, value uint16) uint8 {
+	0xce: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AdcSetFlags8(c.Registers.A, uint8(value))
 		c.Registers.PC += 2
@@ -2359,7 +2359,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SBC A, d8 - Subtract 8-bit immediate and carry flag from A (222)
-	0xde: func(mb Motherboard, value uint16) uint8 {
+	0xde: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SbcSetFlags8(c.Registers.A, uint8(value))
 		c.Registers.PC += 2
@@ -2367,7 +2367,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// XOR d8 - Logical XOR n against A (236)
-	0xee: func(mb Motherboard, value uint16) uint8 {
+	0xee: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.XorSetFlags(c.Registers.A, uint8(value))
 		c.Registers.PC += 2
@@ -2375,7 +2375,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CP d8 - Compare n against A (252)
-	0xfe: func(mb Motherboard, value uint16) uint8 {
+	0xfe: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.CpSetFlags(c.Registers.A, uint8(value))
 		c.Registers.PC += 2
@@ -2384,7 +2384,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xnf **********************/
 	// RRCA - Rotate A right. Old bit 0 to Carry flag (15)
-	0x0F: func(mb Motherboard, value uint16) uint8 {
+	0x0F: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		a := c.Registers.A
 		c.ResetFlagZ()
@@ -2405,7 +2405,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RRA - Rotate A right through Carry flag (31)
-	0x1F: func(mb Motherboard, value uint16) uint8 {
+	0x1F: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		a := c.Registers.A
 		c.ResetFlagZ()
@@ -2431,7 +2431,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CPL - Complement A register (47)
-	0x2F: func(mb Motherboard, value uint16) uint8 {
+	0x2F: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = ^c.Registers.A
 		c.SetFlagN()
@@ -2441,7 +2441,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CCF - Complement carry flag (63)
-	0x3F: func(mb Motherboard, value uint16) uint8 {
+	0x3F: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.ResetFlagH()
@@ -2455,7 +2455,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD C, A - Copy A to C (79)
-	0x4F: func(mb Motherboard, value uint16) uint8 {
+	0x4F: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.C = c.Registers.A
 		c.Registers.PC += 1
@@ -2463,7 +2463,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD E, A - Copy A to E (95)
-	0x5F: func(mb Motherboard, value uint16) uint8 {
+	0x5F: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.E = c.Registers.A
 		c.Registers.PC += 1
@@ -2471,7 +2471,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD L, A - Copy A to L (111)
-	0x6F: func(mb Motherboard, value uint16) uint8 {
+	0x6F: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.L = c.Registers.A
 		c.Registers.PC += 1
@@ -2479,7 +2479,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// LD A, A - Copy A to A (127)
-	0x7F: func(mb Motherboard, value uint16) uint8 {
+	0x7F: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		// c.Registers.A = c.Registers.A
 		c.Registers.PC += 1
@@ -2487,7 +2487,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// ADC A, A - Add A and carry flag to A (143)
-	0x8F: func(mb Motherboard, value uint16) uint8 {
+	0x8F: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.AdcSetFlags8(c.Registers.A, c.Registers.A)
 		c.Registers.PC += 1
@@ -2495,7 +2495,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SBC A, A - Subtract A and carry flag from A (159)
-	0x9F: func(mb Motherboard, value uint16) uint8 {
+	0x9F: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.SbcSetFlags8(c.Registers.A, c.Registers.A)
 		c.Registers.PC += 1
@@ -2503,7 +2503,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// XOR A - Logical XOR A against A (175)
-	0xaf: func(mb Motherboard, value uint16) uint8 {
+	0xaf: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.A = c.XorSetFlags(c.Registers.A, c.Registers.A)
 		c.Registers.PC += 1
@@ -2511,7 +2511,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// CP A - Compare A against A (191)
-	0xbf: func(mb Motherboard, value uint16) uint8 {
+	0xbf: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.CpSetFlags(c.Registers.A, c.Registers.A)
 		c.Registers.PC += 1
@@ -2519,7 +2519,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RST 08H - Push present address onto stack. Jump to address $0008 (207)
-	0xcf: func(mb Motherboard, value uint16) uint8 {
+	0xcf: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 1
 		sp1 := c.Registers.SP - 1
@@ -2536,7 +2536,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RST 18H - Push present address onto stack. Jump to address $0018 (223)
-	0xdf: func(mb Motherboard, value uint16) uint8 {
+	0xdf: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 1
 		sp1 := c.Registers.SP - 1
@@ -2553,7 +2553,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RST 28H - Push present address onto stack. Jump to address $0028 (239)
-	0xef: func(mb Motherboard, value uint16) uint8 {
+	0xef: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 1
 		sp1 := c.Registers.SP - 1
@@ -2570,7 +2570,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RST 38H - Push present address onto stack. Jump to address $0038 (255)
-	0xff: func(mb Motherboard, value uint16) uint8 {
+	0xff: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.Registers.PC += 1
 		sp1 := c.Registers.SP - 1
@@ -2608,7 +2608,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn0 **********************/
 	// RLC B - Rotate B left. Old bit 7 to Carry flag (256) [minus 0xFF for CB prefix]
-	0x100: func(mb Motherboard, value uint16) uint8 {
+	0x100: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.B
 		c.ResetFlagZ()
@@ -2633,7 +2633,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RL B - Rotate B left through Carry flag (272) [minus 0xFF for CB prefix]
-	0x110: func(mb Motherboard, value uint16) uint8 {
+	0x110: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.B
 		c.ResetFlagZ()
@@ -2664,7 +2664,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SLA B - Shift B left into Carry. LSB of B set to 0 (288) [minus 0xFF for CB prefix]
-	0x120: func(mb Motherboard, value uint16) uint8 {
+	0x120: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.B
 		c.ResetFlagZ()
@@ -2689,7 +2689,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SWAP B - Swap upper & lower nibles of B (304) [minus 0xFF for CB prefix]
-	0x130: func(mb Motherboard, value uint16) uint8 {
+	0x130: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.B
 		c.ResetFlagZ()
@@ -2709,7 +2709,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 0, B - Test bit 0 of B (320) [minus 0xFF for CB prefix]
-	0x140: func(mb Motherboard, value uint16) uint8 {
+	0x140: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -2723,7 +2723,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 2, B - Test bit 2 of B (336) [minus 0xFF for CB prefix]
-	0x150: func(mb Motherboard, value uint16) uint8 {
+	0x150: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -2737,7 +2737,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 4, B - Test bit 4 of B (352) [minus 0xFF for CB prefix]
-	0x160: func(mb Motherboard, value uint16) uint8 {
+	0x160: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -2751,7 +2751,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 6, B - Test bit 6 of B (368) [minus 0xFF for CB prefix]
-	0x170: func(mb Motherboard, value uint16) uint8 {
+	0x170: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -2765,7 +2765,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 0, B - Reset bit 0 of B (384) [minus 0xFF for CB prefix]
-	0x180: func(mb Motherboard, value uint16) uint8 {
+	0x180: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.B, 0)
 		c.Registers.PC += 2
@@ -2773,7 +2773,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 2, B - Reset bit 2 of B (400) [minus 0xFF for CB prefix]
-	0x190: func(mb Motherboard, value uint16) uint8 {
+	0x190: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.B, 2)
 		c.Registers.PC += 2
@@ -2781,7 +2781,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 4, B - Reset bit 4 of B (416) [minus 0xFF for CB prefix]
-	0x1A0: func(mb Motherboard, value uint16) uint8 {
+	0x1A0: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.B, 4)
 		c.Registers.PC += 2
@@ -2789,7 +2789,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 6, B - Reset bit 6 of B (432) [minus 0xFF for CB prefix]
-	0x1B0: func(mb Motherboard, value uint16) uint8 {
+	0x1B0: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.B, 6)
 		c.Registers.PC += 2
@@ -2797,7 +2797,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 0, B - Set bit 0 of B (448) [minus 0xFF for CB prefix]
-	0x1C0: func(mb Motherboard, value uint16) uint8 {
+	0x1C0: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.B, 0)
 		c.Registers.PC += 2
@@ -2805,7 +2805,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 2, B - Set bit 2 of B (464) [minus 0xFF for CB prefix]
-	0x1D0: func(mb Motherboard, value uint16) uint8 {
+	0x1D0: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.B, 2)
 		c.Registers.PC += 2
@@ -2813,7 +2813,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 4, B - Set bit 4 of B (480) [minus 0xFF for CB prefix]
-	0x1E0: func(mb Motherboard, value uint16) uint8 {
+	0x1E0: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.B, 4)
 		c.Registers.PC += 2
@@ -2821,7 +2821,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 6, B - Set bit 6 of B (496) [minus 0xFF for CB prefix]
-	0x1F0: func(mb Motherboard, value uint16) uint8 {
+	0x1F0: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.B, 6)
 		c.Registers.PC += 2
@@ -2830,7 +2830,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn1 **********************/
 	// RLC C - Rotate C left. Old bit 7 to Carry flag (257) [minus 0xFF for CB prefix]
-	0x101: func(mb Motherboard, value uint16) uint8 {
+	0x101: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.C
 		c.ResetFlagZ()
@@ -2855,7 +2855,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RL C - Rotate C left through Carry flag (273) [minus 0xFF for CB prefix]
-	0x111: func(mb Motherboard, value uint16) uint8 {
+	0x111: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.C
 		c.ResetFlagZ()
@@ -2886,7 +2886,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SLA C - Shift C left into Carry. LSB of C set to 0 (289) [minus 0xFF for CB prefix]
-	0x121: func(mb Motherboard, value uint16) uint8 {
+	0x121: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.C
 		c.ResetFlagZ()
@@ -2906,7 +2906,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SWAP C - Swap upper & lower nibles of C (305) [minus 0xFF for CB prefix]
-	0x131: func(mb Motherboard, value uint16) uint8 {
+	0x131: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.C
 		c.ResetFlagZ()
@@ -2926,7 +2926,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 0, C - Test bit 0 of C (321) [minus 0xFF for CB prefix]
-	0x141: func(mb Motherboard, value uint16) uint8 {
+	0x141: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -2940,7 +2940,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 2, C - Test bit 2 of C (337) [minus 0xFF for CB prefix]
-	0x151: func(mb Motherboard, value uint16) uint8 {
+	0x151: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -2954,7 +2954,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 4, C - Test bit 4 of C (353) [minus 0xFF for CB prefix]
-	0x161: func(mb Motherboard, value uint16) uint8 {
+	0x161: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -2968,7 +2968,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 6, C - Test bit 6 of C (369) [minus 0xFF for CB prefix]
-	0x171: func(mb Motherboard, value uint16) uint8 {
+	0x171: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -2982,7 +2982,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 0, C - Reset bit 0 of C (385) [minus 0xFF for CB prefix]
-	0x181: func(mb Motherboard, value uint16) uint8 {
+	0x181: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.C, 0)
 		c.Registers.PC += 2
@@ -2990,7 +2990,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 2, C - Reset bit 2 of C (401) [minus 0xFF for CB prefix]
-	0x191: func(mb Motherboard, value uint16) uint8 {
+	0x191: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.C, 2)
 		c.Registers.PC += 2
@@ -2998,7 +2998,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 4, C - Reset bit 4 of C (417) [minus 0xFF for CB prefix]
-	0x1A1: func(mb Motherboard, value uint16) uint8 {
+	0x1A1: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.C, 4)
 		c.Registers.PC += 2
@@ -3006,7 +3006,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 6, C - Reset bit 6 of C (433) [minus 0xFF for CB prefix]
-	0x1B1: func(mb Motherboard, value uint16) uint8 {
+	0x1B1: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.C, 6)
 		c.Registers.PC += 2
@@ -3014,7 +3014,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 0, C - Set bit 0 of C (449) [minus 0xFF for CB prefix]
-	0x1C1: func(mb Motherboard, value uint16) uint8 {
+	0x1C1: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.C, 0)
 		c.Registers.PC += 2
@@ -3022,7 +3022,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 2, C - Set bit 2 of C (465) [minus 0xFF for CB prefix]
-	0x1D1: func(mb Motherboard, value uint16) uint8 {
+	0x1D1: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.C, 2)
 		c.Registers.PC += 2
@@ -3030,7 +3030,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 4, C - Set bit 4 of C (481) [minus 0xFF for CB prefix]
-	0x1E1: func(mb Motherboard, value uint16) uint8 {
+	0x1E1: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.C, 4)
 		c.Registers.PC += 2
@@ -3038,7 +3038,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 6, C - Set bit 6 of C (497) [minus 0xFF for CB prefix]
-	0x1F1: func(mb Motherboard, value uint16) uint8 {
+	0x1F1: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.C, 6)
 		c.Registers.PC += 2
@@ -3047,7 +3047,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn2 **********************/
 	// RLC D - Rotate D left. Old bit 7 to Carry flag (258) [minus 0xFF for CB prefix]
-	0x102: func(mb Motherboard, value uint16) uint8 {
+	0x102: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.D
 		c.ResetFlagZ()
@@ -3072,7 +3072,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RL D - Rotate D left through Carry flag (274) [minus 0xFF for CB prefix]
-	0x112: func(mb Motherboard, value uint16) uint8 {
+	0x112: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.D
 		c.ResetFlagZ()
@@ -3103,7 +3103,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SLA D - Shift D left into Carry. LSB of D set to 0 (290) [minus 0xFF for CB prefix]
-	0x122: func(mb Motherboard, value uint16) uint8 {
+	0x122: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.D
 		c.ResetFlagZ()
@@ -3128,7 +3128,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SWAP D - Swap upper & lower nibles of D (306) [minus 0xFF for CB prefix]
-	0x132: func(mb Motherboard, value uint16) uint8 {
+	0x132: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.D
 		c.ResetFlagZ()
@@ -3148,7 +3148,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 0, D - Test bit 0 of D (322) [minus 0xFF for CB prefix]
-	0x142: func(mb Motherboard, value uint16) uint8 {
+	0x142: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3162,7 +3162,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 2, D - Test bit 2 of D (338) [minus 0xFF for CB prefix]
-	0x152: func(mb Motherboard, value uint16) uint8 {
+	0x152: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3176,7 +3176,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 4, D - Test bit 4 of D (354) [minus 0xFF for CB prefix]
-	0x162: func(mb Motherboard, value uint16) uint8 {
+	0x162: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3190,7 +3190,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 6, D - Test bit 6 of D (370) [minus 0xFF for CB prefix]
-	0x172: func(mb Motherboard, value uint16) uint8 {
+	0x172: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3203,7 +3203,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 0, D - Reset bit 0 of D (386) [minus 0xFF for CB prefix]
-	0x182: func(mb Motherboard, value uint16) uint8 {
+	0x182: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.D, 0)
 		c.Registers.PC += 2
@@ -3211,7 +3211,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 2, D - Reset bit 2 of D (402) [minus 0xFF for CB prefix]
-	0x192: func(mb Motherboard, value uint16) uint8 {
+	0x192: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.D, 2)
 		c.Registers.PC += 2
@@ -3219,7 +3219,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 4, D - Reset bit 4 of D (418) [minus 0xFF for CB prefix]
-	0x1A2: func(mb Motherboard, value uint16) uint8 {
+	0x1A2: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.D, 4)
 		c.Registers.PC += 2
@@ -3227,7 +3227,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 6, D - Reset bit 6 of D (434) [minus 0xFF for CB prefix]
-	0x1B2: func(mb Motherboard, value uint16) uint8 {
+	0x1B2: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.D, 6)
 		c.Registers.PC += 2
@@ -3235,7 +3235,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 0, D - Set bit 0 of D (450) [minus 0xFF for CB prefix]
-	0x1C2: func(mb Motherboard, value uint16) uint8 {
+	0x1C2: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.D, 0)
 		c.Registers.PC += 2
@@ -3243,7 +3243,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 2, D - Set bit 2 of D (466) [minus 0xFF for CB prefix]
-	0x1D2: func(mb Motherboard, value uint16) uint8 {
+	0x1D2: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.D, 2)
 		c.Registers.PC += 2
@@ -3251,7 +3251,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 4, D - Set bit 4 of D (482) [minus 0xFF for CB prefix]
-	0x1E2: func(mb Motherboard, value uint16) uint8 {
+	0x1E2: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.D, 4)
 		c.Registers.PC += 2
@@ -3259,7 +3259,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 6, D - Set bit 6 of D (498) [minus 0xFF for CB prefix]
-	0x1F2: func(mb Motherboard, value uint16) uint8 {
+	0x1F2: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.D, 6)
 		c.Registers.PC += 2
@@ -3268,7 +3268,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn3 **********************/
 	// RLC E - Rotate E left. Old bit 7 to Carry flag (259) [minus 0xFF for CB prefix]
-	0x103: func(mb Motherboard, value uint16) uint8 {
+	0x103: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.E
 		c.ResetFlagZ()
@@ -3292,7 +3292,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RL E - Rotate E left through Carry flag (275) [minus 0xFF for CB prefix]
-	0x113: func(mb Motherboard, value uint16) uint8 {
+	0x113: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.E
 		c.ResetFlagZ()
@@ -3321,7 +3321,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SLA E - Shift E left into Carry. LSB of E set to 0 (291) [minus 0xFF for CB prefix]
-	0x123: func(mb Motherboard, value uint16) uint8 {
+	0x123: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.E
 		c.ResetFlagZ()
@@ -3344,7 +3344,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SWAP E - Swap upper & lower nibles of E (307) [minus 0xFF for CB prefix]
-	0x133: func(mb Motherboard, value uint16) uint8 {
+	0x133: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.E
 		c.ResetFlagZ()
@@ -3364,7 +3364,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 0, E - Test bit 0 of E (323) [minus 0xFF for CB prefix]
-	0x143: func(mb Motherboard, value uint16) uint8 {
+	0x143: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3378,7 +3378,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 2, E - Test bit 2 of E (339) [minus 0xFF for CB prefix]
-	0x153: func(mb Motherboard, value uint16) uint8 {
+	0x153: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3392,7 +3392,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 4, E - Test bit 4 of E (355) [minus 0xFF for CB prefix]
-	0x163: func(mb Motherboard, value uint16) uint8 {
+	0x163: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3406,7 +3406,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 6, E - Test bit 6 of E (371) [minus 0xFF for CB prefix]
-	0x173: func(mb Motherboard, value uint16) uint8 {
+	0x173: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3419,7 +3419,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 0, E - Reset bit 0 of E (387) [minus 0xFF for CB prefix]
-	0x183: func(mb Motherboard, value uint16) uint8 {
+	0x183: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.E, 0)
 		c.Registers.PC += 2
@@ -3427,7 +3427,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 2, E - Reset bit 2 of E (403) [minus 0xFF for CB prefix]
-	0x193: func(mb Motherboard, value uint16) uint8 {
+	0x193: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.E, 2)
 		c.Registers.PC += 2
@@ -3435,7 +3435,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 4, E - Reset bit 4 of E (419) [minus 0xFF for CB prefix]
-	0x1A3: func(mb Motherboard, value uint16) uint8 {
+	0x1A3: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.E, 4)
 		c.Registers.PC += 2
@@ -3443,7 +3443,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 6, E - Reset bit 6 of E (435) [minus 0xFF for CB prefix]
-	0x1B3: func(mb Motherboard, value uint16) uint8 {
+	0x1B3: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.E, 6)
 		c.Registers.PC += 2
@@ -3451,7 +3451,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 0, E - Set bit 0 of E (451) [minus 0xFF for CB prefix]
-	0x1C3: func(mb Motherboard, value uint16) uint8 {
+	0x1C3: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.E, 0)
 		c.Registers.PC += 2
@@ -3459,7 +3459,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 2, E - Set bit 2 of E (467) [minus 0xFF for CB prefix]
-	0x1D3: func(mb Motherboard, value uint16) uint8 {
+	0x1D3: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.E, 2)
 		c.Registers.PC += 2
@@ -3467,7 +3467,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 4, E - Set bit 4 of E (483) [minus 0xFF for CB prefix]
-	0x1E3: func(mb Motherboard, value uint16) uint8 {
+	0x1E3: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.E, 4)
 		c.Registers.PC += 2
@@ -3475,7 +3475,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 6, E - Set bit 6 of E (499) [minus 0xFF for CB prefix]
-	0x1F3: func(mb Motherboard, value uint16) uint8 {
+	0x1F3: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.E, 6)
 		c.Registers.PC += 2
@@ -3484,7 +3484,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn4 **********************/
 	// RLC H - Rotate H left. Old bit 7 to Carry flag (260) [minus 0xFF for CB prefix]
-	0x104: func(mb Motherboard, value uint16) uint8 {
+	0x104: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.H
 		c.ResetFlagZ()
@@ -3507,7 +3507,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RL H - Rotate H left through Carry flag (276) [minus 0xFF for CB prefix]
-	0x114: func(mb Motherboard, value uint16) uint8 {
+	0x114: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.H
 		c.ResetFlagZ()
@@ -3536,7 +3536,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SLA H - Shift H left into Carry. LSB of H set to 0 (292) [minus 0xFF for CB prefix]
-	0x124: func(mb Motherboard, value uint16) uint8 {
+	0x124: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.H
 		c.ResetFlagZ()
@@ -3559,7 +3559,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SWAP H - Swap upper & lower nibles of H (308) [minus 0xFF for CB prefix]
-	0x134: func(mb Motherboard, value uint16) uint8 {
+	0x134: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.H
 		c.ResetFlagZ()
@@ -3579,7 +3579,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 0, H - Test bit 0 of H (324) [minus 0xFF for CB prefix]
-	0x144: func(mb Motherboard, value uint16) uint8 {
+	0x144: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3593,7 +3593,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 2, H - Test bit 2 of H (340) [minus 0xFF for CB prefix]
-	0x154: func(mb Motherboard, value uint16) uint8 {
+	0x154: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3607,7 +3607,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 4, H - Test bit 4 of H (356) [minus 0xFF for CB prefix]
-	0x164: func(mb Motherboard, value uint16) uint8 {
+	0x164: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3621,7 +3621,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 6, H - Test bit 6 of H (372) [minus 0xFF for CB prefix]
-	0x174: func(mb Motherboard, value uint16) uint8 {
+	0x174: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3634,7 +3634,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 0, H - Reset bit 0 of H (388) [minus 0xFF for CB prefix]
-	0x184: func(mb Motherboard, value uint16) uint8 {
+	0x184: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.H, 0)
 		c.Registers.PC += 2
@@ -3642,7 +3642,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 2, H - Reset bit 2 of H (404) [minus 0xFF for CB prefix]
-	0x194: func(mb Motherboard, value uint16) uint8 {
+	0x194: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.H, 2)
 		c.Registers.PC += 2
@@ -3650,7 +3650,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 4, H - Reset bit 4 of H (420) [minus 0xFF for CB prefix]
-	0x1A4: func(mb Motherboard, value uint16) uint8 {
+	0x1A4: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.H, 4)
 		c.Registers.PC += 2
@@ -3658,7 +3658,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 6, H - Reset bit 6 of H (436) [minus 0xFF for CB prefix]
-	0x1B4: func(mb Motherboard, value uint16) uint8 {
+	0x1B4: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.H, 6)
 		c.Registers.PC += 2
@@ -3666,7 +3666,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 0, H - Set bit 0 of H (452) [minus 0xFF for CB prefix]
-	0x1C4: func(mb Motherboard, value uint16) uint8 {
+	0x1C4: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.H, 0)
 		c.Registers.PC += 2
@@ -3674,7 +3674,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 2, H - Set bit 2 of H (468) [minus 0xFF for CB prefix]
-	0x1D4: func(mb Motherboard, value uint16) uint8 {
+	0x1D4: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.H, 2)
 		c.Registers.PC += 2
@@ -3682,7 +3682,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 4, H - Set bit 4 of H (484) [minus 0xFF for CB prefix]
-	0x1E4: func(mb Motherboard, value uint16) uint8 {
+	0x1E4: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.H, 4)
 		c.Registers.PC += 2
@@ -3690,7 +3690,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 6, H - Set bit 6 of H (500) [minus 0xFF for CB prefix]
-	0x1F4: func(mb Motherboard, value uint16) uint8 {
+	0x1F4: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.H, 6)
 		c.Registers.PC += 2
@@ -3699,7 +3699,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn5 **********************/
 	// RLC L - Rotate L left. Old bit 7 to Carry flag (261) [minus 0xFF for CB prefix]
-	0x105: func(mb Motherboard, value uint16) uint8 {
+	0x105: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.L
 		c.ResetFlagZ()
@@ -3722,7 +3722,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RL L - Rotate L left through Carry flag (277) [minus 0xFF for CB prefix]
-	0x115: func(mb Motherboard, value uint16) uint8 {
+	0x115: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.L
 		c.ResetFlagZ()
@@ -3751,7 +3751,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SLA L - Shift L left into Carry. LSB of L set to 0 (293) [minus 0xFF for CB prefix]
-	0x125: func(mb Motherboard, value uint16) uint8 {
+	0x125: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.L
 		c.ResetFlagZ()
@@ -3774,7 +3774,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SWAP L - Swap upper & lower nibles of L (309) [minus 0xFF for CB prefix]
-	0x135: func(mb Motherboard, value uint16) uint8 {
+	0x135: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.L
 		c.ResetFlagZ()
@@ -3794,7 +3794,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 0, L - Test bit 0 of L (325) [minus 0xFF for CB prefix]
-	0x145: func(mb Motherboard, value uint16) uint8 {
+	0x145: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3808,7 +3808,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 2, L - Test bit 2 of L (341) [minus 0xFF for CB prefix]
-	0x155: func(mb Motherboard, value uint16) uint8 {
+	0x155: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3822,7 +3822,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 4, L - Test bit 4 of L (357) [minus 0xFF for CB prefix]
-	0x165: func(mb Motherboard, value uint16) uint8 {
+	0x165: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3836,7 +3836,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 6, L - Test bit 6 of L (373) [minus 0xFF for CB prefix]
-	0x175: func(mb Motherboard, value uint16) uint8 {
+	0x175: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -3849,7 +3849,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 0, L - Reset bit 0 of L (389) [minus 0xFF for CB prefix]
-	0x185: func(mb Motherboard, value uint16) uint8 {
+	0x185: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.L, 0)
 		c.Registers.PC += 2
@@ -3857,7 +3857,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 2, L - Reset bit 2 of L (405) [minus 0xFF for CB prefix]
-	0x195: func(mb Motherboard, value uint16) uint8 {
+	0x195: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.L, 2)
 		c.Registers.PC += 2
@@ -3865,7 +3865,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 4, L - Reset bit 4 of L (421) [minus 0xFF for CB prefix]
-	0x1A5: func(mb Motherboard, value uint16) uint8 {
+	0x1A5: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.L, 4)
 		c.Registers.PC += 2
@@ -3873,7 +3873,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 6, L - Reset bit 6 of L (437) [minus 0xFF for CB prefix]
-	0x1B5: func(mb Motherboard, value uint16) uint8 {
+	0x1B5: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.L, 6)
 		c.Registers.PC += 2
@@ -3881,7 +3881,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 0, L - Set bit 0 of L (453) [minus 0xFF for CB prefix]
-	0x1C5: func(mb Motherboard, value uint16) uint8 {
+	0x1C5: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.L, 0)
 		c.Registers.PC += 2
@@ -3889,7 +3889,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 2, L - Set bit 2 of L (469) [minus 0xFF for CB prefix]
-	0x1D5: func(mb Motherboard, value uint16) uint8 {
+	0x1D5: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.L, 2)
 		c.Registers.PC += 2
@@ -3897,7 +3897,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 4, L - Set bit 4 of L (485) [minus 0xFF for CB prefix]
-	0x1E5: func(mb Motherboard, value uint16) uint8 {
+	0x1E5: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.L, 4)
 		c.Registers.PC += 2
@@ -3905,7 +3905,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 6, L - Set bit 6 of L (501) [minus 0xFF for CB prefix]
-	0x1F5: func(mb Motherboard, value uint16) uint8 {
+	0x1F5: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.L, 6)
 		c.Registers.PC += 2
@@ -3914,7 +3914,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn6 **********************/
 	// RLC (HL) - Rotate value pointed by HL left. Old bit 7 to Carry flag (262) [minus 0xFF for CB prefix]
-	0x106: func(mb Motherboard, value uint16) uint8 {
+	0x106: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -3939,7 +3939,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RL (HL) - Rotate value pointed by HL left through Carry flag (278) [minus 0xFF for CB prefix]
-	0x116: func(mb Motherboard, value uint16) uint8 {
+	0x116: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -3970,7 +3970,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SLA (HL) - Shift value pointed by HL left into Carry. LSB of value pointed by HL set to 0 (294) [minus 0xFF for CB prefix]
-	0x126: func(mb Motherboard, value uint16) uint8 {
+	0x126: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -3995,7 +3995,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SWAP (HL) - Swap upper & lower nibles of value pointed by HL (310) [minus 0xFF for CB prefix]
-	0x136: func(mb Motherboard, value uint16) uint8 {
+	0x136: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4017,7 +4017,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 0, (HL) - Test bit 0 of value pointed by HL (326) [minus 0xFF for CB prefix]
-	0x146: func(mb Motherboard, value uint16) uint8 {
+	0x146: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4033,7 +4033,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 2, (HL) - Test bit 2 of value pointed by HL (342) [minus 0xFF for CB prefix]
-	0x156: func(mb Motherboard, value uint16) uint8 {
+	0x156: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4049,7 +4049,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 4, (HL) - Test bit 4 of value pointed by HL (358) [minus 0xFF for CB prefix]
-	0x166: func(mb Motherboard, value uint16) uint8 {
+	0x166: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4065,7 +4065,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 6, (HL) - Test bit 6 of value pointed by HL (374) [minus 0xFF for CB prefix]
-	0x176: func(mb Motherboard, value uint16) uint8 {
+	0x176: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4080,7 +4080,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 0, (HL) - Reset bit 0 of value pointed by HL (390) [minus 0xFF for CB prefix]
-	0x186: func(mb Motherboard, value uint16) uint8 {
+	0x186: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4092,7 +4092,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 2, (HL) - Reset bit 2 of value pointed by HL (406) [minus 0xFF for CB prefix]
-	0x196: func(mb Motherboard, value uint16) uint8 {
+	0x196: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4104,7 +4104,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 4, (HL) - Reset bit 4 of value pointed by HL (422) [minus 0xFF for CB prefix]
-	0x1A6: func(mb Motherboard, value uint16) uint8 {
+	0x1A6: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4116,7 +4116,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 6, (HL) - Reset bit 6 of value pointed by HL (438) [minus 0xFF for CB prefix]
-	0x1B6: func(mb Motherboard, value uint16) uint8 {
+	0x1B6: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4128,7 +4128,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 0, (HL) - Set bit 0 of value pointed by HL (454) [minus 0xFF for CB prefix]
-	0x1C6: func(mb Motherboard, value uint16) uint8 {
+	0x1C6: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4140,7 +4140,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 2, (HL) - Set bit 2 of value pointed by HL (470) [minus 0xFF for CB prefix]
-	0x1D6: func(mb Motherboard, value uint16) uint8 {
+	0x1D6: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4152,7 +4152,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 4, (HL) - Set bit 4 of value pointed by HL (486) [minus 0xFF for CB prefix]
-	0x1E6: func(mb Motherboard, value uint16) uint8 {
+	0x1E6: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4164,7 +4164,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 6, (HL) - Set bit 6 of value pointed by HL (502) [minus 0xFF for CB prefix]
-	0x1F6: func(mb Motherboard, value uint16) uint8 {
+	0x1F6: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -4177,7 +4177,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn7 **********************/
 	// RLC A - Rotate A left. Old bit 7 to Carry flag (263) [minus 0xFF for CB prefix]
-	0x107: func(mb Motherboard, value uint16) uint8 {
+	0x107: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.A
 		c.ResetFlagZ()
@@ -4200,7 +4200,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RL A - Rotate A left through Carry flag (279) [minus 0xFF for CB prefix]
-	0x117: func(mb Motherboard, value uint16) uint8 {
+	0x117: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.A
 		c.ResetFlagZ()
@@ -4230,7 +4230,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SLA A - Shift A left into Carry. LSB of A set to 0 (295) [minus 0xFF for CB prefix]
-	0x127: func(mb Motherboard, value uint16) uint8 {
+	0x127: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.A
 		c.ResetFlagZ()
@@ -4253,7 +4253,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SWAP A - Swap upper & lower nibles of A (311) [minus 0xFF for CB prefix]
-	0x137: func(mb Motherboard, value uint16) uint8 {
+	0x137: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.A
 		c.ResetFlagZ()
@@ -4273,7 +4273,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 0, A - Test bit 0 of A (327) [minus 0xFF for CB prefix]
-	0x147: func(mb Motherboard, value uint16) uint8 {
+	0x147: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4287,7 +4287,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 2, A - Test bit 2 of A (343) [minus 0xFF for CB prefix]
-	0x157: func(mb Motherboard, value uint16) uint8 {
+	0x157: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4301,7 +4301,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 4, A - Test bit 4 of A (359) [minus 0xFF for CB prefix]
-	0x167: func(mb Motherboard, value uint16) uint8 {
+	0x167: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4315,7 +4315,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 6, A - Test bit 6 of A (375) [minus 0xFF for CB prefix]
-	0x177: func(mb Motherboard, value uint16) uint8 {
+	0x177: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4328,7 +4328,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 0, A - Reset bit 0 of A (391) [minus 0xFF for CB prefix]
-	0x187: func(mb Motherboard, value uint16) uint8 {
+	0x187: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.A, 0)
 		c.Registers.PC += 2
@@ -4336,7 +4336,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 2, A - Reset bit 2 of A (407) [minus 0xFF for CB prefix]
-	0x197: func(mb Motherboard, value uint16) uint8 {
+	0x197: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.A, 2)
 		c.Registers.PC += 2
@@ -4344,7 +4344,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 4, A - Reset bit 4 of A (423) [minus 0xFF for CB prefix]
-	0x1A7: func(mb Motherboard, value uint16) uint8 {
+	0x1A7: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.A, 4)
 		c.Registers.PC += 2
@@ -4352,7 +4352,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 6, A - Reset bit 6 of A (439) [minus 0xFF for CB prefix]
-	0x1B7: func(mb Motherboard, value uint16) uint8 {
+	0x1B7: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.A, 6)
 		c.Registers.PC += 2
@@ -4360,7 +4360,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 0, A - Set bit 0 of A (455) [minus 0xFF for CB prefix]
-	0x1C7: func(mb Motherboard, value uint16) uint8 {
+	0x1C7: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.A, 0)
 		c.Registers.PC += 2
@@ -4368,7 +4368,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 2, A - Set bit 2 of A (471) [minus 0xFF for CB prefix]
-	0x1D7: func(mb Motherboard, value uint16) uint8 {
+	0x1D7: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.A, 2)
 		c.Registers.PC += 2
@@ -4376,7 +4376,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 4, A - Set bit 4 of A (487) [minus 0xFF for CB prefix]
-	0x1E7: func(mb Motherboard, value uint16) uint8 {
+	0x1E7: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.A, 4)
 		c.Registers.PC += 2
@@ -4384,7 +4384,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 6, A - Set bit 6 of A (503) [minus 0xFF for CB prefix]
-	0x1F7: func(mb Motherboard, value uint16) uint8 {
+	0x1F7: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.A, 6)
 		c.Registers.PC += 2
@@ -4393,7 +4393,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn8 **********************/
 	// RRC B - Rotate B right. Old bit 0 to Carry flag (264) [minus 0xFF for CB prefix]
-	0x108: func(mb Motherboard, value uint16) uint8 {
+	0x108: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.B
 		c.ResetFlagZ()
@@ -4416,7 +4416,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RR B - Rotate B right through Carry flag (280) [minus 0xFF for CB prefix]
-	0x118: func(mb Motherboard, value uint16) uint8 {
+	0x118: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.B
 		c.ResetFlagZ()
@@ -4445,7 +4445,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRA B - Shift B right into Carry. MSB doesn't change (296) [minus 0xFF for CB prefix]
-	0x128: func(mb Motherboard, value uint16) uint8 {
+	0x128: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.B
 		c.ResetFlagZ()
@@ -4473,7 +4473,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRL B - Shift B right into Carry. MSB set to 0 (312) [minus 0xFF for CB prefix]
-	0x138: func(mb Motherboard, value uint16) uint8 {
+	0x138: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.B
 		c.ResetFlagZ()
@@ -4499,7 +4499,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT B 1 - Test bit 1 of B (328) [minus 0xFF for CB prefix]
-	0x148: func(mb Motherboard, value uint16) uint8 {
+	0x148: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4513,7 +4513,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT B 3 - Test bit 3 of B (344) [minus 0xFF for CB prefix]
-	0x158: func(mb Motherboard, value uint16) uint8 {
+	0x158: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4527,7 +4527,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT B 5 - Test bit 5 of B (360) [minus 0xFF for CB prefix]
-	0x168: func(mb Motherboard, value uint16) uint8 {
+	0x168: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4541,7 +4541,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT B 7 - Test bit 7 of B (376) [minus 0xFF for CB prefix]
-	0x178: func(mb Motherboard, value uint16) uint8 {
+	0x178: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4554,7 +4554,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES B 1 - Reset bit 0 of B (392) [minus 0xFF for CB prefix]
-	0x188: func(mb Motherboard, value uint16) uint8 {
+	0x188: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.B, 1)
 		c.Registers.PC += 2
@@ -4562,7 +4562,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES B 3 - Reset bit 3 of B (408) [minus 0xFF for CB prefix]
-	0x198: func(mb Motherboard, value uint16) uint8 {
+	0x198: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.B, 3)
 		c.Registers.PC += 2
@@ -4570,7 +4570,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES B 5 - Reset bit 5 of B (424) [minus 0xFF for CB prefix]
-	0x1A8: func(mb Motherboard, value uint16) uint8 {
+	0x1A8: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.B, 5)
 		c.Registers.PC += 2
@@ -4578,7 +4578,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES B 7 - Reset bit 7 of B (440) [minus 0xFF for CB prefix]
-	0x1B8: func(mb Motherboard, value uint16) uint8 {
+	0x1B8: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.B, 7)
 		c.Registers.PC += 2
@@ -4586,7 +4586,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET B 1 - Set bit 1 of B (456) [minus 0xFF for CB prefix]
-	0x1C8: func(mb Motherboard, value uint16) uint8 {
+	0x1C8: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.B, 1)
 		c.Registers.PC += 2
@@ -4594,7 +4594,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET B 3 - Set bit 3 of B (472) [minus 0xFF for CB prefix]
-	0x1D8: func(mb Motherboard, value uint16) uint8 {
+	0x1D8: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.B, 3)
 		c.Registers.PC += 2
@@ -4602,7 +4602,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET B 5 - Set bit 5 of B (488) [minus 0xFF for CB prefix]
-	0x1E8: func(mb Motherboard, value uint16) uint8 {
+	0x1E8: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.B, 5)
 		c.Registers.PC += 2
@@ -4610,7 +4610,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET B 7 - Set bit 7 of B (504) [minus 0xFF for CB prefix]
-	0x1F8: func(mb Motherboard, value uint16) uint8 {
+	0x1F8: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.B, 7)
 		c.Registers.PC += 2
@@ -4619,7 +4619,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xn9 **********************/
 	// RRC C - Rotate C right. Old bit 0 to Carry flag (265) [minus 0xFF for CB prefix]
-	0x109: func(mb Motherboard, value uint16) uint8 {
+	0x109: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.C
 		c.ResetFlagZ()
@@ -4642,7 +4642,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RR C - Rotate C right through Carry flag (281) [minus 0xFF for CB prefix]
-	0x119: func(mb Motherboard, value uint16) uint8 {
+	0x119: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.C
 		c.ResetFlagZ()
@@ -4673,7 +4673,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRA C - Shift C right into Carry. MSB doesn't change (297) [minus 0xFF for CB prefix]
-	0x129: func(mb Motherboard, value uint16) uint8 {
+	0x129: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.C
 		c.ResetFlagZ()
@@ -4702,7 +4702,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRL C - Shift C right into Carry. MSB set to 0 (313) [minus 0xFF for CB prefix]
-	0x139: func(mb Motherboard, value uint16) uint8 {
+	0x139: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.C
 		c.ResetFlagZ()
@@ -4728,7 +4728,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 1, C - Test bit 1 of C (329) [minus 0xFF for CB prefix]
-	0x149: func(mb Motherboard, value uint16) uint8 {
+	0x149: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4742,7 +4742,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 3, C - Test bit 3 of C (345) [minus 0xFF for CB prefix]
-	0x159: func(mb Motherboard, value uint16) uint8 {
+	0x159: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4756,7 +4756,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 5, C - Test bit 5 of C (361) [minus 0xFF for CB prefix]
-	0x169: func(mb Motherboard, value uint16) uint8 {
+	0x169: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4770,7 +4770,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 7, C - Test bit 7 of C (377) [minus 0xFF for CB prefix]
-	0x179: func(mb Motherboard, value uint16) uint8 {
+	0x179: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4783,7 +4783,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 1, C - Reset bit 1 of C (393) [minus 0xFF for CB prefix]
-	0x189: func(mb Motherboard, value uint16) uint8 {
+	0x189: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.C, 1)
 		c.Registers.PC += 2
@@ -4791,7 +4791,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 3, C - Reset bit 3 of C (409) [minus 0xFF for CB prefix]
-	0x199: func(mb Motherboard, value uint16) uint8 {
+	0x199: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.C, 3)
 		c.Registers.PC += 2
@@ -4799,7 +4799,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 5, C - Reset bit 5 of C (425) [minus 0xFF for CB prefix]
-	0x1A9: func(mb Motherboard, value uint16) uint8 {
+	0x1A9: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.C, 5)
 		c.Registers.PC += 2
@@ -4807,7 +4807,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 7, C - Reset bit 7 of C (441) [minus 0xFF for CB prefix]
-	0x1B9: func(mb Motherboard, value uint16) uint8 {
+	0x1B9: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.C, 7)
 		c.Registers.PC += 2
@@ -4815,7 +4815,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 1, C - Set bit 1 of C (457) [minus 0xFF for CB prefix]
-	0x1C9: func(mb Motherboard, value uint16) uint8 {
+	0x1C9: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.C, 1)
 		c.Registers.PC += 2
@@ -4823,7 +4823,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 3, C - Set bit 3 of C (473) [minus 0xFF for CB prefix]
-	0x1D9: func(mb Motherboard, value uint16) uint8 {
+	0x1D9: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.C, 3)
 		c.Registers.PC += 2
@@ -4831,7 +4831,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 5, C - Set bit 5 of C (489) [minus 0xFF for CB prefix]
-	0x1E9: func(mb Motherboard, value uint16) uint8 {
+	0x1E9: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.C, 5)
 		c.Registers.PC += 2
@@ -4839,7 +4839,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 7, C - Set bit 7 of C (505) [minus 0xFF for CB prefix]
-	0x1F9: func(mb Motherboard, value uint16) uint8 {
+	0x1F9: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.C, 7)
 		c.Registers.PC += 2
@@ -4848,7 +4848,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xna **********************/
 	// RRC D - Rotate D right. Old bit 0 to Carry flag (266) [minus 0xFF for CB prefix]
-	0x10a: func(mb Motherboard, value uint16) uint8 {
+	0x10a: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.D
 		c.ResetFlagZ()
@@ -4869,7 +4869,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RR D - Rotate D right through Carry flag (282) [minus 0xFF for CB prefix]
-	0x11a: func(mb Motherboard, value uint16) uint8 {
+	0x11a: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.D
 		c.ResetFlagZ()
@@ -4896,7 +4896,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRA D - Shift D right into Carry. MSB doesn't change (298) [minus 0xFF for CB prefix]
-	0x12a: func(mb Motherboard, value uint16) uint8 {
+	0x12a: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.D
 		c.ResetFlagZ()
@@ -4925,7 +4925,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRL D - Shift D right into Carry. MSB set to 0 (314) [minus 0xFF for CB prefix]
-	0x13a: func(mb Motherboard, value uint16) uint8 {
+	0x13a: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.D
 		c.ResetFlagZ()
@@ -4951,7 +4951,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 1, D - Test bit 1 of D (330) [minus 0xFF for CB prefix]
-	0x14a: func(mb Motherboard, value uint16) uint8 {
+	0x14a: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4965,7 +4965,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 3, D - Test bit 3 of D (346) [minus 0xFF for CB prefix]
-	0x15a: func(mb Motherboard, value uint16) uint8 {
+	0x15a: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4979,7 +4979,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 5, D - Test bit 5 of D (362) [minus 0xFF for CB prefix]
-	0x16a: func(mb Motherboard, value uint16) uint8 {
+	0x16a: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -4993,7 +4993,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 7, D - Test bit 7 of D (378) [minus 0xFF for CB prefix]
-	0x17a: func(mb Motherboard, value uint16) uint8 {
+	0x17a: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5006,7 +5006,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 1, D - Reset bit 2 of D (394) [minus 0xFF for CB prefix]
-	0x18a: func(mb Motherboard, value uint16) uint8 {
+	0x18a: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.D, 1)
 		c.Registers.PC += 2
@@ -5014,7 +5014,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 3, D - Reset bit 3 of D (410) [minus 0xFF for CB prefix]
-	0x19a: func(mb Motherboard, value uint16) uint8 {
+	0x19a: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.D, 3)
 		c.Registers.PC += 2
@@ -5022,7 +5022,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 5, D - Reset bit 5 of D (426) [minus 0xFF for CB prefix]
-	0x1AA: func(mb Motherboard, value uint16) uint8 {
+	0x1AA: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.D, 5)
 		c.Registers.PC += 2
@@ -5030,7 +5030,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 7, D - Reset bit 7 of D (442) [minus 0xFF for CB prefix]
-	0x1BA: func(mb Motherboard, value uint16) uint8 {
+	0x1BA: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.D, 7)
 		c.Registers.PC += 2
@@ -5038,7 +5038,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 1, D - Set bit 1 of D (458) [minus 0xFF for CB prefix]
-	0x1CA: func(mb Motherboard, value uint16) uint8 {
+	0x1CA: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.D, 1)
 		c.Registers.PC += 2
@@ -5046,7 +5046,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 3, D - Set bit 3 of D (474) [minus 0xFF for CB prefix]
-	0x1DA: func(mb Motherboard, value uint16) uint8 {
+	0x1DA: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.D, 3)
 		c.Registers.PC += 2
@@ -5054,7 +5054,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 5, D - Set bit 5 of D (490) [minus 0xFF for CB prefix]
-	0x1EA: func(mb Motherboard, value uint16) uint8 {
+	0x1EA: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.D, 5)
 		c.Registers.PC += 2
@@ -5062,7 +5062,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 7, D - Set bit 7 of D (506) [minus 0xFF for CB prefix]
-	0x1FA: func(mb Motherboard, value uint16) uint8 {
+	0x1FA: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.D, 7)
 		c.Registers.PC += 2
@@ -5071,7 +5071,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xnb **********************/
 	// RRC E - Rotate E right. Old bit 0 to Carry flag (267) [minus 0xFF for CB prefix]
-	0x10b: func(mb Motherboard, value uint16) uint8 {
+	0x10b: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.E
 		c.ResetFlagZ()
@@ -5092,7 +5092,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RR E - Rotate E right through Carry flag (283) [minus 0xFF for CB prefix]
-	0x11b: func(mb Motherboard, value uint16) uint8 {
+	0x11b: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.E
 		c.ResetFlagZ()
@@ -5119,7 +5119,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRA E - Shift E right into Carry. MSB doesn't change (299) [minus 0xFF for CB prefix]
-	0x12b: func(mb Motherboard, value uint16) uint8 {
+	0x12b: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.E
 		c.ResetFlagZ()
@@ -5148,7 +5148,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRL E - Shift E right into Carry. MSB set to 0 (315) [minus 0xFF for CB prefix]
-	0x13b: func(mb Motherboard, value uint16) uint8 {
+	0x13b: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.E
 		c.ResetFlagZ()
@@ -5173,7 +5173,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 1, E - Test bit 1 of E (331) [minus 0xFF for CB prefix]
-	0x14b: func(mb Motherboard, value uint16) uint8 {
+	0x14b: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5187,7 +5187,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 3, E - Test bit 3 of E (347) [minus 0xFF for CB prefix]
-	0x15b: func(mb Motherboard, value uint16) uint8 {
+	0x15b: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5201,7 +5201,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 5, E - Test bit 5 of E (363) [minus 0xFF for CB prefix]
-	0x16b: func(mb Motherboard, value uint16) uint8 {
+	0x16b: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5215,7 +5215,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 7, E - Test bit 7 of E (379) [minus 0xFF for CB prefix]
-	0x17b: func(mb Motherboard, value uint16) uint8 {
+	0x17b: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5229,7 +5229,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 1, E - Reset bit 3 of E (395) [minus 0xFF for CB prefix]
-	0x18b: func(mb Motherboard, value uint16) uint8 {
+	0x18b: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.E, 1)
 		c.Registers.PC += 2
@@ -5237,7 +5237,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 3, E - Reset bit 3 of E (411) [minus 0xFF for CB prefix]
-	0x19b: func(mb Motherboard, value uint16) uint8 {
+	0x19b: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.E, 3)
 		c.Registers.PC += 2
@@ -5245,7 +5245,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 5, E - Reset bit 5 of E (427) [minus 0xFF for CB prefix]
-	0x1AB: func(mb Motherboard, value uint16) uint8 {
+	0x1AB: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.E, 5)
 		c.Registers.PC += 2
@@ -5253,7 +5253,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 7, E - Reset bit 7 of E (443) [minus 0xFF for CB prefix]
-	0x1BB: func(mb Motherboard, value uint16) uint8 {
+	0x1BB: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.E, 7)
 		c.Registers.PC += 2
@@ -5261,7 +5261,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 1, E - Set bit 1 of E (459) [minus 0xFF for CB prefix]
-	0x1CB: func(mb Motherboard, value uint16) uint8 {
+	0x1CB: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.E, 1)
 		c.Registers.PC += 2
@@ -5269,7 +5269,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 3, E - Set bit 3 of E (475) [minus 0xFF for CB prefix]
-	0x1DB: func(mb Motherboard, value uint16) uint8 {
+	0x1DB: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.E, 3)
 		c.Registers.PC += 2
@@ -5277,7 +5277,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 5, E - Set bit 5 of E (491) [minus 0xFF for CB prefix]
-	0x1EB: func(mb Motherboard, value uint16) uint8 {
+	0x1EB: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.E, 5)
 		c.Registers.PC += 2
@@ -5285,7 +5285,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 7, E - Set bit 7 of E (507) [minus 0xFF for CB prefix]
-	0x1FB: func(mb Motherboard, value uint16) uint8 {
+	0x1FB: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.E, 7)
 		c.Registers.PC += 2
@@ -5294,7 +5294,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xnc **********************/
 	// RRC H - Rotate H right. Old bit 0 to Carry flag (268) [minus 0xFF for CB prefix]
-	0x10c: func(mb Motherboard, value uint16) uint8 {
+	0x10c: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.H
 		c.ResetFlagZ()
@@ -5315,7 +5315,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RR H - Rotate H right through Carry flag (284) [minus 0xFF for CB prefix]
-	0x11c: func(mb Motherboard, value uint16) uint8 {
+	0x11c: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.H
 		c.ResetFlagZ()
@@ -5342,7 +5342,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRA H - Shift H right into Carry. MSB doesn't change (300) [minus 0xFF for CB prefix]
-	0x12c: func(mb Motherboard, value uint16) uint8 {
+	0x12c: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.H
 		c.ResetFlagZ()
@@ -5371,7 +5371,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRL H - Shift H right into Carry. MSB set to 0 (316) [minus 0xFF for CB prefix]
-	0x13c: func(mb Motherboard, value uint16) uint8 {
+	0x13c: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.H
 		c.ResetFlagZ()
@@ -5397,7 +5397,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 1, H - Test bit 1 of H (332) [minus 0xFF for CB prefix]
-	0x14c: func(mb Motherboard, value uint16) uint8 {
+	0x14c: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5411,7 +5411,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 3, H - Test bit 3 of H (348) [minus 0xFF for CB prefix]
-	0x15c: func(mb Motherboard, value uint16) uint8 {
+	0x15c: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5425,7 +5425,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 5, H - Test bit 5 of H (364) [minus 0xFF for CB prefix]
-	0x16c: func(mb Motherboard, value uint16) uint8 {
+	0x16c: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5439,7 +5439,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 7, H - Test bit 7 of H (380) [minus 0xFF for CB prefix]
-	0x17c: func(mb Motherboard, value uint16) uint8 {
+	0x17c: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5453,7 +5453,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 1, H - Reset bit 1 of H (396) [minus 0xFF for CB prefix]
-	0x18c: func(mb Motherboard, value uint16) uint8 {
+	0x18c: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.H, 1)
 		c.Registers.PC += 2
@@ -5461,7 +5461,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 3, H - Reset bit 3 of H (412) [minus 0xFF for CB prefix]
-	0x19c: func(mb Motherboard, value uint16) uint8 {
+	0x19c: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.H, 3)
 		c.Registers.PC += 2
@@ -5469,7 +5469,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 5, H - Reset bit 5 of H (428) [minus 0xFF for CB prefix]
-	0x1AC: func(mb Motherboard, value uint16) uint8 {
+	0x1AC: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.H, 5)
 		c.Registers.PC += 2
@@ -5477,7 +5477,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 7, H - Reset bit 7 of H (444) [minus 0xFF for CB prefix]
-	0x1BC: func(mb Motherboard, value uint16) uint8 {
+	0x1BC: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.H, 7)
 		c.Registers.PC += 2
@@ -5485,7 +5485,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 1, H - Set bit 1 of H (460) [minus 0xFF for CB prefix]
-	0x1CC: func(mb Motherboard, value uint16) uint8 {
+	0x1CC: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.H, 1)
 		c.Registers.PC += 2
@@ -5493,7 +5493,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 3, H - Set bit 3 of H (476) [minus 0xFF for CB prefix]
-	0x1DC: func(mb Motherboard, value uint16) uint8 {
+	0x1DC: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.H, 3)
 		c.Registers.PC += 2
@@ -5501,7 +5501,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 5, H - Set bit 5 of H (492) [minus 0xFF for CB prefix]
-	0x1EC: func(mb Motherboard, value uint16) uint8 {
+	0x1EC: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.H, 5)
 		c.Registers.PC += 2
@@ -5509,7 +5509,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 7, H - Set bit 7 of H (508) [minus 0xFF for CB prefix]
-	0x1FC: func(mb Motherboard, value uint16) uint8 {
+	0x1FC: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.H, 7)
 		c.Registers.PC += 2
@@ -5518,7 +5518,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xnd **********************/
 	// RRC L - Rotate L right. Old bit 0 to Carry flag (269) [minus 0xFF for CB prefix]
-	0x10d: func(mb Motherboard, value uint16) uint8 {
+	0x10d: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.L
 		c.ResetFlagZ()
@@ -5539,7 +5539,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RR L - Rotate L right through Carry flag (285) [minus 0xFF for CB prefix]
-	0x11d: func(mb Motherboard, value uint16) uint8 {
+	0x11d: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.L
 		c.ResetFlagZ()
@@ -5566,7 +5566,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRA L - Shift L right into Carry. MSB doesn't change (301) [minus 0xFF for CB prefix]
-	0x12d: func(mb Motherboard, value uint16) uint8 {
+	0x12d: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.L
 		c.ResetFlagZ()
@@ -5595,7 +5595,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRL L - Shift L right into Carry. MSB set to 0 (317) [minus 0xFF for CB prefix]
-	0x13d: func(mb Motherboard, value uint16) uint8 {
+	0x13d: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.L
 		c.ResetFlagZ()
@@ -5621,7 +5621,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 1, L - Test bit 1 of L (333) [minus 0xFF for CB prefix]
-	0x14d: func(mb Motherboard, value uint16) uint8 {
+	0x14d: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5635,7 +5635,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 3, L - Test bit 3 of L (349) [minus 0xFF for CB prefix]
-	0x15d: func(mb Motherboard, value uint16) uint8 {
+	0x15d: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5649,7 +5649,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 5, L - Test bit 5 of L (365) [minus 0xFF for CB prefix]
-	0x16d: func(mb Motherboard, value uint16) uint8 {
+	0x16d: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5663,7 +5663,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 7, L - Test bit 7 of L (381) [minus 0xFF for CB prefix]
-	0x17d: func(mb Motherboard, value uint16) uint8 {
+	0x17d: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -5677,7 +5677,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 1, L - Reset bit 5 of L (397) [minus 0xFF for CB prefix]
-	0x18d: func(mb Motherboard, value uint16) uint8 {
+	0x18d: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.L, 1)
 		c.Registers.PC += 2
@@ -5685,7 +5685,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 3, L - Reset bit 3 of L (413) [minus 0xFF for CB prefix]
-	0x19d: func(mb Motherboard, value uint16) uint8 {
+	0x19d: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.L, 3)
 		c.Registers.PC += 2
@@ -5693,7 +5693,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 5, L - Reset bit 5 of L (429) [minus 0xFF for CB prefix]
-	0x1AD: func(mb Motherboard, value uint16) uint8 {
+	0x1AD: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.L, 5)
 		c.Registers.PC += 2
@@ -5701,7 +5701,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 7, L - Reset bit 7 of L (445) [minus 0xFF for CB prefix]
-	0x1BD: func(mb Motherboard, value uint16) uint8 {
+	0x1BD: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.L, 7)
 		c.Registers.PC += 2
@@ -5709,7 +5709,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 1, L - Set bit 1 of L (461) [minus 0xFF for CB prefix]
-	0x1CD: func(mb Motherboard, value uint16) uint8 {
+	0x1CD: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.L, 1)
 		c.Registers.PC += 2
@@ -5717,7 +5717,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 3, L - Set bit 3 of L (477) [minus 0xFF for CB prefix]
-	0x1DD: func(mb Motherboard, value uint16) uint8 {
+	0x1DD: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.L, 3)
 		c.Registers.PC += 2
@@ -5725,7 +5725,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 5, L - Set bit 5 of L (493) [minus 0xFF for CB prefix]
-	0x1ED: func(mb Motherboard, value uint16) uint8 {
+	0x1ED: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.L, 5)
 		c.Registers.PC += 2
@@ -5733,7 +5733,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 7, L - Set bit 7 of L (509) [minus 0xFF for CB prefix]
-	0x1FD: func(mb Motherboard, value uint16) uint8 {
+	0x1FD: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.L, 7)
 		c.Registers.PC += 2
@@ -5742,7 +5742,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xne **********************/
 	// RRC (HL) - Rotate value pointed by HL right. Old bit 0 to Carry flag (270) [minus 0xFF for CB prefix]
-	0x10e: func(mb Motherboard, value uint16) uint8 {
+	0x10e: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5765,7 +5765,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RR (HL) - Rotate value pointed by HL right through Carry flag (286) [minus 0xFF for CB prefix]
-	0x11e: func(mb Motherboard, value uint16) uint8 {
+	0x11e: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5794,7 +5794,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRA (HL) - Shift value pointed by HL right into Carry. MSB doesn't change (302) [minus 0xFF for CB prefix]
-	0x12e: func(mb Motherboard, value uint16) uint8 {
+	0x12e: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5821,7 +5821,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRL (HL) - Shift value pointed by HL right into Carry. MSB set to 0 (318) [minus 0xFF for CB prefix]
-	0x13e: func(mb Motherboard, value uint16) uint8 {
+	0x13e: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5849,7 +5849,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 1, (HL) - Test bit 1 of value pointed by HL (334) [minus 0xFF for CB prefix]
-	0x14e: func(mb Motherboard, value uint16) uint8 {
+	0x14e: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5865,7 +5865,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 3, (HL) - Test bit 3 of value pointed by HL (350) [minus 0xFF for CB prefix]
-	0x15e: func(mb Motherboard, value uint16) uint8 {
+	0x15e: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5881,7 +5881,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 5, (HL) - Test bit 5 of value pointed by HL (366) [minus 0xFF for CB prefix]
-	0x16e: func(mb Motherboard, value uint16) uint8 {
+	0x16e: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5897,7 +5897,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 7, (HL) - Test bit 7 of value pointed by HL (382) [minus 0xFF for CB prefix]
-	0x17e: func(mb Motherboard, value uint16) uint8 {
+	0x17e: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5913,7 +5913,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 1, (HL) - Reset bit 1 of value pointed by HL (398) [minus 0xFF for CB prefix]
-	0x18e: func(mb Motherboard, value uint16) uint8 {
+	0x18e: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5925,7 +5925,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 3, (HL) - Reset bit 3 of value pointed by HL (414) [minus 0xFF for CB prefix]
-	0x19e: func(mb Motherboard, value uint16) uint8 {
+	0x19e: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5937,7 +5937,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 5, (HL) - Reset bit 5 of value pointed by HL (430) [minus 0xFF for CB prefix]
-	0x1AE: func(mb Motherboard, value uint16) uint8 {
+	0x1AE: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5949,7 +5949,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 7, (HL) - Reset bit 7 of value pointed by HL (446) [minus 0xFF for CB prefix]
-	0x1BE: func(mb Motherboard, value uint16) uint8 {
+	0x1BE: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5961,7 +5961,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 1, (HL) - Set bit 1 of value pointed by HL (462) [minus 0xFF for CB prefix]
-	0x1CE: func(mb Motherboard, value uint16) uint8 {
+	0x1CE: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5973,7 +5973,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 3, (HL) - Set bit 3 of value pointed by HL (478) [minus 0xFF for CB prefix]
-	0x1DE: func(mb Motherboard, value uint16) uint8 {
+	0x1DE: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5985,7 +5985,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 5, (HL) - Set bit 5 of value pointed by HL (494) [minus 0xFF for CB prefix]
-	0x1EE: func(mb Motherboard, value uint16) uint8 {
+	0x1EE: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -5997,7 +5997,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 7, (HL) - Set bit 7 of value pointed by HL (510) [minus 0xFF for CB prefix]
-	0x1FE: func(mb Motherboard, value uint16) uint8 {
+	0x1FE: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		hl := c.HL()
 		b := mb.GetItem(&hl)
@@ -6010,7 +6010,7 @@ var OPCODES = OpCodeMap{
 
 	/****************************** 0xnf **********************/
 	// RRC A - Rotate A right. Old bit 0 to Carry flag (271) [minus 0xFF for CB prefix]
-	0x10f: func(mb Motherboard, value uint16) uint8 {
+	0x10f: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.A
 		c.ResetFlagZ()
@@ -6031,7 +6031,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RR A - Rotate A right through Carry flag (287) [minus 0xFF for CB prefix]
-	0x11f: func(mb Motherboard, value uint16) uint8 {
+	0x11f: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.A
 		c.ResetFlagZ()
@@ -6058,7 +6058,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRA A - Shift A right into Carry. MSB doesn't change (303) [minus 0xFF for CB prefix]
-	0x12f: func(mb Motherboard, value uint16) uint8 {
+	0x12f: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.A
 		c.ResetFlagZ()
@@ -6087,7 +6087,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SRL A - Shift A right into Carry. MSB set to 0 (319) [minus 0xFF for CB prefix]
-	0x13f: func(mb Motherboard, value uint16) uint8 {
+	0x13f: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		b := c.Registers.A
 		c.ResetFlagZ()
@@ -6113,7 +6113,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 1, A - Test bit 1 of A (335) [minus 0xFF for CB prefix]
-	0x14f: func(mb Motherboard, value uint16) uint8 {
+	0x14f: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -6127,7 +6127,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 3, A - Test bit 3 of A (351) [minus 0xFF for CB prefix]
-	0x15f: func(mb Motherboard, value uint16) uint8 {
+	0x15f: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -6141,7 +6141,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 5, A - Test bit 5 of A (367) [minus 0xFF for CB prefix]
-	0x16f: func(mb Motherboard, value uint16) uint8 {
+	0x16f: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -6155,7 +6155,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// BIT 7, A - Test bit 7 of A (383) [minus 0xFF for CB prefix]
-	0x17f: func(mb Motherboard, value uint16) uint8 {
+	0x17f: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		c.ResetFlagN()
 		c.SetFlagH()
@@ -6169,7 +6169,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 1, A - Reset bit 7 of A (399) [minus 0xFF for CB prefix]
-	0x18f: func(mb Motherboard, value uint16) uint8 {
+	0x18f: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.A, 1)
 		c.Registers.PC += 2
@@ -6177,7 +6177,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 3, A - Reset bit 3 of A (415) [minus 0xFF for CB prefix]
-	0x19f: func(mb Motherboard, value uint16) uint8 {
+	0x19f: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.A, 3)
 		c.Registers.PC += 2
@@ -6185,7 +6185,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 5, A - Reset bit 5 of A (431) [minus 0xFF for CB prefix]
-	0x1AF: func(mb Motherboard, value uint16) uint8 {
+	0x1AF: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.A, 5)
 		c.Registers.PC += 2
@@ -6193,7 +6193,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// RES 7, A - Reset bit 7 of A (447) [minus 0xFF for CB prefix]
-	0x1BF: func(mb Motherboard, value uint16) uint8 {
+	0x1BF: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.ResetBit(&c.Registers.A, 7)
 		c.Registers.PC += 2
@@ -6201,7 +6201,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 1, A - Set bit 1 of A (463) [minus 0xFF for CB prefix]
-	0x1CF: func(mb Motherboard, value uint16) uint8 {
+	0x1CF: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.A, 1)
 		c.Registers.PC += 2
@@ -6209,7 +6209,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 3, A - Set bit 3 of A (479) [minus 0xFF for CB prefix]
-	0x1DF: func(mb Motherboard, value uint16) uint8 {
+	0x1DF: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.A, 3)
 		c.Registers.PC += 2
@@ -6217,7 +6217,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 5, A - Set bit 5 of A (495) [minus 0xFF for CB prefix]
-	0x1EF: func(mb Motherboard, value uint16) uint8 {
+	0x1EF: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.A, 5)
 		c.Registers.PC += 2
@@ -6225,7 +6225,7 @@ var OPCODES = OpCodeMap{
 	},
 
 	// SET 7, A - Set bit 7 of A (511) [minus 0xFF for CB prefix]
-	0x1FF: func(mb Motherboard, value uint16) uint8 {
+	0x1FF: func(mb Motherboard, value uint16) Cycles {
 		c := mb.Cpu()
 		internal.SetBit(&c.Registers.A, 7)
 		c.Registers.PC += 2
