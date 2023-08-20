@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/duysqubix/gobc/internal"
@@ -21,6 +22,15 @@ func TestSetBit(t *testing.T) {
 	internal.SetBit(&value, 0)
 	if !internal.IsBitSet(value, 0) {
 		t.Errorf("Expected bit 0 to be set")
+	}
+}
+
+func TestSetBit2(t *testing.T) {
+	var value uint8 = 0b00000000
+	internal.SetBit(&value, 0x8)
+	fmt.Printf("%b\n", value)
+	if !internal.IsBitSet(value, 4) {
+		t.Errorf("Expected bit 3 to be set")
 	}
 }
 

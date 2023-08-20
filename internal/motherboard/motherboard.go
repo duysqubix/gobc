@@ -12,9 +12,9 @@ type Motherboard struct {
 }
 
 func NewMotherboard() *Motherboard {
-	return &Motherboard{
-		cpu: cpu.NewCpu(),
-	}
+	mb := &Motherboard{}
+	mb.cpu = cpu.NewCpu(mb)
+	return mb
 }
 
 func (m *Motherboard) GetItem(addr *uint16) uint8 {
@@ -118,4 +118,8 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 
 func (m *Motherboard) Cpu() *cpu.Cpu {
 	return m.cpu
+}
+
+func (m *Motherboard) Mb() *Motherboard {
+	return m
 }

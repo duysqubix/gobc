@@ -13,15 +13,12 @@ const (
 	FLAGN uint8 = 0x06 // Math operation was a subtraction
 	FLAGZ uint8 = 0x07 // Math operation result was zero
 
-	INTR_VBLANK    uint8 = 0x1  // VBlank interrupt
-	INTR_LCDSTAT   uint8 = 0x2  // LCD status interrupt
-	INTR_TIMER     uint8 = 0x4  // Timer interrupt
-	INTR_SERIAL    uint8 = 0x8  // Serial interrupt
-	INTR_HIGHTOLOW uint8 = 0x10 // Joypad interrupt
-
-	CLOCK_FREQ_GB  uint32 = 4194304 // 4.194304 MHz
-	CLOCK_FREQ_CGB uint32 = 8388608 // 8.388608 MHz
 )
+
+type Motherboard interface {
+	SetItem(addr *uint16, value *uint16)
+	GetItem(addr *uint16) uint8
+}
 
 // Registers is a struct that represents the CPU registers
 type Registers struct {
@@ -37,20 +34,14 @@ type Registers struct {
 	PC uint16 // Program counter
 }
 
-type Interrupts struct {
-	Master_Enable bool  // Master interrupt enable
-	IE            uint8 // Interrupt enable register
-	IF            uint8 // Interrupt flag register
-
-}
-
 type Cpu struct {
-	Registers               *Registers
-	Halted                  bool
-	Interrupts              *Interrupts
+	Registers  *Registers  // CPU registers
+	Halted     bool        // CPU halted
+	Interrupts *Interrupts // Interrupts
+	Mb         Motherboard // Motherboard
 }
 
-func NewCpu() *Cpu {
+func NewCpu(mb Motherboard) *Cpu {
 	return &Cpu{
 		Registers: &Registers{
 			A:  0,
@@ -64,14 +55,59 @@ func NewCpu() *Cpu {
 			SP: 0,
 			PC: 0,
 		},
-		Halted:                  false,
+		Halted: false,
 		Interrupts: &Interrupts{
 			Master_Enable: false,
 			IE:            0,
 			IF:            0,
+			Queued:        false,
 		},
+		Mb: mb,
 	}
 
+}
+
+func (c *Cpu) Tick() uint8 {
+	if c.CheckForInterrupts() {
+		// TODO: We return with the number of cycles it took to handle interrupt
+		c.Halted = false
+		return 0
+	}
+	switch {
+	case c.CheckForInterrupts():
+		c.Halted = false
+		return 0
+
+	case c.Halted && c.Interrupts.Queued:
+		// GBCPUman.pdf page 20
+		// WARNING: The instruction immediately following the HALT instruction is "skipped" when interrupts are
+		// disabled (DI) on the GB,GBP, and SGB.
+		c.Halted = false
+		c.Registers.PC += 1
+
+	case c.Halted:
+		return 4
+	default:
+	}
+
+	// old_pc := c.Registers.PC
+	// old_sp := c.Registers.SP
+	// _ := c.ExecuteInstruction()
+
+	c.Interrupts.Queued = false
+	return 0
+}
+
+func (c *Cpu) ExecuteInstruction() uint8 {
+
+	opcode := uint16(c.Mb.GetItem(&c.Registers.PC))
+	if opcode == 0xCB {
+		pcn := c.Registers.PC + 1
+		opcode = uint16(c.Mb.GetItem(&pcn)) + 0x100
+	}
+
+	// return opcodes.OPCODES[opcode](c)
+	return 0
 }
 
 func (c *Cpu) RandomizeRegisters(seed int64) {
@@ -352,33 +388,6 @@ func (c *Cpu) AdcSetFlags8(a uint8, b uint8) uint8 {
 
 	return uint8(r)
 }
-
-// func (c *Cpu) SubSetFlags8(a uint8, b uint8) uint8 {
-// 	// Check for carry using 16bit arithmetic
-// 	al := uint16(a)
-// 	bl := uint16(b)
-
-// 	r := al - bl
-
-// 	c.ResetFlagZ()
-// 	if (r & 0xff) == 0 {
-// 		c.SetFlagZ()
-// 	}
-
-// 	c.SetFlagN()
-
-// 	c.ResetFlagH()
-// 	if (al^bl^r)&0x10 != 0 {
-// 		c.SetFlagH()
-// 	}
-
-// 	c.ResetFlagC()
-// 	if r&0x100 != 0 {
-// 		c.SetFlagC()
-// 	}
-
-// 	return uint8(r)
-// }
 
 func (c *Cpu) Inc(v uint8) uint8 {
 	r := (v + 1) & 0xff
