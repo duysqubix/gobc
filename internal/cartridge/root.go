@@ -208,14 +208,8 @@ type Cartridge struct {
 	cartType CartridgeType
 }
 
-func NewCartridge(filename *pathlib.Path) *Cartridge {
-	rom_data, err := filename.ReadFile()
-	if err != nil {
-		internal.Panicf("Error reading ROM file: %s", err)
-	}
-
+func load_rom_banks(rom_data []byte) [][]uint8 {
 	var rom_banks [][]uint8
-
 	rom_len := len(rom_data)
 	for i := 0; i < rom_len; i += int(MEMORY_BANK_SIZE) {
 		end := i + int(MEMORY_BANK_SIZE)
@@ -227,6 +221,18 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 
 		rom_banks = append(rom_banks, rom_data[i:end])
 	}
+
+	return rom_banks
+}
+
+
+func NewCartridge(filename *pathlib.Path) *Cartridge {
+	rom_data, err := filename.ReadFile()
+	if err != nil {
+		internal.Panicf("Error reading ROM file: %s", err)
+	}
+
+	rom_banks := load_rom_banks(rom_data)
 
 	cart := Cartridge{
 		RomBanks: rom_banks,

@@ -18,6 +18,8 @@ const (
 type Motherboard interface {
 	SetItem(addr *uint16, value *uint16)
 	GetItem(addr *uint16) uint8
+	Cgb() bool
+	Cpu() *Cpu
 }
 
 // Registers is a struct that represents the CPU registers
@@ -99,15 +101,30 @@ func (c *Cpu) Tick() uint8 {
 }
 
 func (c *Cpu) ExecuteInstruction() uint8 {
+	var value uint16
 
-	opcode := uint16(c.Mb.GetItem(&c.Registers.PC))
-	if opcode == 0xCB {
+	opcode := OpCode(c.Mb.GetItem(&c.Registers.PC))
+	if opcode.CBPrefix() {
 		pcn := c.Registers.PC + 1
-		opcode = uint16(c.Mb.GetItem(&pcn)) + 0x100
+		opcode = OpCode(c.Mb.GetItem(&pcn))
+		opcode.Shift()
 	}
+	pc := c.Registers.PC
+	switch OPCODE_LENGTHS[opcode] {
+	case 2:
+		pc += 1
+		value = uint16(c.Mb.GetItem(&pc))
 
-	// return opcodes.OPCODES[opcode](c)
-	return 0
+	case 3:
+		b := uint16(c.Mb.GetItem(&pc))
+		pc += 1
+		a := uint16(c.Mb.GetItem(&pc))
+		value = (a << 8) | b
+
+	default:
+		value = 0
+	}
+	return OPCODES[opcode](c.Mb, value)
 }
 
 func (c *Cpu) RandomizeRegisters(seed int64) {

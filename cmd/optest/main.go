@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/duysqubix/gobc/internal/motherboard"
-	"github.com/duysqubix/gobc/internal/opcodes"
+	"github.com/duysqubix/gobc/internal/motherboard/cpu"
 )
 
 type Register struct {
@@ -54,8 +54,11 @@ type MockMB struct {
 }
 
 func do_opcodes(opCodeNum uint16, value uint16) {
+	params := motherboard.MotherboardParams{
+		Filename: nil,
+	}
 	mb := MockMB{
-		m:      motherboard.NewMotherboard(),
+		m:      motherboard.NewMotherboard(&params),
 		args:   fmt.Sprint(value),
 		cycles: 0,
 	}
@@ -90,7 +93,7 @@ func do_opcodes(opCodeNum uint16, value uint16) {
 		log.Fatal(err)
 	}
 	c.Dump("Initial State")
-	op := opcodes.OPCODES[opcodes.OpCode(opCodeNum)]
+	op := cpu.OPCODES[cpu.OpCode(opCodeNum)]
 	mb.cycles = op(mb.m, value) // INC BC
 
 	// name :=

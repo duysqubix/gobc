@@ -1,21 +1,14 @@
 package tests
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/duysqubix/gobc/internal"
-	"github.com/duysqubix/gobc/internal/cpu"
+	"github.com/duysqubix/gobc/internal/motherboard"
+	"github.com/duysqubix/gobc/internal/motherboard/cpu"
 )
 
-type MockMotherboard struct{}
-
-func (m MockMotherboard) SetItem(addr *uint16, value *uint16) {
-	fmt.Println("Addr: ", addr, "Value: ", value)
-}
-func (m MockMotherboard) GetItem(addr *uint16) uint8 { return 0 }
-
-var m = MockMotherboard{}
+var m = motherboard.NewMotherboard(&motherboard.MotherboardParams{})
 
 func TestNewCpu(t *testing.T) {
 	cpu := cpu.NewCpu(m)
@@ -283,7 +276,7 @@ func TestCheckForInterrupts_InterruptQueued(t *testing.T) {
 		Interrupts: &cpu.Interrupts{
 			Queued: true,
 		},
-		Mb: &m,
+		Mb: m,
 	}
 
 	result := c.CheckForInterrupts()
@@ -295,7 +288,7 @@ func TestCheckForInterrupts_InterruptQueued(t *testing.T) {
 
 func TestCheckForInterrupts_ValidInterrupts(t *testing.T) {
 
-	c := cpu.NewCpu(&m)
+	c := cpu.NewCpu(m)
 	c.Interrupts = &cpu.Interrupts{
 		IE:     0b10101,
 		IF:     0b01101,

@@ -1,21 +1,44 @@
 package motherboard
 
 import (
+	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
-	"github.com/duysqubix/gobc/internal/cpu"
+	"github.com/duysqubix/gobc/internal/cartridge"
+	"github.com/duysqubix/gobc/internal/motherboard/cpu"
 )
 
 type Motherboard struct {
-	cpu *cpu.Cpu
-	//Ram Ram
-	//Cartridge Cartridge
+	cpu       *cpu.Cpu
+	cartridge *cartridge.Cartridge
+	cbg       bool
+	debug     bool
 }
 
-func NewMotherboard() *Motherboard {
-	mb := &Motherboard{}
+type MotherboardParams struct {
+	Filename *pathlib.Path
+}
+
+func NewMotherboard(params *MotherboardParams) *Motherboard {
+
+	var cart *cartridge.Cartridge
+	if params.Filename != nil {
+		cart = cartridge.NewCartridge(params.Filename)
+	} else {
+		cart = &cartridge.Cartridge{}
+	}
+
+	mb := &Motherboard{
+		cbg:       false,
+		cartridge: cart,
+	}
 	mb.cpu = cpu.NewCpu(mb)
 	return mb
 }
+
+func (m *Motherboard) Cpu() *cpu.Cpu              { return m.cpu }
+func (m *Motherboard) Mb() *Motherboard           { return m }
+func (m *Motherboard) Cgb() bool                  { return m.cbg }
+func (m *Motherboard) Cart() *cartridge.Cartridge { return m.cartridge }
 
 func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	// debugging
@@ -114,12 +137,4 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 		internal.Panicf("Memory write error! Can't write `%#x` to `%#x`\n", *value, *addr)
 	}
 
-}
-
-func (m *Motherboard) Cpu() *cpu.Cpu {
-	return m.cpu
-}
-
-func (m *Motherboard) Mb() *Motherboard {
-	return m
 }

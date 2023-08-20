@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/duysqubix/gobc/internal/motherboard"
-	"github.com/duysqubix/gobc/internal/opcodes"
+	"github.com/duysqubix/gobc/internal/motherboard/cpu"
 )
 
 const ITERATIONS = 1_000_000    // 1 million tests
@@ -21,7 +21,7 @@ const DMG_CLOCK_SPEED = 4194304 // 4.194304 MHz or 4,194,304 cycles per second
 const CGB_CLOCK_SPEED = 8388608 // 8.388608 MHz or 8,388,608 cycles per second
 
 type BenchMarkResult struct {
-	OpCode    opcodes.OpCode
+	OpCode    cpu.OpCode
 	Iters     int
 	AvgCycles float64
 	XSpeedDMG float64
@@ -30,7 +30,7 @@ type BenchMarkResult struct {
 	CGBPass   bool
 }
 
-func Benchmark(opcode opcodes.OpCode, f opcodes.OpLogic, mb *motherboard.Motherboard) BenchMarkResult {
+func Benchmark(opcode cpu.OpCode, f cpu.OpLogic, mb *motherboard.Motherboard) BenchMarkResult {
 
 	var avg_ccps float64
 	var dmg_pass bool = false
@@ -85,7 +85,7 @@ func Benchmark(opcode opcodes.OpCode, f opcodes.OpLogic, mb *motherboard.Motherb
 		XSpeedCGB: xSpeedCGB,
 	}
 }
-func isInArray(value opcodes.OpCode, array []opcodes.OpCode) bool {
+func isInArray(value cpu.OpCode, array []cpu.OpCode) bool {
 	for _, v := range array {
 		if v == value {
 			return true
@@ -126,19 +126,19 @@ func printReport(data []BenchMarkResult, filename string) {
 func main() {
 
 	// an array of illegal opcodes for the Gameboy
-
-	mb := motherboard.NewMotherboard()
+	params := &motherboard.MotherboardParams{}
+	mb := motherboard.NewMotherboard(params)
 
 	var benchmarks []BenchMarkResult
 
 	for i := 0; i <= 0x1ff; i++ {
-		i16 := opcodes.OpCode(i)
-		if isInArray(i16, opcodes.IllegalOpCodes) {
+		i16 := cpu.OpCode(i)
+		if isInArray(i16, cpu.IllegalOpCodes) {
 			log.Printf("Skipping illegal opcode: %#x\n", i)
 			continue
 		}
 
-		var opfunc opcodes.OpLogic = opcodes.OPCODES[i16]
+		var opfunc cpu.OpLogic = cpu.OPCODES[i16]
 		benchmark := Benchmark(i16, opfunc, mb)
 		benchmarks = append(benchmarks, benchmark)
 

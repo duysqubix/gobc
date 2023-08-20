@@ -1,22 +1,65 @@
-package opcodes
+package cpu
 
 import (
 	"github.com/duysqubix/gobc/internal"
-	"github.com/duysqubix/gobc/internal/cpu"
 )
-
-type Motherboard interface {
-	SetItem(addr *uint16, value *uint16)
-	GetItem(addr *uint16) uint8
-	Cpu() *cpu.Cpu
-}
 
 type OpCode uint16
 type OpCycles uint8
 type OpLogic func(mb Motherboard, value uint16) uint8
 type OpCodeMap map[OpCode]OpLogic
 
+const (
+	CB_SHIFT OpCode = 0x100
+)
+
+func (o *OpCode) CBPrefix() bool {
+	return *o == 0xcb
+}
+
+func (o *OpCode) Shift() OpCode {
+	return *o + CB_SHIFT
+}
+
 var IllegalOpCodes = []OpCode{0xd3, 0xdb, 0xdd, 0xe3, 0xe4, 0xeb, 0xec, 0xed, 0xf4, 0xfc, 0xfd}
+
+// used to know how many bytes to read after the opcode
+// during instruction decoding from Program Counter
+var OPCODE_LENGTHS = [512]uint8{
+	1, 3, 1, 1, 1, 1, 2, 1, 3, 1, 1, 1, 1, 1, 2, 1,
+	2, 3, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1,
+	2, 3, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1,
+	2, 3, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 3, 3, 3, 1, 2, 1, 1, 1, 3, 1, 3, 3, 2, 1,
+	1, 1, 3, 0, 3, 1, 2, 1, 1, 1, 3, 0, 3, 0, 2, 1,
+	2, 1, 1, 0, 0, 1, 2, 1, 2, 1, 3, 0, 0, 0, 2, 1,
+	2, 1, 1, 1, 0, 1, 2, 1, 2, 1, 3, 1, 0, 0, 2, 1,
+	// CB prefix instructions do not take any arguments
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+}
 
 // OPCODES is a map of opcodes to their logic
 var OPCODES = OpCodeMap{
@@ -34,10 +77,11 @@ var OPCODES = OpCodeMap{
 		c := mb.Cpu()
 
 		// TODO: Implement
-		// if c.mb.cgb == true {
-		// 	var addr uint16 = 0xff04
-		// 	c.mb.SetItem(&addr, 0)
-		// }
+		if mb.Cgb() == true {
+			var addr uint16 = 0xff04
+			var value uint16 = 0x00
+			mb.SetItem(&addr, &value)
+		}
 
 		c.Registers.PC += 2
 		return 4
@@ -1154,11 +1198,11 @@ var OPCODES = OpCodeMap{
 
 		var flag uint8 = 0
 		if (a & 0xff) == 0 {
-			internal.SetBit(&flag, cpu.FLAGZ)
+			internal.SetBit(&flag, FLAGZ)
 		}
 
 		if corr&0x60 != 0 {
-			internal.SetBit(&flag, cpu.FLAGC)
+			internal.SetBit(&flag, FLAGC)
 		}
 
 		c.Registers.F &= 0b01000000
