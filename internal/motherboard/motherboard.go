@@ -13,12 +13,15 @@ type Motherboard struct {
 	Cartridge *cartridge.Cartridge
 	Cbg       bool
 	Randomize bool
+	Decouple  bool // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
 }
 
 type MotherboardParams struct {
-	Filename  *pathlib.Path
-	Randomize bool
-	Cbg       bool
+	Filename    *pathlib.Path
+	Randomize   bool
+	Cbg         bool
+	Breakpoints []uint16
+	Decouple    bool
 }
 
 func NewMotherboard(params *MotherboardParams) *Motherboard {
@@ -34,6 +37,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 		Cbg:       params.Cbg,
 		Cartridge: cart,
 		Randomize: params.Randomize,
+		Decouple:  params.Decouple,
 	}
 	mb.Cpu = NewCpu(mb)
 	return mb
@@ -49,6 +53,11 @@ func (m *Motherboard) Tick() bool {
 
 func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	logger.Debugf("Reading from %#x on Motherboard\n", *addr)
+	if m.Decouple {
+		logger.Warn("Decoupled Motherboard from other components. Memory read is mocked")
+		return 0xDA // mock return value
+	}
+
 	// debugging
 	switch {
 	case 0x0000 <= *addr && *addr < 0x4000: // ROM bank 0
@@ -101,6 +110,11 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	// writing to memory should only be 8 bits
 	if *value >= 0x100 {
 		internal.Logger.Panicf("Memory write error! Can't write %#x to %#x\n", *value, *addr)
+	}
+
+	if m.Decouple {
+		logger.Warn("Decoupled Motherboard from other components. Memory write is mocked")
+		return
 	}
 
 	switch {

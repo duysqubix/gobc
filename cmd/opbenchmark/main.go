@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/duysqubix/gobc/internal"
-	mb "github.com/duysqubix/gobc/internal/motherboard"
+	"github.com/duysqubix/gobc/internal/motherboard"
 )
 
 const ITERATIONS = 1_000_000    // 1 million tests
@@ -20,7 +20,7 @@ const DMG_CLOCK_SPEED = 4194304 // 4.194304 MHz or 4,194,304 cycles per second
 const CGB_CLOCK_SPEED = 8388608 // 8.388608 MHz or 8,388,608 cycles per second
 
 type BenchMarkResult struct {
-	OpCode    mb.OpCode
+	OpCode    motherboard.OpCode
 	Iters     int
 	AvgCycles float64
 	XSpeedDMG float64
@@ -29,7 +29,7 @@ type BenchMarkResult struct {
 	CGBPass   bool
 }
 
-func Benchmark(opcode mb.OpCode, f mb.OpLogic, mb *mb.Motherboard) BenchMarkResult {
+func Benchmark(opcode motherboard.OpCode, f motherboard.OpLogic, mb *motherboard.Motherboard) BenchMarkResult {
 
 	var avg_ccps float64
 	var dmg_pass bool = false
@@ -84,7 +84,7 @@ func Benchmark(opcode mb.OpCode, f mb.OpLogic, mb *mb.Motherboard) BenchMarkResu
 		XSpeedCGB: xSpeedCGB,
 	}
 }
-func isInArray(value mb.OpCode, array []mb.OpCode) bool {
+func isInArray(value motherboard.OpCode, array []motherboard.OpCode) bool {
 	for _, v := range array {
 		if v == value {
 			return true
@@ -125,20 +125,20 @@ func printReport(data []BenchMarkResult, filename string) {
 func main() {
 
 	// an array of illegal opcodes for the Gameboy
-	params := &mb.MotherboardParams{}
-	m := mb.NewMotherboard(params)
+	params := &motherboard.MotherboardParams{Decouple: true}
+	mb := motherboard.NewMotherboard(params)
 
 	var benchmarks []BenchMarkResult
 
 	for i := 0; i <= 0x1ff; i++ {
-		i16 := mb.OpCode(i)
-		if isInArray(i16, mb.ILLEGAL_OPCODES) {
+		i16 := motherboard.OpCode(i)
+		if isInArray(i16, motherboard.ILLEGAL_OPCODES) {
 			internal.Logger.Infof("Skipping illegal opcode: %#x\n", i)
 			continue
 		}
 
-		var opfunc mb.OpLogic = mb.OPCODES[i16]
-		benchmark := Benchmark(i16, opfunc, m)
+		var opfunc motherboard.OpLogic = motherboard.OPCODES[i16]
+		benchmark := Benchmark(i16, opfunc, mb)
 		benchmarks = append(benchmarks, benchmark)
 
 		dmg := benchmark.DMGPass
