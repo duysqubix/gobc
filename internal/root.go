@@ -10,7 +10,7 @@ const CGB_CLOCK_SPEED = 8388608 // 8.388608 MHz or 8,388,608 cycles per second
 var Logger = log.New()
 
 func init() {
-	Logger.SetLevel(log.DebugLevel) // change to be read from OS env
+	Logger.SetLevel(log.ErrorLevel) // change to be read from OS env
 }
 
 func IsBitSet(value uint8, bit uint8) bool {
