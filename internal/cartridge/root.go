@@ -203,9 +203,11 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 }
 
 type Cartridge struct {
-	filename string    // filename of the ROM
-	RomBanks [][]uint8 // slice of ROM banks
-	cartType CartridgeType
+	filename        string    // filename of the ROM
+	RomBanks        [][]uint8 // slice of ROM banks
+	RomBanksCount   uint16    // number of ROM banks
+	cartType        CartridgeType
+	RomBankSelected uint16
 }
 
 func load_rom_banks(rom_data []byte) [][]uint8 {
@@ -225,7 +227,6 @@ func load_rom_banks(rom_data []byte) [][]uint8 {
 	return rom_banks
 }
 
-
 func NewCartridge(filename *pathlib.Path) *Cartridge {
 	rom_data, err := filename.ReadFile()
 	if err != nil {
@@ -235,8 +236,10 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 	rom_banks := load_rom_banks(rom_data)
 
 	cart := Cartridge{
-		RomBanks: rom_banks,
-		filename: filename.Name(),
+		RomBanks:        rom_banks,
+		filename:        filename.Name(),
+		RomBanksCount:   uint16(len(rom_banks)),
+		RomBankSelected: 0,
 	}
 
 	cart_type_addr := rom_banks[0][CARTRIDGE_TYPE_ADDR]

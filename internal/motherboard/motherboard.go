@@ -11,11 +11,13 @@ type Motherboard struct {
 	cpu       *cpu.Cpu
 	cartridge *cartridge.Cartridge
 	cbg       bool
+	randomize bool
 	debug     bool
 }
 
 type MotherboardParams struct {
-	Filename *pathlib.Path
+	Filename  *pathlib.Path
+	randomize bool
 }
 
 func NewMotherboard(params *MotherboardParams) *Motherboard {
@@ -30,6 +32,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	mb := &Motherboard{
 		cbg:       false,
 		cartridge: cart,
+		randomize: params.randomize,
 	}
 	mb.cpu = cpu.NewCpu(mb)
 	return mb
