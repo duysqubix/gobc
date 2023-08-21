@@ -2008,9 +2008,8 @@ var OPCODES = OpCodeMap{
 
 	// PREFIX CB - CB prefix (203) --- isn't callable
 	0xcb: func(mb *Motherboard, value uint16) OpCycles {
-		c := *mb.Cpu
-		c.Registers.PC += 1
-		return 4
+		logger.Fatal("0xcb is not callable, this is just here for documentation")
+		return 101
 	},
 
 	// 0xdb - Illegal instruction

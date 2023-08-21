@@ -112,6 +112,7 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 		pcn := c.Registers.PC + 1
 		opcode = OpCode(c.Mb.GetItem(&pcn))
 		opcode = opcode.Shift()
+
 	}
 	pc := c.Registers.PC
 	opcode_len := OPCODE_LENGTHS[opcode]
@@ -134,7 +135,7 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 		value = 0
 	}
 
-	logger.Debugf("Executing %s [%#x] with value $%X", OPCODE_NAMES[opcode], opcode, value)
+	logger.Debugf("Executing %s [%#x] with value $%X | PC: $%X", OPCODE_NAMES[opcode], opcode, value, c.Registers.PC)
 	return OPCODES[opcode](c.Mb, value)
 }
 

@@ -313,7 +313,6 @@ func TestExecuteInstruction8bitImmediate(t *testing.T) {
 
 	rom_bank := bytes.Repeat([]byte{0xff}, int(cartridge.MEMORY_BANK_SIZE))
 
-	// LD A, 0x12 (Total Cycles: 24)
 	rom_bank[0x150] = 0x00 // NOP  4 cycles
 	rom_bank[0x151] = 0x00 // NOP  4 cycles
 	rom_bank[0x152] = 0x3e // LD A 8 cycles
@@ -404,5 +403,56 @@ func TestExecuteInstruction16bitImmediate(t *testing.T) {
 
 	if c.DE() != 0xbeef {
 		t.Errorf("Expected DE to be 0xbeef, got %#x", c.DE())
+	}
+}
+
+// test that the correct number of cycles are returned
+// and registers are updated correctly
+func TestExecuteInstructionCB(t *testing.T) {
+	// create cpu instructions that perform a CB instruction, like SET 2, B (0xcb 0xc4)
+	// and test that the correct number of cycles are returned
+
+	rom_bank := bytes.Repeat([]byte{0xff}, int(cartridge.MEMORY_BANK_SIZE))
+
+	rom_bank[0x150] = 0x00 // NOP   4 cycles
+	rom_bank[0x151] = 0x00 // NOP   4 cycles
+	rom_bank[0x152] = 0xcb // SET 2, 8 cycles
+	rom_bank[0x153] = 0xd0 //
+	rom_bank[0x154] = 0x76 // halt   4 cycles
+
+	rom_banks := cartridge.LoadRomBanks(rom_bank)
+
+	dummy_cart := &cartridge.Cartridge{RomBanks: rom_banks, RomBanksCount: 1, RomBankSelected: 0}
+	dummy_cart.CartType = cartridge.CARTRIDGE_TABLE[0x00](dummy_cart) // ROM_ONLY
+
+	_m := mb.Motherboard{
+		Cartridge: dummy_cart,
+	}
+	_m.Cpu = mb.NewCpu(&_m)
+
+	c := _m.Cpu
+
+	c.Registers.PC = 0x150
+	c.Registers.B = 0x00
+
+	var expected_cycles mb.OpCycles = 20
+	var cycles mb.OpCycles = 0
+
+	// make sure to only iterate through the number of commands
+	// NOP, NOP, (LD DE, $12), HALT == 4 commands
+	for i := 0; i < 4; i++ {
+		// opcode := _m.GetItem(&c.Registers.PC)
+		// opcode_str := mb.OPCODE_NAMES[opcode]
+		cycles += c.ExecuteInstruction()
+		// logger.Infof("(%d) Executing %s [%#x]...Cycles: %d | PC: $%X", i, opcode_str, opcode, cycles, c.Registers.PC)
+
+	}
+
+	if cycles != expected_cycles {
+		t.Errorf("Expected %d cycles, got %d", expected_cycles, cycles)
+	}
+
+	if !internal.IsBitSet(c.Registers.B, 2) {
+		t.Errorf("Expected bit 2 to be set in B, got %#x", c.Registers.B)
 	}
 }
