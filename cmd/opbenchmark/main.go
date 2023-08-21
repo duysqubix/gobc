@@ -12,8 +12,7 @@ import (
 	"time"
 
 	"github.com/duysqubix/gobc/internal"
-	"github.com/duysqubix/gobc/internal/motherboard"
-	"github.com/duysqubix/gobc/internal/motherboard/cpu"
+	mb "github.com/duysqubix/gobc/internal/motherboard"
 )
 
 const ITERATIONS = 1_000_000    // 1 million tests
@@ -21,7 +20,7 @@ const DMG_CLOCK_SPEED = 4194304 // 4.194304 MHz or 4,194,304 cycles per second
 const CGB_CLOCK_SPEED = 8388608 // 8.388608 MHz or 8,388,608 cycles per second
 
 type BenchMarkResult struct {
-	OpCode    cpu.OpCode
+	OpCode    mb.OpCode
 	Iters     int
 	AvgCycles float64
 	XSpeedDMG float64
@@ -30,7 +29,7 @@ type BenchMarkResult struct {
 	CGBPass   bool
 }
 
-func Benchmark(opcode cpu.OpCode, f cpu.OpLogic, mb *motherboard.Motherboard) BenchMarkResult {
+func Benchmark(opcode mb.OpCode, f mb.OpLogic, mb *mb.Motherboard) BenchMarkResult {
 
 	var avg_ccps float64
 	var dmg_pass bool = false
@@ -85,7 +84,7 @@ func Benchmark(opcode cpu.OpCode, f cpu.OpLogic, mb *motherboard.Motherboard) Be
 		XSpeedCGB: xSpeedCGB,
 	}
 }
-func isInArray(value cpu.OpCode, array []cpu.OpCode) bool {
+func isInArray(value mb.OpCode, array []mb.OpCode) bool {
 	for _, v := range array {
 		if v == value {
 			return true
@@ -126,20 +125,20 @@ func printReport(data []BenchMarkResult, filename string) {
 func main() {
 
 	// an array of illegal opcodes for the Gameboy
-	params := &motherboard.MotherboardParams{}
-	mb := motherboard.NewMotherboard(params)
+	params := &mb.MotherboardParams{}
+	m := mb.NewMotherboard(params)
 
 	var benchmarks []BenchMarkResult
 
 	for i := 0; i <= 0x1ff; i++ {
-		i16 := cpu.OpCode(i)
-		if isInArray(i16, cpu.IllegalOpCodes) {
+		i16 := mb.OpCode(i)
+		if isInArray(i16, mb.ILLEGAL_OPCODES) {
 			internal.Logger.Infof("Skipping illegal opcode: %#x\n", i)
 			continue
 		}
 
-		var opfunc cpu.OpLogic = cpu.OPCODES[i16]
-		benchmark := Benchmark(i16, opfunc, mb)
+		var opfunc mb.OpLogic = mb.OPCODES[i16]
+		benchmark := Benchmark(i16, opfunc, m)
 		benchmarks = append(benchmarks, benchmark)
 
 		dmg := benchmark.DMGPass

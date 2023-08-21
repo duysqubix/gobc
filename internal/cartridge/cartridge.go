@@ -206,11 +206,11 @@ type Cartridge struct {
 	filename        string    // filename of the ROM
 	RomBanks        [][]uint8 // slice of ROM banks
 	RomBanksCount   uint16    // number of ROM banks
-	cartType        CartridgeType
+	CartType        CartridgeType
 	RomBankSelected uint16
 }
 
-func load_rom_banks(rom_data []byte) [][]uint8 {
+func LoadRomBanks(rom_data []byte) [][]uint8 {
 	var rom_banks [][]uint8
 	rom_len := len(rom_data)
 	for i := 0; i < rom_len; i += int(MEMORY_BANK_SIZE) {
@@ -233,7 +233,7 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 		internal.Logger.Panicf("Error reading ROM file: %s", err)
 	}
 
-	rom_banks := load_rom_banks(rom_data)
+	rom_banks := LoadRomBanks(rom_data)
 
 	cart := Cartridge{
 		RomBanks:        rom_banks,
@@ -248,7 +248,7 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 	if cartTypeConstructor == nil {
 		internal.Logger.Panicf("Cartridge type not supported: %02X", cart_type_addr)
 	}
-	cart.cartType = cartTypeConstructor(&cart)
+	cart.CartType = cartTypeConstructor(&cart)
 
 	calc_checksum, valid := cart.ValidateChecksum()
 	if !valid {

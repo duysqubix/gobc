@@ -4,15 +4,15 @@ import (
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/cartridge"
-	"github.com/duysqubix/gobc/internal/motherboard/cpu"
 )
 
+var logger = internal.Logger
+
 type Motherboard struct {
-	cpu       *cpu.Cpu
-	cartridge *cartridge.Cartridge
-	cbg       bool
-	randomize bool
-	debug     bool
+	Cpu       *CPU
+	Cartridge *cartridge.Cartridge
+	Cbg       bool
+	Randomize bool
 }
 
 type MotherboardParams struct {
@@ -30,25 +30,21 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	}
 
 	mb := &Motherboard{
-		cbg:       false,
-		cartridge: cart,
-		randomize: params.randomize,
+		Cbg:       false,
+		Cartridge: cart,
+		Randomize: params.randomize,
 	}
-	mb.cpu = cpu.NewCpu(mb)
+	mb.Cpu = NewCpu(mb)
 	return mb
 }
 
-func (m *Motherboard) Cpu() *cpu.Cpu              { return m.cpu }
-func (m *Motherboard) Mb() *Motherboard           { return m }
-func (m *Motherboard) Cgb() bool                  { return m.cbg }
-func (m *Motherboard) Cart() *cartridge.Cartridge { return m.cartridge }
-
 func (m *Motherboard) GetItem(addr *uint16) uint8 {
+
 	// debugging
 	switch {
 	case 0x0000 <= *addr && *addr < 0x4000: // ROM bank 0
 		// doesn't change the data. This is for MBC commands
-		// fmt.Printf("Reading from %#x from Cartridge ROM bank\n", *addr)
+		return m.Cartridge.CartType.GetItem(*addr)
 
 	case 0x4000 <= *addr && *addr < 0x8000: // Switchable ROM bank
 		// doesn't change the data. This is for MBC commands

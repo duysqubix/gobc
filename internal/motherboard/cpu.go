@@ -1,4 +1,4 @@
-package cpu
+package motherboard
 
 import (
 	"fmt"
@@ -18,15 +18,6 @@ const (
 
 )
 
-type Cycles uint8
-
-type Motherboard interface {
-	SetItem(addr *uint16, value *uint16)
-	GetItem(addr *uint16) uint8
-	Cgb() bool
-	Cpu() *Cpu
-}
-
 // Registers is a struct that represents the CPU registers
 type Registers struct {
 	A  uint8  // Accumulator
@@ -41,17 +32,17 @@ type Registers struct {
 	PC uint16 // Program counter
 }
 
-type Cpu struct {
-	Registers  *Registers  // CPU registers
-	Halted     bool        // CPU halted
-	Interrupts *Interrupts // Interrupts
-	Mb         Motherboard // Motherboard
-	IsStuck    bool        // CPU is stuck
-	Stopped    bool        // CPU is stopped
+type CPU struct {
+	Registers  *Registers   // CPU registers
+	Halted     bool         // CPU halted
+	Interrupts *Interrupts  // Interrupts
+	Mb         *Motherboard // Motherboard
+	IsStuck    bool         // CPU is stuck
+	Stopped    bool         // CPU is stopped
 }
 
-func NewCpu(mb Motherboard) *Cpu {
-	return &Cpu{
+func NewCpu(mb *Motherboard) *CPU {
+	return &CPU{
 		Registers: &Registers{
 			A:  0,
 			B:  0,
@@ -76,7 +67,7 @@ func NewCpu(mb Motherboard) *Cpu {
 
 }
 
-func (c *Cpu) Tick() Cycles {
+func (c *CPU) Tick() OpCycles {
 	if c.CheckForInterrupts() {
 		// TODO: We return with the number of Cycles it took to handle interrupt
 		c.Halted = false
@@ -113,17 +104,18 @@ func (c *Cpu) Tick() Cycles {
 	return cycles
 }
 
-func (c *Cpu) ExecuteInstruction() Cycles {
+func (c *CPU) ExecuteInstruction() OpCycles {
 	var value uint16
 
 	opcode := OpCode(c.Mb.GetItem(&c.Registers.PC))
 	if opcode.CBPrefix() {
 		pcn := c.Registers.PC + 1
 		opcode = OpCode(c.Mb.GetItem(&pcn))
-		opcode.Shift()
+		opcode = opcode.Shift()
 	}
 	pc := c.Registers.PC
-	switch OPCODE_LENGTHS[opcode] {
+	opcode_len := OPCODE_LENGTHS[opcode]
+	switch opcode_len {
 
 	// 8 bit immediate
 	case 2:
@@ -141,10 +133,12 @@ func (c *Cpu) ExecuteInstruction() Cycles {
 	default:
 		value = 0
 	}
+
+	logger.Debugf("Executing %s [%#x] with value $%X", OPCODE_NAMES[opcode], opcode, value)
 	return OPCODES[opcode](c.Mb, value)
 }
 
-func (c *Cpu) RandomizeRegisters(seed int64) {
+func (c *CPU) RandomizeRegisters(seed int64) {
 	r := rand.New(rand.NewSource(seed))
 
 	c.Registers.A = uint8(r.Intn(0xffff))
@@ -160,61 +154,61 @@ func (c *Cpu) RandomizeRegisters(seed int64) {
 
 }
 
-func (c *Cpu) ClearAllFlags() { c.Registers.F = 0 }
+func (c *CPU) ClearAllFlags() { c.Registers.F = 0 }
 
-func (c *Cpu) IsFlagZSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGZ)) }
-func (c *Cpu) IsFlagNSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGN)) }
-func (c *Cpu) IsFlagHSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGH)) }
-func (c *Cpu) IsFlagCSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGC)) }
+func (c *CPU) IsFlagZSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGZ)) }
+func (c *CPU) IsFlagNSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGN)) }
+func (c *CPU) IsFlagHSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGH)) }
+func (c *CPU) IsFlagCSet() bool { return internal.IsBitSet(c.Registers.F, uint8(FLAGC)) }
 
-func (c *Cpu) ToggleFlagC() { internal.ToggleBit(&c.Registers.F, uint8(FLAGC)) }
-func (c *Cpu) ToggleFlagH() { internal.ToggleBit(&c.Registers.F, uint8(FLAGH)) }
-func (c *Cpu) ToggleFlagN() { internal.ToggleBit(&c.Registers.F, uint8(FLAGN)) }
-func (c *Cpu) ToggleFlagZ() { internal.ToggleBit(&c.Registers.F, uint8(FLAGZ)) }
+func (c *CPU) ToggleFlagC() { internal.ToggleBit(&c.Registers.F, uint8(FLAGC)) }
+func (c *CPU) ToggleFlagH() { internal.ToggleBit(&c.Registers.F, uint8(FLAGH)) }
+func (c *CPU) ToggleFlagN() { internal.ToggleBit(&c.Registers.F, uint8(FLAGN)) }
+func (c *CPU) ToggleFlagZ() { internal.ToggleBit(&c.Registers.F, uint8(FLAGZ)) }
 
-func (c *Cpu) SetFlagZ() { internal.SetBit(&c.Registers.F, uint8(FLAGZ)) }
-func (c *Cpu) SetFlagN() { internal.SetBit(&c.Registers.F, uint8(FLAGN)) }
-func (c *Cpu) SetFlagH() { internal.SetBit(&c.Registers.F, uint8(FLAGH)) }
-func (c *Cpu) SetFlagC() { internal.SetBit(&c.Registers.F, uint8(FLAGC)) }
+func (c *CPU) SetFlagZ() { internal.SetBit(&c.Registers.F, uint8(FLAGZ)) }
+func (c *CPU) SetFlagN() { internal.SetBit(&c.Registers.F, uint8(FLAGN)) }
+func (c *CPU) SetFlagH() { internal.SetBit(&c.Registers.F, uint8(FLAGH)) }
+func (c *CPU) SetFlagC() { internal.SetBit(&c.Registers.F, uint8(FLAGC)) }
 
-func (c *Cpu) ResetFlagZ() { internal.ResetBit(&c.Registers.F, uint8(FLAGZ)) }
-func (c *Cpu) ResetFlagN() { internal.ResetBit(&c.Registers.F, uint8(FLAGN)) }
-func (c *Cpu) ResetFlagH() { internal.ResetBit(&c.Registers.F, uint8(FLAGH)) }
-func (c *Cpu) ResetFlagC() { internal.ResetBit(&c.Registers.F, uint8(FLAGC)) }
+func (c *CPU) ResetFlagZ() { internal.ResetBit(&c.Registers.F, uint8(FLAGZ)) }
+func (c *CPU) ResetFlagN() { internal.ResetBit(&c.Registers.F, uint8(FLAGN)) }
+func (c *CPU) ResetFlagH() { internal.ResetBit(&c.Registers.F, uint8(FLAGH)) }
+func (c *CPU) ResetFlagC() { internal.ResetBit(&c.Registers.F, uint8(FLAGC)) }
 
-func (c *Cpu) SetBC(value uint16) {
+func (c *CPU) SetBC(value uint16) {
 	c.Registers.B = uint8(value >> 8)
 	c.Registers.C = uint8(value & 0xFF)
 }
 
-func (c *Cpu) SetDE(value uint16) {
+func (c *CPU) SetDE(value uint16) {
 	c.Registers.D = uint8(value >> 8)
 	c.Registers.E = uint8(value & 0xFF)
 }
 
-func (c *Cpu) SetHL(value uint16) {
+func (c *CPU) SetHL(value uint16) {
 	c.Registers.H = uint8(value >> 8)
 	c.Registers.L = uint8(value & 0xFF)
 }
 
-func (c *Cpu) SetAF(value uint16) {
+func (c *CPU) SetAF(value uint16) {
 	c.Registers.A = uint8(value >> 8)
 	c.Registers.F = uint8(value & 0xFF)
 }
 
-func (c *Cpu) BC() uint16 {
+func (c *CPU) BC() uint16 {
 	return (uint16)(c.Registers.B)<<8 | (uint16)(c.Registers.C)
 }
 
-func (c *Cpu) DE() uint16 {
+func (c *CPU) DE() uint16 {
 	return (uint16)(c.Registers.D)<<8 | (uint16)(c.Registers.E)
 }
 
-func (c *Cpu) HL() uint16 {
+func (c *CPU) HL() uint16 {
 	return (uint16)(c.Registers.H)<<8 | (uint16)(c.Registers.L)
 }
 
-func (cpu *Cpu) Dump(header string) {
+func (cpu *CPU) Dump(header string) {
 	reg := cpu.Registers
 	fmt.Printf("GOBC -- %s\n", header)
 	fmt.Printf("A: %X(%d) F: %X(%d) <%04b|ZNHC>\n", reg.A, reg.A, reg.F, reg.F, (reg.F >> 4))
@@ -224,7 +218,7 @@ func (cpu *Cpu) Dump(header string) {
 	fmt.Println("*=============================================*")
 }
 
-func (cpu *Cpu) DumpState() {
+func (cpu *CPU) DumpState() {
 	pc := cpu.Registers.PC
 	pc2 := pc + 1
 	pc3 := pc + 2
@@ -271,7 +265,7 @@ func (cpu *Cpu) DumpState() {
 	table.Render()
 }
 
-func (c *Cpu) CpSetFlags(a uint8, b uint8) {
+func (c *CPU) CpSetFlags(a uint8, b uint8) {
 
 	// Check for carry using 16bit arithmetic
 	al := uint16(a)
@@ -297,7 +291,7 @@ func (c *Cpu) CpSetFlags(a uint8, b uint8) {
 	}
 }
 
-func (c *Cpu) AndSetFlags(a uint8, b uint8) uint8 {
+func (c *CPU) AndSetFlags(a uint8, b uint8) uint8 {
 	r := a & b
 	c.ResetFlagZ()
 	if r == 0 {
@@ -309,7 +303,7 @@ func (c *Cpu) AndSetFlags(a uint8, b uint8) uint8 {
 	return r
 }
 
-func (c *Cpu) OrSetFlags(a uint8, b uint8) uint8 {
+func (c *CPU) OrSetFlags(a uint8, b uint8) uint8 {
 	r := a | b
 	c.ResetFlagZ()
 	if r == 0 {
@@ -321,7 +315,7 @@ func (c *Cpu) OrSetFlags(a uint8, b uint8) uint8 {
 	return r
 }
 
-func (c *Cpu) XorSetFlags(a uint8, b uint8) uint8 {
+func (c *CPU) XorSetFlags(a uint8, b uint8) uint8 {
 	r := a ^ b
 	c.ResetFlagZ()
 	if r == 0 {
@@ -333,7 +327,7 @@ func (c *Cpu) XorSetFlags(a uint8, b uint8) uint8 {
 	return r
 }
 
-func (c *Cpu) SubSetFlags8(a uint8, b uint8) uint8 {
+func (c *CPU) SubSetFlags8(a uint8, b uint8) uint8 {
 	// Check for carry using 16bit arithmetic
 	al := uint16(a)
 	bl := uint16(b)
@@ -360,7 +354,7 @@ func (c *Cpu) SubSetFlags8(a uint8, b uint8) uint8 {
 	return uint8(r)
 }
 
-func (c *Cpu) SbcSetFlags8(a uint8, b uint8) uint8 {
+func (c *CPU) SbcSetFlags8(a uint8, b uint8) uint8 {
 	// Check for carry using 16bit arithmetic
 	al := uint16(a)
 	bl := uint16(b)
@@ -391,7 +385,7 @@ func (c *Cpu) SbcSetFlags8(a uint8, b uint8) uint8 {
 	return uint8(r)
 }
 
-func (c *Cpu) AddSetFlags16(a uint16, b uint16) uint32 {
+func (c *CPU) AddSetFlags16(a uint16, b uint16) uint32 {
 	// widen to 32 bits to get carry
 	a32 := uint32(a)
 	b32 := uint32(b)
@@ -412,7 +406,7 @@ func (c *Cpu) AddSetFlags16(a uint16, b uint16) uint32 {
 	return r
 }
 
-func (c *Cpu) AddSetFlags8(a uint8, b uint8) uint8 {
+func (c *CPU) AddSetFlags8(a uint8, b uint8) uint8 {
 	// Check for carry using 16bit arithmetic
 	al := uint16(a)
 	bl := uint16(b)
@@ -439,7 +433,7 @@ func (c *Cpu) AddSetFlags8(a uint8, b uint8) uint8 {
 	return uint8(r)
 }
 
-func (c *Cpu) AdcSetFlags8(a uint8, b uint8) uint8 {
+func (c *CPU) AdcSetFlags8(a uint8, b uint8) uint8 {
 	// Check for carry using 16bit arithmetic
 	al := uint16(a)
 	bl := uint16(b)
@@ -470,7 +464,7 @@ func (c *Cpu) AdcSetFlags8(a uint8, b uint8) uint8 {
 	return uint8(r)
 }
 
-func (c *Cpu) Inc(v uint8) uint8 {
+func (c *CPU) Inc(v uint8) uint8 {
 	r := (v + 1) & 0xff
 
 	c.ResetFlagZ()
@@ -488,7 +482,7 @@ func (c *Cpu) Inc(v uint8) uint8 {
 	return r
 }
 
-func (c *Cpu) Dec(v uint8) uint8 {
+func (c *CPU) Dec(v uint8) uint8 {
 	r := (v - 1) & 0xff
 
 	c.ResetFlagZ()

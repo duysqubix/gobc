@@ -1,4 +1,4 @@
-package cpu
+package motherboard
 
 import (
 	"github.com/duysqubix/gobc/internal"
@@ -69,7 +69,7 @@ func (i *Interrupts) ResetTimer()     { internal.ResetBit(&i.IF, INTR_TIMER) }
 func (i *Interrupts) ResetSerial()    { internal.ResetBit(&i.IF, INTR_SERIAL) }
 func (i *Interrupts) ResetHighToLow() { internal.ResetBit(&i.IF, INTR_HIGHTOLOW) }
 
-func (c *Cpu) HandleInterrupt(flag uint8, addr uint16) {
+func (c *CPU) HandleInterrupt(flag uint8, addr uint16) {
 	intr := c.Interrupts
 
 	pch := uint16(c.Registers.PC >> 8)
@@ -94,7 +94,7 @@ func (c *Cpu) HandleInterrupt(flag uint8, addr uint16) {
 	}
 }
 
-func (c *Cpu) CheckForInterrupts() bool {
+func (c *CPU) CheckForInterrupts() bool {
 	intr := c.Interrupts
 
 	if intr.Queued {
