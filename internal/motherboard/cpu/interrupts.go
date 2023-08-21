@@ -1,8 +1,6 @@
 package cpu
 
 import (
-	"log"
-
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -35,7 +33,7 @@ func (i *Interrupts) CheckValidInterrupts() uint8 {
 	disabled_interrupts := i.IF &^ i.IE
 
 	if disabled_interrupts != 0 {
-		log.Printf("Warning: Interrupt flags are set but not enabled. IE: %08b, IF: %08b", i.IE, i.IF)
+		internal.Logger.Warningf("Warning: Interrupt flags are set but not enabled. IE: %08b, IF: %08b", i.IE, i.IF)
 	}
 
 	return valid_interrupts
@@ -72,7 +70,6 @@ func (i *Interrupts) ResetSerial()    { internal.ResetBit(&i.IF, INTR_SERIAL) }
 func (i *Interrupts) ResetHighToLow() { internal.ResetBit(&i.IF, INTR_HIGHTOLOW) }
 
 func (c *Cpu) HandleInterrupt(flag uint8, addr uint16) {
-	log.Printf("Handling interrupt: %d\n", flag)
 	intr := c.Interrupts
 
 	pch := uint16(c.Registers.PC >> 8)
@@ -107,7 +104,7 @@ func (c *Cpu) CheckForInterrupts() bool {
 
 	valid_interrupts := intr.CheckValidInterrupts() // holds the interrupts that are enabled and requested
 	intr.Queued = false
-	log.Printf("Valid Interrupts: %08b\n", valid_interrupts)
+	internal.Logger.Debugf("Valid Interrupts: %08b\n", valid_interrupts)
 
 	// iterate through individual bits of valid_interrupts
 	for i := uint8(0); i < 5; i++ {

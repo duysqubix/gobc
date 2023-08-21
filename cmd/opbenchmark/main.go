@@ -7,11 +7,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 	"time"
 
+	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
 	"github.com/duysqubix/gobc/internal/motherboard/cpu"
 )
@@ -134,7 +134,7 @@ func main() {
 	for i := 0; i <= 0x1ff; i++ {
 		i16 := cpu.OpCode(i)
 		if isInArray(i16, cpu.IllegalOpCodes) {
-			log.Printf("Skipping illegal opcode: %#x\n", i)
+			internal.Logger.Infof("Skipping illegal opcode: %#x\n", i)
 			continue
 		}
 
