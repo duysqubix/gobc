@@ -7,8 +7,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/duysqubix/gobc/internal"
@@ -129,8 +131,22 @@ func main() {
 	mb := motherboard.NewMotherboard(params)
 
 	var benchmarks []BenchMarkResult
+	var start_opcode uint16 = 0x00
+	var end_opcode uint16 = 0xff
 
-	for i := 0; i <= 0x1ff; i++ {
+	if len(os.Args) > 1 {
+		opcode := os.Args[1]
+		opcode_i, err := strconv.ParseUint(opcode, 16, 16)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		start_opcode = uint16(opcode_i)
+		end_opcode = uint16(opcode_i)
+	}
+
+	for i := start_opcode; i <= end_opcode; i++ {
 		i16 := motherboard.OpCode(i)
 		if isInArray(i16, motherboard.ILLEGAL_OPCODES) {
 			internal.Logger.Infof("Skipping illegal opcode: %#x\n", i)
