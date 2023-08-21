@@ -134,7 +134,7 @@ func (c *Cpu) CheckForInterrupts() bool {
 				intr.Queued = true
 
 			default:
-				internal.Panicf("Invalid interrupt: %d", i)
+				internal.Logger.Panicf("Invalid interrupt: %d", i)
 			}
 		}
 	}

@@ -49,7 +49,7 @@ func main() {
 	// check if file is supported
 	ext := filepath.Ext(filename)
 	if !internal.IsInStrArray(ext, SUPPORTED_ROMS) {
-		internal.Panicf("Not a supported ROM: %s", ext)
+		internal.Logger.Panicf("Not a supported ROM: %s", ext)
 	}
 
 	fmt.Println("Reading ROM file: ", filename)

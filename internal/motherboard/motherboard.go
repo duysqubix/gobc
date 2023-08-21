@@ -95,7 +95,7 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	// preventing overflow of 8 bits
 	// writing to memory should only be 8 bits
 	if *value >= 0x100 {
-		internal.Panicf("Memory write error! Can't write %#x to %#x\n", *value, *addr)
+		internal.Logger.Panicf("Memory write error! Can't write %#x to %#x\n", *value, *addr)
 	}
 
 	switch {
@@ -137,7 +137,7 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	case *addr == 0xFFFF: // Interrupt Enable Register
 		// fmt.Printf("Writing %#x to %#x on Interrupt Enable Register\n", *value, *addr)
 	default:
-		internal.Panicf("Memory write error! Can't write `%#x` to `%#x`\n", *value, *addr)
+		internal.Logger.Panicf("Memory write error! Can't write `%#x` to `%#x`\n", *value, *addr)
 	}
 
 }

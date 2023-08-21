@@ -230,7 +230,7 @@ func load_rom_banks(rom_data []byte) [][]uint8 {
 func NewCartridge(filename *pathlib.Path) *Cartridge {
 	rom_data, err := filename.ReadFile()
 	if err != nil {
-		internal.Panicf("Error reading ROM file: %s", err)
+		internal.Logger.Panicf("Error reading ROM file: %s", err)
 	}
 
 	rom_banks := load_rom_banks(rom_data)
@@ -246,13 +246,13 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 	cartTypeConstructor := CARTRIDGE_TABLE[rom_banks[0][CARTRIDGE_TYPE_ADDR]]
 
 	if cartTypeConstructor == nil {
-		internal.Panicf("Cartridge type not supported: %02X", cart_type_addr)
+		internal.Logger.Panicf("Cartridge type not supported: %02X", cart_type_addr)
 	}
 	cart.cartType = cartTypeConstructor(&cart)
 
 	calc_checksum, valid := cart.ValidateChecksum()
 	if !valid {
-		internal.Panicf("Checksum invalid. Expected %02X, got %02X", cart.RomBanks[0][HEADER_CHECKSUM_ADDR], calc_checksum)
+		internal.Logger.Panicf("Checksum invalid. Expected %02X, got %02X", cart.RomBanks[0][HEADER_CHECKSUM_ADDR], calc_checksum)
 	}
 	return &cart
 }

@@ -1,5 +1,9 @@
 package cartridge
 
+import (
+	"github.com/duysqubix/gobc/internal"
+)
+
 type RomOnlyCartridge struct {
 	parent  *Cartridge
 	sram    bool
@@ -22,7 +26,8 @@ func (c *RomOnlyCartridge) GetItem(addr uint16) uint8 {
 		return c.parent.RomBanks[rombank_n][addr]
 
 	case 0xA000 <= addr && addr < 0xC000:
-		if !
+		internal.Logger.Panicf("Reading from SRAM is not implemented yet")
+	default:
 
 	}
 	return 0
