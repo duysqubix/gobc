@@ -4,8 +4,6 @@ import (
 	"github.com/duysqubix/gobc/internal"
 )
 
-var logger = internal.Logger
-
 type RomOnlyCartridge struct {
 	parent  *Cartridge
 	sram    bool
@@ -18,7 +16,7 @@ func (c *RomOnlyCartridge) SetItem(addr uint16, value uint8) {
 }
 
 func (c *RomOnlyCartridge) GetItem(addr uint16) uint8 {
-
+	logger.Debugf("Reading from %#x on ROM Only Cartridge\n", addr)
 	switch {
 	case 0x0000 <= addr && addr < 0x4000:
 		return c.parent.RomBanks[0][addr]

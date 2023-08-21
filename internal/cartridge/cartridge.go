@@ -11,6 +11,8 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+var logger = internal.Logger
+
 const (
 
 	// Header Range
@@ -211,6 +213,7 @@ type Cartridge struct {
 }
 
 func LoadRomBanks(rom_data []byte) [][]uint8 {
+	logger.Infof("Processing ROM file of size %d bytes", len(rom_data))
 	var rom_banks [][]uint8
 	rom_len := len(rom_data)
 	for i := 0; i < rom_len; i += int(MEMORY_BANK_SIZE) {
@@ -254,6 +257,8 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 	if !valid {
 		internal.Logger.Panicf("Checksum invalid. Expected %02X, got %02X", cart.RomBanks[0][HEADER_CHECKSUM_ADDR], calc_checksum)
 	}
+	cart.Dump()
+	logger.Infof("ROM file loaded successfully: %s", filename)
 	return &cart
 }
 

@@ -17,7 +17,8 @@ type Motherboard struct {
 
 type MotherboardParams struct {
 	Filename  *pathlib.Path
-	randomize bool
+	Randomize bool
+	Cbg       bool
 }
 
 func NewMotherboard(params *MotherboardParams) *Motherboard {
@@ -30,16 +31,24 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	}
 
 	mb := &Motherboard{
-		Cbg:       false,
+		Cbg:       params.Cbg,
 		Cartridge: cart,
-		Randomize: params.randomize,
+		Randomize: params.Randomize,
 	}
 	mb.Cpu = NewCpu(mb)
 	return mb
 }
 
-func (m *Motherboard) GetItem(addr *uint16) uint8 {
+func (m *Motherboard) Tick() bool {
+	if m.Cpu.Stopped {
+		return false
+	}
+	m.Cpu.Tick()
+	return true
+}
 
+func (m *Motherboard) GetItem(addr *uint16) uint8 {
+	logger.Debugf("Reading from %#x on Motherboard\n", *addr)
 	// debugging
 	switch {
 	case 0x0000 <= *addr && *addr < 0x4000: // ROM bank 0

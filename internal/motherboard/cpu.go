@@ -2,7 +2,6 @@ package motherboard
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 
@@ -95,7 +94,7 @@ func (c *CPU) Tick() OpCycles {
 	cycles := c.ExecuteInstruction()
 
 	if !c.Halted && (old_pc == c.Registers.PC) && (old_sp == c.Registers.SP) && !c.IsStuck {
-		log.Fatalf("CPU is stuck at PC: %#x SP: %#x", c.Registers.PC, c.Registers.SP)
+		logger.Errorf("CPU is stuck at PC: %#x SP: %#x", c.Registers.PC, c.Registers.SP)
 		c.DumpState()
 		c.IsStuck = true
 	}
@@ -221,8 +220,8 @@ func (cpu *CPU) Dump(header string) {
 
 func (cpu *CPU) DumpState() {
 	pc := cpu.Registers.PC
-	pc2 := pc + 1
-	pc3 := pc + 2
+	pc2 := pc - 1
+	pc3 := pc - 2
 	opdata := []OpCode{
 		OpCode(cpu.Mb.GetItem(&pc)),
 		OpCode(cpu.Mb.GetItem(&pc2)),
