@@ -30,14 +30,15 @@ type Gobc struct {
 	Breakpoints [2]uint16 // holds start and end address of breakpoint
 }
 
-func NewGobc(romfile string) *Gobc {
+func NewGobc(romfile string, breakpoints []uint16) *Gobc {
 	// read cartridge first
 
 	gobc := &Gobc{
 		Mb: motherboard.NewMotherboard(&motherboard.MotherboardParams{
-			Filename:  pathlib.NewPathAfero(romfile, afero.NewOsFs()),
-			Randomize: true,
-			Cbg:       false,
+			Filename:    pathlib.NewPathAfero(romfile, afero.NewOsFs()),
+			Randomize:   true,
+			Cbg:         false,
+			Breakpoints: breakpoints,
 		}),
 		Stopped: false,
 		Paused:  false,
@@ -101,8 +102,6 @@ func parseSingleBreakpoint(breakpoints string) uint16 {
 }
 
 func parseBreakpoints(breakpoints string) []uint16 {
-	logger.SetLevel(log.DebugLevel)
-	logger.Debugf("Debugging enabled")
 	var a []uint16
 
 	split := strings.Split(breakpoints, ",")
@@ -139,7 +138,7 @@ func parseBreakpoints(breakpoints string) []uint16 {
 
 	// now sort and remove duplicates
 	sort.Slice(a, func(i, j int) bool { return a[i] < a[j] })
- 
+
 	// Remove duplicates
 	return removeDuplicates(a)
 
@@ -173,22 +172,23 @@ func MainAction(ctx *cli.Context) error {
 	}
 
 	breakpoints := ctx.String("breakpoints")
+	fmt.Println(breakpoints)
 	if breakpoints != "" {
 		fmt.Println(parseBreakpoints(breakpoints))
 
 	}
-	// romfile := ctx.Args().First()
-	// gobc := NewGobc(romfile)
+	romfile := ctx.Args().First()
+	gobc := NewGobc(romfile)
 
-	// for gobc.Tick() {
-	// 	if !gobc.Paused {
-	// 		if !gobc.Mb.Tick() {
-	// 			gobc.Stopped = true
-	// 		}
-	// 	}
-	// }
+	for gobc.Tick() {
+		if !gobc.Paused {
+			if !gobc.Mb.Tick() {
+				gobc.Stopped = true
+			}
+		}
+	}
 
-	// gobc.Stop()
+	gobc.Stop()
 
 	return cli.Exit("", 0)
 }
@@ -220,8 +220,7 @@ func main() {
 				Name: "verbose",
 			},
 			&cli.StringFlag{
-				Name:  "breakpoints",
-				Value: "0000:FFFF",
+				Name: "breakpoints",
 			},
 		},
 	}

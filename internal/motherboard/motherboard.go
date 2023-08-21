@@ -8,12 +8,18 @@ import (
 
 var logger = internal.Logger
 
+type Breakpoints struct {
+	Enabled bool
+	Addrs   []uint16
+}
+
 type Motherboard struct {
-	Cpu       *CPU
-	Cartridge *cartridge.Cartridge
-	Cbg       bool
-	Randomize bool
-	Decouple  bool // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
+	Cpu         *CPU
+	Cartridge   *cartridge.Cartridge
+	Cbg         bool
+	Randomize   bool
+	Decouple    bool // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
+	Breakpoints *Breakpoints
 }
 
 type MotherboardParams struct {
@@ -33,11 +39,25 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 		cart = &cartridge.Cartridge{}
 	}
 
+	var bp *Breakpoints
+	if len(params.Breakpoints) > 0 {
+		logger.Debug("Breakpoints enabled")
+		bp = &Breakpoints{
+			Enabled: true,
+			Addrs:   params.Breakpoints,
+		}
+	} else {
+		bp = &Breakpoints{
+			Enabled: false,
+		}
+	}
+
 	mb := &Motherboard{
-		Cbg:       params.Cbg,
-		Cartridge: cart,
-		Randomize: params.Randomize,
-		Decouple:  params.Decouple,
+		Cbg:         params.Cbg,
+		Cartridge:   cart,
+		Randomize:   params.Randomize,
+		Decouple:    params.Decouple,
+		Breakpoints: bp,
 	}
 	mb.Cpu = NewCpu(mb)
 	return mb
