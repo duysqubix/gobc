@@ -4,6 +4,7 @@ package cartridge
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/chigopher/pathlib"
@@ -224,6 +225,10 @@ func LoadRomBanks(rom_data []byte) [][]uint8 {
 			end = rom_len
 		}
 
+		bank := make([]uint8, MEMORY_BANK_SIZE)
+		for j := range bank {
+			bank[j] = 0xff
+		}
 		rom_banks = append(rom_banks, rom_data[i:end])
 	}
 
@@ -257,7 +262,7 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 	if !valid {
 		internal.Logger.Panicf("Checksum invalid. Expected %02X, got %02X", cart.RomBanks[0][HEADER_CHECKSUM_ADDR], calc_checksum)
 	}
-	cart.Dump()
+	cart.Dump(os.Stdout)
 	logger.Infof("ROM file loaded successfully: %s", filename)
 	return &cart
 }
@@ -273,7 +278,7 @@ func (c *Cartridge) ValidateChecksum() (uint8, bool) {
 
 }
 
-func (c *Cartridge) Dump() {
+func (c *Cartridge) Dump(writer io.Writer) {
 	title := c.RomBanks[0][TITLE_START_ADDR : TITLE_END_ADDR+1]
 	license1 := NewLicenseeCodeMap[c.RomBanks[0][NEW_LICENSEE_CODE_START_ADDR]]
 	license2 := NewLicenseeCodeMap[c.RomBanks[0][NEW_LICENSEE_CODE_END_ADDR]]
@@ -313,7 +318,7 @@ func (c *Cartridge) Dump() {
 		{"Global Checksum", fmt.Sprintf("$%02X", c.RomBanks[0][GLOBAL_CHECKSUM_START_ADDR])},
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
+	table := tablewriter.NewWriter(writer)
 	table.SetHeader([]string{"Attribute", "Value"})
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 
@@ -321,6 +326,90 @@ func (c *Cartridge) Dump() {
 		table.Append(v)
 	}
 
+	table.Render()
+}
+
+// writes the ROM into a file that is human readle
+// [bank#]/[addr]: [opcode] [value] [description]
+func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
+
+	table := tablewriter.NewWriter(writer)
+	table.SetHeader([]string{"Bank", "Address", "Opcode", "Value", "Description", "Notes"})
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+
+	// var str string
+	var data [][]string
+	var opcode uint16
+	for cntr, bank := range c.RomBanks {
+		addr_start := 0x150
+		if cntr > 0 {
+			addr_start = 0x00
+		}
+		for addr := addr_start; addr < len(bank); addr++ {
+			oplen := internal.OPCODE_LENGTHS[bank[addr]]
+			if bank[addr] == 0x00 && !include_nop {
+				continue
+			}
+
+			opcode = uint16(bank[addr])
+			if opcode == 0xcb {
+				addr++
+				opcode = uint16(bank[addr]) + 0x100
+			}
+
+			// str += fmt.Sprintf("[Bank_%d]/[$%04X]: ", cntr, addr)
+
+			switch oplen {
+			case 2:
+				opcode = uint16(bank[addr])
+				// immediate 8bit
+				addr++
+				value := bank[addr]
+				// str += fmt.Sprintf("$%-4X $%-4X // %s -- 8bit Immediate\n", opcode, value, internal.OPCODE_NAMES[opcode])
+				data = append(data, []string{
+					fmt.Sprintf("Bank_%d", cntr),
+					fmt.Sprintf("$%04X", addr),
+					fmt.Sprintf("$%02X", opcode),
+					fmt.Sprintf("$%02X", value),
+					fmt.Sprintf("%s", internal.OPCODE_NAMES[opcode]),
+					"8bit Immediate",
+				})
+			case 3:
+				// immediate 16bit
+				opcode = uint16(bank[addr])
+				addr++
+				h := bank[addr]
+				addr++
+				l := bank[addr]
+				value := (uint16(h) << 8) | uint16(l)
+				// str += fmt.Sprintf("$%-4X $%-4X // %s -- 16bit Immediate\n", opcode, value, internal.OPCODE_NAMES[opcode])
+				data = append(data, []string{
+					fmt.Sprintf("Bank_%d", cntr),
+					fmt.Sprintf("$%04X", addr),
+					fmt.Sprintf("$%02X", opcode),
+					fmt.Sprintf("$%04X", value),
+					fmt.Sprintf("%s", internal.OPCODE_NAMES[opcode]),
+					"16bit Immediate",
+				})
+			default:
+				// opcode = uint16(bank[addr])
+				// str += fmt.Sprintf("$%-10X // %s\n", opcode, internal.OPCODE_NAMES[opcode])
+				data = append(data, []string{
+					fmt.Sprintf("Bank_%d", cntr),
+					fmt.Sprintf("$%04X", addr),
+					fmt.Sprintf("$%02X", opcode),
+					"",
+					fmt.Sprintf("%s", internal.OPCODE_NAMES[opcode]),
+					"",
+				})
+			}
+		}
+	}
+	// fmt.Println(str)
+
+	for _, row := range data {
+		table.Append(row)
+	}
 	table.Render()
 }
 

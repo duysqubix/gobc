@@ -13,6 +13,18 @@ type RomOnlyCartridge struct {
 
 func (c *RomOnlyCartridge) SetItem(addr uint16, value uint8) {
 	// implement
+	logger.Debugf("Writing %#x to %#x on ROM Only Cartridge\n", value, addr)
+	switch {
+	case 0x0000 <= addr && addr < 0x4000:
+		if value == 0 {
+			value = 1
+		}
+		c.parent.RomBankSelected = uint16(value & 0b1)
+		logger.Warnf("Switching to ROM Bank %d\n", c.parent.RomBankSelected)
+	case 0x4000 <= addr && addr < 0xC000:
+		logger.Warn("Writing to RAM is not implemented yet")
+
+	}
 }
 
 func (c *RomOnlyCartridge) GetItem(addr uint16) uint8 {
