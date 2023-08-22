@@ -9,8 +9,9 @@ import (
 var logger = internal.Logger
 
 type Breakpoints struct {
-	Enabled bool
-	Addrs   []uint16
+	Enabled     bool
+	Addrs       []uint16
+	LastElement uint16
 }
 
 type Motherboard struct {
@@ -42,9 +43,13 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	var bp *Breakpoints
 	if len(params.Breakpoints) > 0 {
 		logger.Debug("Breakpoints enabled")
+
+		last_element := params.Breakpoints[len(params.Breakpoints)-1]
+
 		bp = &Breakpoints{
-			Enabled: true,
-			Addrs:   params.Breakpoints,
+			Enabled:     true,
+			Addrs:       params.Breakpoints,
+			LastElement: last_element,
 		}
 	} else {
 		bp = &Breakpoints{
@@ -125,7 +130,7 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 }
 
 func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
-
+	logger.Debugf("Writing %#x to %#x on Motherboard\n", *value, *addr)
 	// preventing overflow of 8 bits
 	// writing to memory should only be 8 bits
 	if *value >= 0x100 {
@@ -137,10 +142,12 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 		return
 	}
 
+	v := uint8(*value)
 	switch {
 	case 0x0000 <= *addr && *addr < 0x4000: // ROM bank 0
 		// doesn't change the data. This is for MBC commands
 		// fmt.Printf("Writing %#x to %#x to Cartridge ROM bank\n", *value, *addr)
+		m.Cartridge.CartType.SetItem(*addr, v)
 
 	case 0x4000 <= *addr && *addr < 0x8000: // Switchable ROM bank
 		// doesn't change the data. This is for MBC commands
@@ -175,6 +182,7 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 
 	case *addr == 0xFFFF: // Interrupt Enable Register
 		// fmt.Printf("Writing %#x to %#x on Interrupt Enable Register\n", *value, *addr)
+		m.Cpu.Interrupts.IE = v
 	default:
 		internal.Logger.Panicf("Memory write error! Can't write `%#x` to `%#x`\n", *value, *addr)
 	}

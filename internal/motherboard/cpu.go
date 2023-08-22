@@ -1,12 +1,14 @@
 package motherboard
 
 import (
+	"bufio"
 	"fmt"
 	"math/rand"
 	"os"
 
 	"github.com/duysqubix/gobc/internal"
 	"github.com/olekukonko/tablewriter"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -107,6 +109,7 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 	var value uint16
 
 	opcode := OpCode(c.Mb.GetItem(&c.Registers.PC))
+	fmt.Printf("Opcode: %s [%#x] | PC: %#x\n", internal.OPCODE_NAMES[opcode], opcode, c.Registers.PC)
 	if opcode.CBPrefix() {
 		pcn := c.Registers.PC + 1
 		opcode = OpCode(c.Mb.GetItem(&pcn))
@@ -114,7 +117,7 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 
 	}
 	pc := c.Registers.PC
-	opcode_len := OPCODE_LENGTHS[opcode]
+	opcode_len := internal.OPCODE_LENGTHS[opcode]
 	switch opcode_len {
 
 	// 8 bit immediate
@@ -134,7 +137,18 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 		value = 0
 	}
 
-	logger.Debugf("Executing %s [%#x] with value $%X | PC: $%X", OPCODE_NAMES[opcode], opcode, value, c.Registers.PC)
+	if c.Mb.Breakpoints.Enabled {
+		if internal.IsInUint16Array(pc, c.Mb.Breakpoints.Addrs) {
+			reader := bufio.NewReader(os.Stdin)
+
+			old_level := logger.Level
+			logger.SetLevel(log.DebugLevel)
+			c.DumpState()
+			logger.Debugf("Executing %s [%#x] with value $%X | PC: $%X", internal.OPCODE_NAMES[opcode], opcode, value, pc)
+			logger.SetLevel(old_level)
+			reader.ReadString('\n')
+		}
+	}
 	return OPCODES[opcode](c.Mb, value)
 }
 
