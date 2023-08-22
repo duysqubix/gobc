@@ -18,6 +18,7 @@ import (
 )
 
 var SUPPORTED_ROMS = []string{".gbc", ".gb"}
+var logger = internal.Logger
 
 func main() {
 
@@ -60,6 +61,25 @@ func main() {
 	if internal.IsInStrArray("--raw", os.Args) {
 		cart.RawHeaderDump()
 	} else {
-		cart.Dump()
+		file, err := os.Create("cartdump.txt")
+		if err != nil {
+			panic(err)
+		}
+
+		defer file.Close()
+
+		include_nop := false
+
+		if internal.IsInStrArray("--include-nop", os.Args) {
+			include_nop = true
+		}
+		if internal.IsInStrArray("--instruction-set", os.Args) {
+			cart.Dump(file)
+			cart.DumpInstructionSet(file, include_nop)
+		} else {
+			cart.Dump(file)
+		}
+
+		fmt.Println("Dumped cartridge metadata to cartdump.txt")
 	}
 }

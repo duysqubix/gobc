@@ -50,7 +50,7 @@ func (g *Gobc) Tick() bool {
 	if g.Stopped {
 		return false
 	}
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1 * time.Nanosecond)
 	logger.Debug("Tick")
 	return true
 }
@@ -171,14 +171,14 @@ func MainAction(ctx *cli.Context) error {
 		logger.Debugf("Debugging enabled")
 	}
 
-	breakpoints := ctx.String("breakpoints")
-	fmt.Println(breakpoints)
-	if breakpoints != "" {
-		fmt.Println(parseBreakpoints(breakpoints))
+	var breakpoints []uint16
+	if ctx.String("breakpoints") != "" {
+		breakpoints = parseBreakpoints(ctx.String("breakpoints"))
+		logger.Errorf("Breakpoints: %02x", breakpoints)
 
 	}
 	romfile := ctx.Args().First()
-	gobc := NewGobc(romfile)
+	gobc := NewGobc(romfile, breakpoints)
 
 	for gobc.Tick() {
 		if !gobc.Paused {
