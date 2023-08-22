@@ -337,7 +337,7 @@ func TestExecuteInstruction8bitImmediate(t *testing.T) {
 	var cycles mb.OpCycles = 0
 	for i := 0; i < 4; i++ {
 		opcode := _m.GetItem(&c.Registers.PC)
-		opcode_str := mb.OPCODE_NAMES[opcode]
+		opcode_str := internal.OPCODE_NAMES[opcode]
 		cycles += c.ExecuteInstruction()
 		logger.Infof("Executing %s [%#x]...Cycles: %d", opcode_str, opcode, cycles)
 
@@ -391,7 +391,7 @@ func TestExecuteInstruction16bitImmediate(t *testing.T) {
 	// NOP, NOP, (LD DE, $12), HALT == 4 commands
 	for i := 0; i < 4; i++ {
 		opcode := _m.GetItem(&c.Registers.PC)
-		opcode_str := mb.OPCODE_NAMES[opcode]
+		opcode_str := internal.OPCODE_NAMES[opcode]
 		cycles += c.ExecuteInstruction()
 		logger.Infof("(%d) Executing %s [%#x]...Cycles: %d | PC: $%X", i, opcode_str, opcode, cycles, c.Registers.PC)
 
