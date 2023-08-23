@@ -11,14 +11,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	FLAGC uint8 = 0x04 // Math operation raised carry
-	FLAGH uint8 = 0x05 // Math operation raised half carry
-	FLAGN uint8 = 0x06 // Math operation was a subtraction
-	FLAGZ uint8 = 0x07 // Math operation result was zero
-
-)
-
 // Registers is a struct that represents the CPU registers
 type Registers struct {
 	A  uint8  // Accumulator
@@ -69,13 +61,10 @@ func NewCpu(mb *Motherboard) *CPU {
 }
 
 func (c *CPU) Tick() OpCycles {
-	if c.CheckForInterrupts() {
-		// TODO: We return with the number of Cycles it took to handle interrupt
-		c.Halted = false
-		return 0
-	}
+
 	switch {
 	case c.CheckForInterrupts():
+
 		c.Halted = false
 		return 0
 
@@ -268,6 +257,8 @@ func (cpu *CPU) DumpState() {
 		{"Halted", fmt.Sprintf("%t", cpu.Halted)},
 		{"Interrupts Queued", fmt.Sprintf("%t", cpu.Interrupts.Queued)},
 		{"Stopped", fmt.Sprintf("%t", cpu.Stopped)},
+		{"IsStuck", fmt.Sprintf("%t", cpu.IsStuck)},
+		{"Cbg", fmt.Sprintf("%t", cpu.Mb.Cbg)},
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)

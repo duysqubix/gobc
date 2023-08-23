@@ -4,14 +4,6 @@ import (
 	"github.com/duysqubix/gobc/internal"
 )
 
-type OpCode uint16
-type OpCycles uint8
-type OpLogic func(mb *Motherboard, value uint16) OpCycles
-type OpCodeMap map[OpCode]OpLogic
-
-const (
-	CB_SHIFT OpCode = 0x100
-)
 
 func (o *OpCode) CBPrefix() bool {
 	return *o == 0xcb
@@ -22,8 +14,6 @@ func (o *OpCode) Shift() OpCode {
 }
 
 var ILLEGAL_OPCODES = []OpCode{0xd3, 0xdb, 0xdd, 0xe3, 0xe4, 0xeb, 0xec, 0xed, 0xf4, 0xfc, 0xfd}
-
-
 
 // OPCODES is a map of opcodes to their logic
 var OPCODES = OpCodeMap{

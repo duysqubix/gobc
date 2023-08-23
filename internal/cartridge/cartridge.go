@@ -278,6 +278,15 @@ func (c *Cartridge) ValidateChecksum() (uint8, bool) {
 
 }
 
+func (c *Cartridge) CbgModeEnabled() bool {
+	if c.RomBanksCount == 0 {
+		// no ROM banks loaded -- only possible if we're running tests
+		return false
+	}
+
+	return c.RomBanks[0][CBG_FLAG_ADDR] == 0x80 || c.RomBanks[0][CBG_FLAG_ADDR] == 0xC0
+}
+
 func (c *Cartridge) Dump(writer io.Writer) {
 	title := c.RomBanks[0][TITLE_START_ADDR : TITLE_END_ADDR+1]
 	license1 := NewLicenseeCodeMap[c.RomBanks[0][NEW_LICENSEE_CODE_START_ADDR]]
@@ -296,7 +305,7 @@ func (c *Cartridge) Dump(writer io.Writer) {
 
 	cbg_mode := c.RomBanks[0][CBG_FLAG_ADDR]
 	var cgb_mode_desc string
-	if cbg_mode == 0x80 || cbg_mode == 0xC0 {
+	if c.CbgModeEnabled() {
 		cgb_mode_desc = CbgFlagMap[cbg_mode]
 	} else {
 		cgb_mode_desc = "CGB Not Supported"
@@ -340,6 +349,7 @@ func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
 	// var str string
 	var data [][]string
 	var opcode uint16
+	var notes string
 	for cntr, bank := range c.RomBanks {
 		addr_start := 0x150
 		if cntr > 0 {
@@ -355,12 +365,15 @@ func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
 			if opcode == 0xcb {
 				addr++
 				opcode = uint16(bank[addr]) + 0x100
+				notes = "CB Prefix"
 			}
 
 			// str += fmt.Sprintf("[Bank_%d]/[$%04X]: ", cntr, addr)
 
 			switch oplen {
 			case 2:
+				orig_addr := addr
+				notes = "8bit Immediate"
 				opcode = uint16(bank[addr])
 				// immediate 8bit
 				addr++
@@ -368,14 +381,16 @@ func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
 				// str += fmt.Sprintf("$%-4X $%-4X // %s -- 8bit Immediate\n", opcode, value, internal.OPCODE_NAMES[opcode])
 				data = append(data, []string{
 					fmt.Sprintf("Bank_%d", cntr),
-					fmt.Sprintf("$%04X", addr),
+					fmt.Sprintf("$%04X", orig_addr),
 					fmt.Sprintf("$%02X", opcode),
 					fmt.Sprintf("$%02X", value),
 					fmt.Sprintf("%s", internal.OPCODE_NAMES[opcode]),
-					"8bit Immediate",
+					notes,
 				})
 			case 3:
 				// immediate 16bit
+				orig_addr := addr
+				notes = "16bit Immediate"
 				opcode = uint16(bank[addr])
 				addr++
 				h := bank[addr]
@@ -385,11 +400,11 @@ func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
 				// str += fmt.Sprintf("$%-4X $%-4X // %s -- 16bit Immediate\n", opcode, value, internal.OPCODE_NAMES[opcode])
 				data = append(data, []string{
 					fmt.Sprintf("Bank_%d", cntr),
-					fmt.Sprintf("$%04X", addr),
+					fmt.Sprintf("$%04X", orig_addr),
 					fmt.Sprintf("$%02X", opcode),
 					fmt.Sprintf("$%04X", value),
 					fmt.Sprintf("%s", internal.OPCODE_NAMES[opcode]),
-					"16bit Immediate",
+					notes,
 				})
 			default:
 				// opcode = uint16(bank[addr])
@@ -400,7 +415,7 @@ func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
 					fmt.Sprintf("$%02X", opcode),
 					"",
 					fmt.Sprintf("%s", internal.OPCODE_NAMES[opcode]),
-					"",
+					notes,
 				})
 			}
 		}

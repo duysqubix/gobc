@@ -30,15 +30,15 @@ type Gobc struct {
 	Breakpoints [2]uint16 // holds start and end address of breakpoint
 }
 
-func NewGobc(romfile string, breakpoints []uint16) *Gobc {
+func NewGobc(romfile string, breakpoints []uint16, force_cbg bool) *Gobc {
 	// read cartridge first
 
 	gobc := &Gobc{
 		Mb: motherboard.NewMotherboard(&motherboard.MotherboardParams{
 			Filename:    pathlib.NewPathAfero(romfile, afero.NewOsFs()),
 			Randomize:   true,
-			Cbg:         false,
 			Breakpoints: breakpoints,
+			ForceCbg:    force_cbg,
 		}),
 		Stopped: false,
 		Paused:  false,
@@ -51,7 +51,7 @@ func (g *Gobc) Tick() bool {
 		return false
 	}
 	time.Sleep(1 * time.Nanosecond)
-	logger.Debug("Tick")
+	logger.Debug("----------------Tick-----------------")
 	return true
 }
 
@@ -64,7 +64,7 @@ func (g *Gobc) Stop() {
 }
 
 func parseRangeBreakpoints(breakpoints string) []uint16 {
-	logger.Debug(breakpoints)
+	// logger.Debug(breakpoints)
 	var parsed []uint16
 	start, err := strconv.ParseUint(strings.Split(breakpoints, ":")[0], 16, 16)
 	if err != nil {
@@ -85,7 +85,7 @@ func parseRangeBreakpoints(breakpoints string) []uint16 {
 
 func parseSingleBreakpoint(breakpoints string) uint16 {
 
-	logger.Debug(breakpoints)
+	// logger.Debug(breakpoints)
 
 	// single breakpoint
 	addr, err := strconv.ParseUint(breakpoints, 16, 16)
@@ -105,7 +105,7 @@ func parseBreakpoints(breakpoints string) []uint16 {
 	var a []uint16
 
 	split := strings.Split(breakpoints, ",")
-	logger.Debug(split)
+	// logger.Debug(split)
 
 	if len(split) == 1 {
 		if split[0] == "" {
@@ -157,6 +157,12 @@ func removeDuplicates(a []uint16) []uint16 {
 }
 
 func MainAction(ctx *cli.Context) error {
+	var force_cgb bool = false
+
+	if ctx.Bool("force-cgb") {
+		force_cgb = true
+	}
+
 	if !ctx.Args().Present() {
 		cli.ShowAppHelpAndExit(ctx, 1)
 	}
@@ -174,11 +180,12 @@ func MainAction(ctx *cli.Context) error {
 	var breakpoints []uint16
 	if ctx.String("breakpoints") != "" {
 		breakpoints = parseBreakpoints(ctx.String("breakpoints"))
-		logger.Errorf("Breakpoints: %02x", breakpoints)
+		// logger.Errorf("Breakpoints: %02x", breakpoints)
 
 	}
+	fmt.Println(force_cgb)
 	romfile := ctx.Args().First()
-	gobc := NewGobc(romfile, breakpoints)
+	gobc := NewGobc(romfile, breakpoints, force_cgb)
 
 	for gobc.Tick() {
 		if !gobc.Paused {
@@ -194,7 +201,6 @@ func MainAction(ctx *cli.Context) error {
 }
 
 func main() {
-
 	app := &cli.App{
 		Name:      "gobc",
 		Version:   "0.0.1",
@@ -221,6 +227,9 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name: "breakpoints",
+			},
+			&cli.BoolFlag{
+				Name: "force-cgb",
 			},
 		},
 	}

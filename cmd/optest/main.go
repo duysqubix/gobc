@@ -54,7 +54,8 @@ type MockMB struct {
 
 func do_opcodes(opCodeNum uint16, value uint16) {
 	params := motherboard.MotherboardParams{
-		Filename: nil,
+		Filename:  nil,
+		Randomize: true,
 	}
 	mb := MockMB{
 		m:      motherboard.NewMotherboard(&params),
