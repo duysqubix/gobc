@@ -15,9 +15,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 
 	"github.com/duysqubix/gobc/internal"
 )
@@ -27,25 +30,73 @@ const (
 	screenHeight = internal.SCREEN_HEIGHT
 )
 
-type Game struct{}
+var data []uint8
 
-func (g *Game) Update() error {
+func init() {
+	data = make([]uint8, 0xffff)
+
+	for i := 0; i < 0xffff; i++ {
+		data[i] = uint8(rand.Intn(0xff))
+	}
+}
+
+type Gobc struct {
+	memory []uint8
+	y      float64
+}
+
+func (g *Gobc) Update() error {
+	_, dy := ebiten.Wheel()
+	g.y -= dy
+	if g.y < 0 {
+		g.y = 0.0
+	}
 
 	return nil
 }
 
-func (g *Game) Draw(screen *ebiten.Image) {
+func (g *Gobc) Draw(screen *ebiten.Image) {
+	// op := &ebiten.DrawImageOptions{}
+	// op.GeoM.Translate(float64(g.x), float64(g.y))
+	// screen.DrawImage(pointerImage, op)
+
+	// msg := fmt.Sprintf("TPS: %0.2f, x: %d, y: %d", ebiten.ActualTPS(), g.x, g.y)
+	// ebitenutil.DebugPrint(screen, msg)
+	// ebitenutil.Print(screen, msg)
+	// ebitenutil.DebugPrint(screen, fmt.Sprint(g.y))
+
+	ebitenutil.DebugPrintAt(screen, "Addr | Values", 0, 0)
+	ebitenutil.DebugPrintAt(screen, "-----+-------", 0, 16)
+	max_y := screen.Bounds().Max.Y
+	max_x := screen.Bounds().Max.X
+
+	max_rows := max_y / 16
+	max_cols := max_x / 6
+	max_cols += 1
+
+	// print rows from memory
+	for i := 0; i < max_rows; i++ {
+		// print address
+		row_addr_start := i + int(g.y)
+		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%04x", row_addr_start), 0, 29+(i*16))
+
+		for j := 0; j < 4; j++ {
+			ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%02x", g.memory[j+row_addr_start]), 45+(j*16), 29+(i*16))
+		}
+
+	}
+	// ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Max Rows: %d, Max Cols: %d", max_rows, max_cols), 0, 32)
 
 }
 
-func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+func (g *Gobc) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return screenWidth, screenHeight
 }
 
 func main() {
-	g := &Game{}
+	g := &Gobc{memory: data, y: 0}
 
-	ebiten.SetWindowSize(screenWidth, screenHeight)
+	ebiten.SetWindowSize(screenWidth*4, screenHeight*4)
 	ebiten.SetWindowTitle("Gobc")
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
