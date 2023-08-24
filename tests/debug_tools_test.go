@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	example "github.com/duysqubix/gobc/internal/debug_tools"
+	example "github.com/duysqubix/gobc/internal/windows"
 )
 
 func TestConvertUint32ToByteSlice(t *testing.T) {

@@ -64,7 +64,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 		Decouple:    params.Decouple,
 		Breakpoints: bp,
 	}
-	
+
 	mb.Cbg = mb.Cartridge.CbgModeEnabled() || params.ForceCbg
 	mb.Cpu = NewCpu(mb)
 	mb.Ram = NewInternalRAM(mb.Cbg, params.Randomize)
@@ -72,12 +72,12 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	return mb
 }
 
-func (m *Motherboard) Tick() bool {
-	if m.Cpu.Stopped {
-		return false
+func (m *Motherboard) Tick() (bool, OpCycles) {
+	if m.Cpu.Stopped || m.Cpu.Halted || m.Cpu.IsStuck {
+		return false, 0
 	}
-	m.Cpu.Tick()
-	return true
+	cycles := m.Cpu.Tick()
+	return true, cycles
 }
 
 func (m *Motherboard) GetItem(addr *uint16) uint8 {

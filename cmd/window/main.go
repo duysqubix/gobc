@@ -1,104 +1,77 @@
-// Copyright 2017 The Ebiten Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package main
 
 import (
 	"fmt"
-	"log"
-	"math/rand"
 
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-
-	"github.com/duysqubix/gobc/internal"
+	"github.com/faiface/pixel"
+	"github.com/faiface/pixel/pixelgl"
+	"github.com/faiface/pixel/text"
+	"golang.org/x/image/colornames"
+	"golang.org/x/image/font/basicfont"
 )
 
-const (
-	screenWidth  = internal.SCREEN_WIDTH
-	screenHeight = internal.SCREEN_HEIGHT
-)
+func update() {
 
-var data []uint8
+}
 
-func init() {
-	data = make([]uint8, 0xffff)
+func draw() {
 
-	for i := 0; i < 0xffff; i++ {
-		data[i] = uint8(rand.Intn(0xff))
+}
+
+func run() {
+
+	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
+		Title:  "Pixel Rocks!",
+		Bounds: pixel.R(0, 0, 1024, 768),
+		VSync:  true,
+	},
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	basicAtlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
+	basicTxt := text.New(pixel.V(100, 500), basicAtlas)
+
+	for !win.Closed() {
+		win.Clear(colornames.Black)
+		dot := basicTxt.Dot
+		fmt.Fprintln(basicTxt, "Hello, text!")
+		fmt.Fprintln(basicTxt, "I support multiple lines!")
+		fmt.Fprintf(basicTxt, "And I'm an %s, yay!", "io.Writer")
+
+		basicTxt.Draw(win, pixel.IM.Scaled(basicTxt.Orig, 4))
+		basicTxt.Clear()
+		basicTxt.Dot = dot
+		win.Update()
 	}
 }
 
-type Gobc struct {
-	memory []uint8
-	y      float64
-}
+func GameLoop() {
+	// windowHeight := float64(gameHeight * scale)
+	// windowWidth := float64(gameWidth * scale)
+	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
+		Title:  "gobc",
+		Bounds: pixel.R(0, 0, 1024, 768),
+		VSync:  true,
+	})
 
-func (g *Gobc) Update() error {
-	_, dy := ebiten.Wheel()
-	g.y -= dy
-	if g.y < 0 {
-		g.y = 0.0
+	if err != nil {
+		// logger.Panicf("Failed to create window: %s", err)
+		panic(err)
 	}
 
-	return nil
-}
+	for !win.Closed() {
 
-func (g *Gobc) Draw(screen *ebiten.Image) {
-	// op := &ebiten.DrawImageOptions{}
-	// op.GeoM.Translate(float64(g.x), float64(g.y))
-	// screen.DrawImage(pointerImage, op)
+		win.Clear(colornames.White)
 
-	// msg := fmt.Sprintf("TPS: %0.2f, x: %d, y: %d", ebiten.ActualTPS(), g.x, g.y)
-	// ebitenutil.DebugPrint(screen, msg)
-	// ebitenutil.Print(screen, msg)
-	// ebitenutil.DebugPrint(screen, fmt.Sprint(g.y))
-
-	ebitenutil.DebugPrintAt(screen, "Addr | Values", 0, 0)
-	ebitenutil.DebugPrintAt(screen, "-----+-------", 0, 16)
-	max_y := screen.Bounds().Max.Y
-	max_x := screen.Bounds().Max.X
-
-	max_rows := max_y / 16
-	max_cols := max_x / 6
-	max_cols += 1
-
-	// print rows from memory
-	for i := 0; i < max_rows; i++ {
-		// print address
-		row_addr_start := i + int(g.y)
-		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%04x", row_addr_start), 0, 29+(i*16))
-
-		for j := 0; j < 4; j++ {
-			ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%02x", g.memory[j+row_addr_start]), 45+(j*16), 29+(i*16))
-		}
-
+		// Update(gobc)
+		// Draw(gobc)
+		win.Update()
 	}
-	// ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Max Rows: %d, Max Cols: %d", max_rows, max_cols), 0, 32)
-
-}
-
-func (g *Gobc) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return screenWidth, screenHeight
 }
 
 func main() {
-	g := &Gobc{memory: data, y: 0}
-
-	ebiten.SetWindowSize(screenWidth*4, screenHeight*4)
-	ebiten.SetWindowTitle("Gobc")
-	if err := ebiten.RunGame(g); err != nil {
-		log.Fatal(err)
-	}
+	pixelgl.Run(GameLoop)
 }

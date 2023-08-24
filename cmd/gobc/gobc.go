@@ -1,159 +1,69 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"sort"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/chigopher/pathlib"
+	"github.com/faiface/pixel"
+	"github.com/faiface/pixel/pixelgl"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/afero"
+	"github.com/urfave/cli/v2"
+	"golang.org/x/image/colornames"
 
 	"github.com/duysqubix/gobc/internal"
-	"github.com/duysqubix/gobc/internal/motherboard"
-	"github.com/urfave/cli/v2"
+	"github.com/duysqubix/gobc/internal/windows"
+	// "github.com/duysqubix/gobc/internal/windows"
+	// "github.com/urfave/cli/v2"
 )
 
 var logger = internal.Logger
 
-func init() {
-}
+var (
+	gameWidth  = internal.GB_SCREEN_WIDTH
+	gameHeight = internal.GB_SCREEN_HEIGHT
+	scale      = 2
+	frameTick  *time.Ticker
+	g          *windows.GoBoyColor
+)
 
-type Gobc struct {
-	// BootRomFile string // Boot ROM filename
-	Mb          *motherboard.Motherboard
-	Stopped     bool
-	Paused      bool
-	Breakpoints [2]uint16 // holds start and end address of breakpoint
-}
-
-func NewGobc(romfile string, breakpoints []uint16, force_cbg bool) *Gobc {
-	// read cartridge first
-
-	gobc := &Gobc{
-		Mb: motherboard.NewMotherboard(&motherboard.MotherboardParams{
-			Filename:    pathlib.NewPathAfero(romfile, afero.NewOsFs()),
-			Randomize:   true,
-			Breakpoints: breakpoints,
-			ForceCbg:    force_cbg,
-		}),
-		Stopped: false,
-		Paused:  false,
+func setFPS(fps int) {
+	if fps <= 0 {
+		frameTick = nil
+	} else {
+		frameTick = time.NewTicker(time.Second / time.Duration(fps))
 	}
-	return gobc
 }
 
-func (g *Gobc) Tick() bool {
-	if g.Stopped {
-		return false
-	}
-	time.Sleep(1 * time.Nanosecond)
-	logger.Debug("----------------Tick-----------------")
-	return true
+func Update(gobc *windows.GoBoyColor) {
+
 }
 
-func (g *Gobc) Stop() {
-	logger.Info("#########################")
-	logger.Info("# Stopping Emulator.... #")
-	logger.Info("#########################")
-	g.Mb.Cpu.Stopped = true
-	g.Stopped = true
+func Draw(gobc *windows.GoBoyColor) {
+
 }
 
-func parseRangeBreakpoints(breakpoints string) []uint16 {
-	// logger.Debug(breakpoints)
-	var parsed []uint16
-	start, err := strconv.ParseUint(strings.Split(breakpoints, ":")[0], 16, 16)
+func GameLoop() {
+	windowHeight := float64(gameHeight * scale)
+	windowWidth := float64(gameWidth * scale)
+	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
+		Title:  "gobc",
+		Bounds: pixel.R(0, 0, windowWidth, windowHeight),
+		VSync:  true,
+	})
+
 	if err != nil {
-		errmsg := fmt.Sprintf("Invalid breakpoint format: %s", breakpoints)
-		cli.Exit(errmsg, 1)
-	}
-	end, err := strconv.ParseUint(strings.Split(breakpoints, ":")[1], 16, 16)
-	if err != nil {
-		errmsg := fmt.Sprintf("Invalid breakpoint format: %s", breakpoints)
-		cli.Exit(errmsg, 1)
+		// logger.Panicf("Failed to create window: %s", err)
+		panic(err)
 	}
 
-	for i := start; i <= end; i++ {
-		parsed = append(parsed, uint16(i))
+	for !win.Closed() {
+
+		win.Clear(colornames.White)
+
+		Update(g)
+		Draw(g)
+		win.Update()
 	}
-	return parsed
-}
-
-func parseSingleBreakpoint(breakpoints string) uint16 {
-
-	// logger.Debug(breakpoints)
-
-	// single breakpoint
-	addr, err := strconv.ParseUint(breakpoints, 16, 16)
-	if addr > 0xffff {
-		errmsg := fmt.Sprintf("Addr out of range: %s", breakpoints)
-		cli.Exit(errmsg, 1)
-	}
-	if err != nil {
-		errmsg := fmt.Sprintf("Invalid breakpoint format: %s", breakpoints)
-		cli.Exit(errmsg, 1)
-	}
-
-	return uint16(addr)
-}
-
-func parseBreakpoints(breakpoints string) []uint16 {
-	var a []uint16
-
-	split := strings.Split(breakpoints, ",")
-	// logger.Debug(split)
-
-	if len(split) == 1 {
-		if split[0] == "" {
-			return a
-		}
-		// check if single element is a range
-		is_range := strings.Split(split[0], ":")
-		if len(is_range) == 2 {
-			a = append(a, parseRangeBreakpoints(split[0])...)
-		} else {
-			// not a range so parse as single breakpoint
-			a = append(a, parseSingleBreakpoint(split[0]))
-		}
-	}
-	if len(split) > 1 {
-		for _, b := range split {
-			if b == "" {
-				continue
-			}
-			// check if single element is a range
-			is_range := strings.Split(b, ":")
-			if len(is_range) == 2 {
-				a = append(a, parseRangeBreakpoints(b)...)
-			} else {
-				// not a range so parse as single breakpoint
-				a = append(a, parseSingleBreakpoint(b))
-			}
-		}
-	}
-
-	// now sort and remove duplicates
-	sort.Slice(a, func(i, j int) bool { return a[i] < a[j] })
-
-	// Remove duplicates
-	return removeDuplicates(a)
-
-}
-
-func removeDuplicates(a []uint16) []uint16 {
-	j := 0
-	for i := 1; i < len(a); i++ {
-		if a[j] != a[i] {
-			j++
-			a[j] = a[i]
-		}
-	}
-	result := a[:j+1]
-	return result
 }
 
 func MainAction(ctx *cli.Context) error {
@@ -172,32 +82,26 @@ func MainAction(ctx *cli.Context) error {
 		logger.Debugf("Verbose enabled")
 	}
 
-	if ctx.Bool("debug") {
-		logger.SetLevel(log.DebugLevel)
-		logger.Debugf("Debugging enabled")
-	}
-
 	var breakpoints []uint16
 	if ctx.String("breakpoints") != "" {
-		breakpoints = parseBreakpoints(ctx.String("breakpoints"))
+		breakpoints = windows.ParseBreakpoints(ctx.String("breakpoints"))
 		// logger.Errorf("Breakpoints: %02x", breakpoints)
 
 	}
-	fmt.Println(force_cgb)
-	romfile := ctx.Args().First()
-	gobc := NewGobc(romfile, breakpoints, force_cgb)
 
-	for gobc.Tick() {
-		if !gobc.Paused {
-			if !gobc.Mb.Tick() {
-				gobc.Stopped = true
-			}
-		}
+	romfile := ctx.Args().First()
+	g = windows.NewGoBoyColor(romfile, breakpoints, force_cgb)
+
+	if ctx.Bool("debug") {
+		// spin up Memory Window and show ROMs Memory Map
+		// g.Debug_MemoryView = windows.NewMemoryViewWindow(gobc)
+		// gobc.DebugMode = true
 	}
 
-	gobc.Stop()
+	pixelgl.Run(GameLoop)
 
 	return cli.Exit("", 0)
+
 }
 
 func main() {

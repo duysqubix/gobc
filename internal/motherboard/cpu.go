@@ -98,7 +98,7 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 	var value uint16
 
 	opcode := OpCode(c.Mb.GetItem(&c.Registers.PC))
-	fmt.Printf("Opcode: %s [%#x] | PC: %#x\n", internal.OPCODE_NAMES[opcode], opcode, c.Registers.PC)
+	// fmt.Printf("Opcode: %s [%#x] | PC: %#x\n", internal.OPCODE_NAMES[opcode], opcode, c.Registers.PC)
 	if opcode.CBPrefix() {
 		pcn := c.Registers.PC + 1
 		opcode = OpCode(c.Mb.GetItem(&pcn))

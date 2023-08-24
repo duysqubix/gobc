@@ -7,10 +7,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const FRAMES_PER_SECOND = 60
 const DMG_CLOCK_SPEED = 4194304 // 4.194304 MHz or 4,194,304 cycles per second
 const CGB_CLOCK_SPEED = 8388608 // 8.388608 MHz or 8,388,608 cycles per second
-const SCREEN_WIDTH = 160
-const SCREEN_HEIGHT = 144
+const GB_SCREEN_WIDTH = 160
+const GB_SCREEN_HEIGHT = 144
 const DEFAULT_LOG_LEVEL = log.ErrorLevel
 
 var Logger = log.New()
