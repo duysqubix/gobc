@@ -81,6 +81,8 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 }
 
 func (m *Motherboard) GetItem(addr *uint16) uint8 {
+	addr_copy := *addr
+
 	// logger.Debugf("Reading from %#x on Motherboard\n", *addr)
 	if m.Decouple {
 		logger.Warn("Decoupled Motherboard from other components. Memory read is mocked")
@@ -89,7 +91,7 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 
 	// debugging
 	switch {
-	case 0x0000 <= *addr && *addr < 0x4000: // ROM bank 0
+	case *addr < 0x4000: // ROM bank 0
 		return m.Cartridge.CartType.GetItem(*addr)
 
 	case 0x4000 <= *addr && *addr < 0x8000: // Switchable ROM bank
@@ -103,16 +105,16 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 
 	case 0xD000 <= *addr && *addr < 0xE000: // 4K Work RAM bank 1 (or switchable bank 1)
 		logger.Debugf("Reading from %#x on Work RAM", *addr)
-		(*addr) -= 0xD000
+		addr_copy -= 0xD000
 		// check if CGB mode
 		if m.Cbg {
 			// check what bank to read from
 			bank := m.Ram.ActiveWramBank()
 			logger.Debugf("Bank: %d", bank)
-			return m.Ram.GetItemWRAM(bank, *addr)
+			return m.Ram.GetItemWRAM(bank, addr_copy)
 		}
 		logger.Debugf("%d\n", 1)
-		return m.Ram.GetItemWRAM(1, *addr)
+		return m.Ram.GetItemWRAM(1, addr_copy)
 
 	case 0xE000 <= *addr && *addr < 0xFE00: // Echo of 8K Internal RAM
 
@@ -126,6 +128,9 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 		return m.Ram.GetItemIO(*addr)
 
 	case 0xFF80 <= *addr && *addr < 0xFFFF: // High RAM
+		logger.Debugf("Reading from %#x on High RAM", *addr)
+		addr_copy -= 0xFF80
+		return m.Ram.GetItemHRAM(addr_copy)
 
 	case *addr == 0xFFFF: // Interrupt Enable Register
 	default:
@@ -139,6 +144,7 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	// logger.Debugf("Writing %#x to %#x on Motherboard\n", *value, *addr)
 	// preventing overflow of 8 bits
 	// writing to memory should only be 8 bits
+
 	if *value >= 0x100 {
 		internal.Logger.Panicf("Memory write error! Can't write %#x to %#x\n", *value, *addr)
 	}
@@ -147,10 +153,11 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 		logger.Warn("Decoupled Motherboard from other components. Memory write is mocked")
 		return
 	}
-
 	v := uint8(*value)
+	addr_copy := *addr
+
 	switch {
-	case 0x0000 <= *addr && *addr < 0x4000: // ROM bank 0
+	case *addr < 0x4000: // ROM bank 0
 		m.Cartridge.CartType.SetItem(*addr, v)
 
 	case 0x4000 <= *addr && *addr < 0x8000: // Switchable ROM bank
@@ -164,17 +171,17 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 
 	case 0xD000 <= *addr && *addr < 0xE000: // 4K Work RAM bank 1 (or switchable bank 1)
 		logger.Debugf("Writing %#x to %#x on Work RAM", v, *addr)
-		(*addr) -= 0xD000
+		addr_copy -= 0xD000
 		// check if CGB mode
 		if m.Cbg {
 			// check what bank to read from
 			bank := m.Ram.ActiveWramBank()
 			logger.Errorf("Bank: %d", bank)
-			m.Ram.SetItemWRAM(bank, *addr, v)
+			m.Ram.SetItemWRAM(bank, addr_copy, v)
 			break
 		}
 		logger.Debugf("Bank: %d", 1)
-		m.Ram.SetItemWRAM(1, *addr, v)
+		m.Ram.SetItemWRAM(1, addr_copy, v)
 
 	case 0xE000 <= *addr && *addr < 0xFE00: // Echo of 8K Internal RAM
 
@@ -187,7 +194,9 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 		m.Ram.SetItemIO(*addr, v)
 
 	case 0xFF80 <= *addr && *addr < 0xFFFF: // High RAM
-
+		logger.Debugf("Writing %#x to %#x on High RAM", v, addr_copy)
+		addr_copy -= 0xFF80
+		m.Ram.SetItemHRAM(addr_copy, v)
 	case *addr == 0xFFFF: // Interrupt Enable Register
 		// fmt.Printf("Writing %#x to %#x on Interrupt Enable Register\n", *value, *addr)
 		m.Cpu.Interrupts.IE = v

@@ -368,7 +368,6 @@ func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
 				notes = "CB Prefix"
 			}
 
-			// str += fmt.Sprintf("[Bank_%d]/[$%04X]: ", cntr, addr)
 
 			switch oplen {
 			case 2:
@@ -378,13 +377,12 @@ func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
 				// immediate 8bit
 				addr++
 				value := bank[addr]
-				// str += fmt.Sprintf("$%-4X $%-4X // %s -- 8bit Immediate\n", opcode, value, internal.OPCODE_NAMES[opcode])
 				data = append(data, []string{
 					fmt.Sprintf("Bank_%d", cntr),
 					fmt.Sprintf("$%04X", orig_addr),
 					fmt.Sprintf("$%02X", opcode),
 					fmt.Sprintf("$%02X", value),
-					fmt.Sprintf("%s", internal.OPCODE_NAMES[opcode]),
+					internal.OPCODE_NAMES[opcode],
 					notes,
 				})
 			case 3:
@@ -396,25 +394,22 @@ func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
 				h := bank[addr]
 				addr++
 				l := bank[addr]
-				value := (uint16(h) << 8) | uint16(l)
-				// str += fmt.Sprintf("$%-4X $%-4X // %s -- 16bit Immediate\n", opcode, value, internal.OPCODE_NAMES[opcode])
+				value := (uint16(l) << 8) | uint16(h) // swapped to show correct value
 				data = append(data, []string{
 					fmt.Sprintf("Bank_%d", cntr),
 					fmt.Sprintf("$%04X", orig_addr),
 					fmt.Sprintf("$%02X", opcode),
 					fmt.Sprintf("$%04X", value),
-					fmt.Sprintf("%s", internal.OPCODE_NAMES[opcode]),
+					internal.OPCODE_NAMES[opcode],
 					notes,
 				})
 			default:
-				// opcode = uint16(bank[addr])
-				// str += fmt.Sprintf("$%-10X // %s\n", opcode, internal.OPCODE_NAMES[opcode])
 				data = append(data, []string{
 					fmt.Sprintf("Bank_%d", cntr),
 					fmt.Sprintf("$%04X", addr),
 					fmt.Sprintf("$%02X", opcode),
 					"",
-					fmt.Sprintf("%s", internal.OPCODE_NAMES[opcode]),
+					internal.OPCODE_NAMES[opcode],
 					notes,
 				})
 			}

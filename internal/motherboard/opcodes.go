@@ -1,9 +1,10 @@
 package motherboard
 
 import (
+	"fmt"
+
 	"github.com/duysqubix/gobc/internal"
 )
-
 
 func (o *OpCode) CBPrefix() bool {
 	return *o == 0xcb
@@ -1637,11 +1638,14 @@ var OPCODES = OpCodeMap{
 	// RET - Pop two bytes from stack & jump to that address (201)
 	0xc9: func(mb *Motherboard, value uint16) OpCycles {
 		c := *mb.Cpu
+		fmt.Printf("RET: %#x, SP: %#x\n", c.Registers.PC, c.Registers.SP)
+
 		sp2 := c.Registers.SP + 1
 		pcl := mb.GetItem(&c.Registers.SP)
 		pch := mb.GetItem(&sp2)
 		c.Registers.SP += 2
 		c.Registers.PC = uint16(pch)<<8 | uint16(pcl)
+		fmt.Printf("RET: %#x, SP: %#x\n", c.Registers.PC, c.Registers.SP)
 		return 16
 	},
 

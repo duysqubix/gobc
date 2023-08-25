@@ -9,6 +9,11 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+type Window interface {
+	Draw()
+	Update() error
+}
+
 func parseRangeBreakpoints(breakpoints string) []uint16 {
 	// logger.Debug(breakpoints)
 	var parsed []uint16

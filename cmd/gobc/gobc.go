@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -34,19 +35,23 @@ func setFPS(fps int) {
 	}
 }
 
-func Update(gobc *windows.GoBoyColor) {
-
+func Update(g windows.Window) {
+	// update gameboy state
+	g.Update()
 }
 
-func Draw(gobc *windows.GoBoyColor) {
-
+func Draw(g windows.Window) {
+	// draw gameboy state
+	g.Draw()
 }
 
 func GameLoop() {
+	setFPS(internal.FRAMES_PER_SECOND)
+
 	windowHeight := float64(gameHeight * scale)
 	windowWidth := float64(gameWidth * scale)
 	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
-		Title:  "gobc",
+		Title:  "gobc v0.1",
 		Bounds: pixel.R(0, 0, windowWidth, windowHeight),
 		VSync:  true,
 	})
@@ -56,13 +61,24 @@ func GameLoop() {
 		panic(err)
 	}
 
+	var fps float64
+	var elasped int64 = 0
 	for !win.Closed() {
-
+		win.SetTitle("gobc v0.1 | FPS: " + fmt.Sprintf("%.2f", fps))
+		start := time.Now()
 		win.Clear(colornames.White)
 
 		Update(g)
 		Draw(g)
 		win.Update()
+
+		if frameTick != nil {
+			<-frameTick.C
+		}
+		elasped += time.Since(start).Milliseconds()
+		fps = 1000 / float64(elasped)
+
+		// fmt.Println(elasped)
 	}
 }
 
@@ -96,6 +112,7 @@ func MainAction(ctx *cli.Context) error {
 		// spin up Memory Window and show ROMs Memory Map
 		// g.Debug_MemoryView = windows.NewMemoryViewWindow(gobc)
 		// gobc.DebugMode = true
+		logger.SetLevel(log.DebugLevel)
 	}
 
 	pixelgl.Run(GameLoop)

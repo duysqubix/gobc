@@ -73,6 +73,7 @@ func (g *GoBoyColor) updateInternalGameState() bool {
 		}
 	}
 	totalProcessedCycles += int64(internalCycleCounter)
+	// fmt.Println("Total Cycles Processed: ", totalProcessedCycles)
 	if !still_good {
 		g.Stop()
 	}
@@ -89,9 +90,9 @@ func (g *GoBoyColor) Update() error {
 	return nil
 }
 
-// func (g *Gobc) Draw(screen *ebiten.Image) {
+func (g *GoBoyColor) Draw() {
 
-// }
+}
 
 func (g *GoBoyColor) Tick() bool {
 	if g.Stopped {

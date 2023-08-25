@@ -37,15 +37,15 @@ type CPU struct {
 func NewCpu(mb *Motherboard) *CPU {
 	return &CPU{
 		Registers: &Registers{
-			A:  0,
+			A:  0x1,
 			B:  0,
 			C:  0,
 			D:  0,
-			E:  0,
-			F:  0,
+			E:  0x8F,
+			F:  0xD0,
 			H:  0,
-			L:  0,
-			SP: 0,
+			L:  0x87,
+			SP: 0xFFFE,
 			PC: 0,
 		},
 		Halted: false,
@@ -98,7 +98,7 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 	var value uint16
 
 	opcode := OpCode(c.Mb.GetItem(&c.Registers.PC))
-	// fmt.Printf("Opcode: %s [%#x] | PC: %#x\n", internal.OPCODE_NAMES[opcode], opcode, c.Registers.PC)
+	// fmt.Printf("Pre-Execution :Opcode: %s [%#x] | PC: %#x | SP: %#x\n", internal.OPCODE_NAMES[opcode], opcode, c.Registers.PC, c.Registers.SP)
 	if opcode.CBPrefix() {
 		pcn := c.Registers.PC + 1
 		opcode = OpCode(c.Mb.GetItem(&pcn))
@@ -125,6 +125,7 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 	default:
 		value = 0
 	}
+	// fmt.Printf("Post-Execution :Opcode: %s [%#x] | PC: %#x | SP: %#x | Value: %#x\n", internal.OPCODE_NAMES[opcode], opcode, c.Registers.PC, c.Registers.SP, value)
 
 	if c.Mb.Breakpoints.Enabled {
 		if internal.IsInUint16Array(pc, c.Mb.Breakpoints.Addrs) {
