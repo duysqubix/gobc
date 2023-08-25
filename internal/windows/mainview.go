@@ -4,10 +4,10 @@ import (
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
+	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
-
-	// "github.com/hajimehoshi/ebiten/v2"
 	"github.com/spf13/afero"
+	"golang.org/x/image/colornames"
 )
 
 const (
@@ -16,6 +16,13 @@ const (
 )
 
 var (
+	gameScale        = 1
+	gameScreenWidth  = internal.GB_SCREEN_WIDTH
+	gameScreenHeight = internal.GB_SCREEN_HEIGHT
+
+	gameTrueWidth  = float64(gameScreenWidth * gameScale)
+	gameTrueHeight = float64(gameScreenHeight * gameScale)
+
 	internalCycleCounter int
 	internalCycleReturn  motherboard.OpCycles
 	internalStatus       bool
@@ -24,17 +31,45 @@ var (
 	totalProcessedCycles int64
 )
 
-type GoBoyColor struct {
-	// BootRomFile string // Boot ROM filename
-	Mb           *motherboard.Motherboard
-	Stopped      bool
-	Paused       bool
-	DebugMode    bool
-	Breakpoints  [2]uint16 // holds start and end address of breakpoint
-	DebugWindows map[string]*pixelgl.Window
+type MainGameWindow struct {
+	hw     *GoBoyColor
+	Window *pixelgl.Window
 }
 
-func NewGoBoyColor(romfile string, breakpoints []uint16, force_cbg bool) *GoBoyColor {
+// this will get called every frame
+// every frame must be called 1 / GB_CLOCK_HZ times in order to run the emulator at the correct speed
+func (mw *MainGameWindow) Update() error {
+
+	if !mw.hw.updateInternalGameState() {
+		return nil
+	}
+	return nil
+}
+
+func (mw *MainGameWindow) Draw() {
+	mw.Window.Clear(colornames.White)
+	mw.Window.Update()
+}
+
+func (mw *MainGameWindow) Win() *pixelgl.Window {
+	return mw.Window
+}
+
+func (mw *MainGameWindow) SetUp() {
+	mw.Window.SetBounds(pixel.R(0, 0, gameTrueWidth, gameTrueHeight))
+}
+
+type GoBoyColor struct {
+	// BootRomFile string // Boot ROM filename
+	Mb          *motherboard.Motherboard
+	Stopped     bool
+	Paused      bool
+	DebugMode   bool
+	Breakpoints [2]uint16 // holds start and end address of breakpoint
+	ForceCgb    bool
+}
+
+func NewGoBoyColor(romfile string, breakpoints []uint16, force_cgb bool) *GoBoyColor {
 	// read cartridge first
 
 	gobc := &GoBoyColor{
@@ -42,13 +77,31 @@ func NewGoBoyColor(romfile string, breakpoints []uint16, force_cbg bool) *GoBoyC
 			Filename:    pathlib.NewPathAfero(romfile, afero.NewOsFs()),
 			Randomize:   true,
 			Breakpoints: breakpoints,
-			ForceCbg:    force_cbg,
+			ForceCgb:    force_cgb,
 		}),
-		Stopped:      false,
-		Paused:       false,
-		DebugWindows: make(map[string]*pixelgl.Window),
+		Stopped: false,
+		Paused:  false,
 	}
 	return gobc
+}
+
+func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
+
+	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
+		Title:  "gobc v0.1 | Main Game Window",
+		Bounds: pixel.R(0, 0, gameTrueWidth, gameTrueHeight),
+		VSync:  true,
+	})
+
+	if err != nil {
+		// logger.Panicf("Failed to create window: %s", err)
+		panic(err)
+	}
+
+	return &MainGameWindow{
+		Window: win,
+		hw:     gobc,
+	}
 }
 
 // will want to block on this for CYCLES/60 cycles to process before rendering graphics
@@ -78,20 +131,6 @@ func (g *GoBoyColor) updateInternalGameState() bool {
 		g.Stop()
 	}
 	return still_good
-}
-
-// this will get called every frame
-// every frame must be called 1 / GB_CLOCK_HZ times in order to run the emulator at the correct speed
-func (g *GoBoyColor) Update() error {
-
-	if !g.updateInternalGameState() {
-		return nil
-	}
-	return nil
-}
-
-func (g *GoBoyColor) Draw() {
-
 }
 
 func (g *GoBoyColor) Tick() bool {

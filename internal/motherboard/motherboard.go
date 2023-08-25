@@ -1,6 +1,8 @@
 package motherboard
 
 import (
+	"fmt"
+
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/cartridge"
@@ -18,7 +20,7 @@ type Motherboard struct {
 	Cpu         *CPU                 // CPU
 	Cartridge   *cartridge.Cartridge // Cartridge
 	Ram         *InternalRAM         // Internal RAM
-	Cbg         bool                 // Color Gameboy
+	Cgb         bool                 // Color Gameboy
 	Randomize   bool                 // Randomize RAM on startup
 	Decouple    bool                 // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
 	Breakpoints *Breakpoints         // Breakpoints
@@ -27,7 +29,7 @@ type Motherboard struct {
 type MotherboardParams struct {
 	Filename    *pathlib.Path
 	Randomize   bool
-	ForceCbg    bool
+	ForceCgb    bool
 	Breakpoints []uint16
 	Decouple    bool
 }
@@ -65,9 +67,9 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 		Breakpoints: bp,
 	}
 
-	mb.Cbg = mb.Cartridge.CbgModeEnabled() || params.ForceCbg
+	mb.Cgb = mb.Cartridge.CbgModeEnabled() || params.ForceCgb
 	mb.Cpu = NewCpu(mb)
-	mb.Ram = NewInternalRAM(mb.Cbg, params.Randomize)
+	mb.Ram = NewInternalRAM(mb.Cgb, params.Randomize)
 
 	return mb
 }
@@ -76,7 +78,24 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 	if m.Cpu.Stopped || m.Cpu.Halted || m.Cpu.IsStuck {
 		return false, 0
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			df := internal.StateDumpFile()
+			logger.SetOutput(df)
+			// dump CPU State
+			fmt.Fprintln(df, "-----CRASH DETECTED-----")
+			fmt.Fprintln(df, "----- CPU STATE -----")
+			m.Cpu.DumpState(df)
+			fmt.Fprintln(df, "----- MEMORY STATE -----")
+			m.Ram.DumpState(df)
+			fmt.Fprintln(df, "-----END CRASH-----")
+			fmt.Println("Crash detected.. check log file for more details")
+			logger.Panic()
+		}
+	}()
 	cycles := m.Cpu.Tick()
+
 	return true, cycles
 }
 
@@ -91,48 +110,124 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 
 	// debugging
 	switch {
+	/*
+	*
+	* READ: ROM BANK 0
+	*
+	 */
 	case *addr < 0x4000: // ROM bank 0
+		logger.Debugf("Reading from %#x on ROM bank 0", *addr)
 		return m.Cartridge.CartType.GetItem(*addr)
 
+	/*
+	*
+	* READ: SWITCHABLE ROM BANK
+	*
+	 */
 	case 0x4000 <= *addr && *addr < 0x8000: // Switchable ROM bank
+		logger.Debugf("Reading from %#x on Switchable ROM bank", *addr)
+		return m.Cartridge.CartType.GetItem(*addr)
 
+	/*
+	*
+	* READ: VIDEO RAM
+	*
+	 */
 	case 0x8000 <= *addr && *addr < 0xA000: // 8K Video RAM
+		logger.Debugf("Reading from %#x on Video RAM", *addr)
 
+		if m.Cgb {
+			return m.Ram.GetItemVRAM(m.Ram.ActiveVramBank(), *addr)
+		}
+
+		return m.Ram.GetItemVRAM(0, *addr)
+
+	/*
+	*
+	* READ: EXTERNAL RAM
+	*
+	 */
 	case 0xA000 <= *addr && *addr < 0xC000: // 8K External RAM (Cartridge)
+		logger.Debugf("Reading from %#x on External RAM", *addr)
+		return m.Cartridge.CartType.GetItem(*addr)
 
+	/*
+	*
+	* READ: WORK RAM BANK 0
+	*
+	 */
 	case 0xC000 <= *addr && *addr < 0xD000: // 4K Work RAM bank 0
+		logger.Debugf("Reading from %#x on Work RAM Bank 0", *addr)
 		return m.Ram.GetItemWRAM(0, *addr)
 
-	case 0xD000 <= *addr && *addr < 0xE000: // 4K Work RAM bank 1 (or switchable bank 1)
-		logger.Debugf("Reading from %#x on Work RAM", *addr)
+	/*
+	*
+	* READ: WORK 4K RAM BANK 1 (or switchable bank 1)
+	*
+	 */
+	case 0xD000 <= *addr && *addr < 0xE000:
 		addr_copy -= 0xD000
+		logger.Debugf("Reading from %#x on Work RAM Bank=[%d]", *addr, m.Ram.ActiveWramBank())
 		// check if CGB mode
-		if m.Cbg {
+		if m.Cgb {
 			// check what bank to read from
 			bank := m.Ram.ActiveWramBank()
-			logger.Debugf("Bank: %d", bank)
 			return m.Ram.GetItemWRAM(bank, addr_copy)
 		}
 		logger.Debugf("%d\n", 1)
 		return m.Ram.GetItemWRAM(1, addr_copy)
 
-	case 0xE000 <= *addr && *addr < 0xFE00: // Echo of 8K Internal RAM
+	/*
+	*
+	* READ: ECHO OF 8K INTERNAL RAM
+	*
+	 */
+	case 0xE000 <= *addr && *addr < 0xFE00:
+		logger.Debugf("Reading from %#x on Echo of 8K Internal RAM", *addr)
+		return m.Ram.GetItemWRAM(0, addr_copy-0x2000)
 
-	case 0xFE00 <= *addr && *addr < 0xFEA0: // Sprite Attribute Table (OAM)
+	/*
+	*
+	* READ: SPRITE ATTRIBUTE TABLE (OAM)
+	*
+	 */
+	case 0xFE00 <= *addr && *addr < 0xFEA0:
+		logger.Debugf("Reading from %#x on Sprite Attribute Table (OAM)", *addr)
+	/*
+	*
+	* READ: NOT USABLE
+	*
+	 */
+	case 0xFEA0 <= *addr && *addr < 0xFF00:
+		logger.Warningf("Reading from %#x on Not Usable", *addr)
 
-	case 0xFEA0 <= *addr && *addr < 0xFF00: // Not Usable
-
-	case 0xFF00 <= *addr && *addr < 0xFF80: // I/O Registers
+	/*
+	*
+	* READ: I/O REGISTERS
+	*
+	 */
+	case 0xFF00 <= *addr && *addr < 0xFF80:
 		logger.Debugf("Reading from %#x on IO", *addr)
-
 		return m.Ram.GetItemIO(*addr)
 
-	case 0xFF80 <= *addr && *addr < 0xFFFF: // High RAM
+	/*
+	*
+	* READ: HIGH RAM
+	*
+	 */
+	case 0xFF80 <= *addr && *addr < 0xFFFF:
 		logger.Debugf("Reading from %#x on High RAM", *addr)
 		addr_copy -= 0xFF80
 		return m.Ram.GetItemHRAM(addr_copy)
 
-	case *addr == 0xFFFF: // Interrupt Enable Register
+	/*
+	*
+	* READ: INTERRUPT ENABLE REGISTER
+	*
+	 */
+	case *addr == 0xFFFF:
+		logger.Debugf("Reading from %#x on Interrupt Enable Register\n", *addr)
+
 	default:
 		logger.Panicf("Memory read error! Can't read from %#x\n", *addr)
 	}
@@ -141,10 +236,6 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 }
 
 func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
-	// logger.Debugf("Writing %#x to %#x on Motherboard\n", *value, *addr)
-	// preventing overflow of 8 bits
-	// writing to memory should only be 8 bits
-
 	if *value >= 0x100 {
 		internal.Logger.Panicf("Memory write error! Can't write %#x to %#x\n", *value, *addr)
 	}
@@ -157,48 +248,126 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	addr_copy := *addr
 
 	switch {
-	case *addr < 0x4000: // ROM bank 0
+	/*
+	*
+	* WRITE: ROM BANK 0
+	*
+	 */
+	case *addr < 0x4000:
+		logger.Debugf("Writing %#x to %#x on ROM bank 0", v, *addr)
 		m.Cartridge.CartType.SetItem(*addr, v)
 
-	case 0x4000 <= *addr && *addr < 0x8000: // Switchable ROM bank
+	/*
+	*
+	* WRITE: SWITCHABLE ROM BANK
+	*
+	 */
+	case 0x4000 <= *addr && *addr < 0x8000:
+		logger.Debugf("Writing %#x to %#x on Switchable ROM bank", v, *addr)
+		m.Cartridge.CartType.SetItem(*addr, v)
 
-	case 0x8000 <= *addr && *addr < 0xA000: // 8K Video RAM
+	/*
+	*
+	* WRITE: VIDEO RAM
+	*
+	 */
+	case 0x8000 <= *addr && *addr < 0xA000:
+		// add checks here for CBG, for the switchable bank option
+		logger.Debugf("Writing %#x to %#x on Video RAM", v, *addr)
+		if m.Cgb {
+			m.Ram.SetItemVRAM(m.Ram.ActiveVramBank(), *addr, v)
+		}
+		m.Ram.SetItemVRAM(0, *addr, v)
 
-	case 0xA000 <= *addr && *addr < 0xC000: // 8K External RAM (Cartridge)
+	/*
+	*
+	* WRITE: EXTERNAL RAM
+	*
+	 */
+	case 0xA000 <= *addr && *addr < 0xC000:
+		logger.Debugf("Writing %#x to %#x on External RAM", v, *addr)
+		m.Cartridge.CartType.SetItem(*addr, v)
 
-	case 0xC000 <= *addr && *addr < 0xD000: // 4K Work RAM bank 0
-		m.Ram.SetItemWRAM(0, *addr, v)
+	/*
+	*
+	* WRITE: WORK RAM BANK 0
+	*
+	 */
+	case 0xC000 <= *addr && *addr < 0xD000:
+		addr_copy -= 0xC000
+		logger.Debugf("Writing %#x to %#x on Work RAM BANK 0", v, addr_copy)
 
-	case 0xD000 <= *addr && *addr < 0xE000: // 4K Work RAM bank 1 (or switchable bank 1)
-		logger.Debugf("Writing %#x to %#x on Work RAM", v, *addr)
+		m.Ram.SetItemWRAM(0, addr_copy, v)
+
+	/*
+	*
+	* WRITE: WORK 4K RAM BANK 1 (or switchable bank 1)
+	*
+	 */
+	case 0xD000 <= *addr && *addr < 0xE000:
 		addr_copy -= 0xD000
+		logger.Debugf("Writing %#x to %#x on Work RAM Bank=[%d]", *addr, v, m.Ram.ActiveWramBank())
+
 		// check if CGB mode
-		if m.Cbg {
+		if m.Cgb {
 			// check what bank to read from
 			bank := m.Ram.ActiveWramBank()
-			logger.Errorf("Bank: %d", bank)
 			m.Ram.SetItemWRAM(bank, addr_copy, v)
 			break
 		}
-		logger.Debugf("Bank: %d", 1)
 		m.Ram.SetItemWRAM(1, addr_copy, v)
 
-	case 0xE000 <= *addr && *addr < 0xFE00: // Echo of 8K Internal RAM
+	/*
+	*
+	* WRITE: ECHO OF 8K INTERNAL RAM
+	*
+	 */
+	case 0xE000 <= *addr && *addr < 0xFE00:
+		logger.Debugf("Writing %#x to %#x on Echo of 8K Internal RAM", v, *addr)
+		m.Ram.SetItemWRAM(0, addr_copy-0x2000, v)
 
-	case 0xFE00 <= *addr && *addr < 0xFEA0: // Sprite Attribute Table (OAM)
+	/*
+	*
+	* WRITE: SPRITE ATTRIBUTE TABLE (OAM)
+	*
+	 */
+	case 0xFE00 <= *addr && *addr < 0xFEA0:
+		logger.Debugf("Writing %#x to %#x on Sprite Attribute Table (OAM)", v, *addr)
 
-	case 0xFEA0 <= *addr && *addr < 0xFF00: // Not Usable
+	/*
+	*
+	* WRITE: NOT USABLE
+	*
+	 */
+	case 0xFEA0 <= *addr && *addr < 0xFF00:
+		logger.Warningf("Writing %#x to %#x on Not Usable", v, *addr)
 
-	case 0xFF00 <= *addr && *addr < 0xFF80: // I/O Registers
+	/*
+	*
+	* WRITE: I/O REGISTERS
+	*
+	 */
+	case 0xFF00 <= *addr && *addr < 0xFF80:
 		logger.Debugf("Writing %#x to %#x on IO", v, *addr)
 		m.Ram.SetItemIO(*addr, v)
 
-	case 0xFF80 <= *addr && *addr < 0xFFFF: // High RAM
+	/*
+	*
+	* WRITE: HIGH RAM
+	*
+	 */
+	case 0xFF80 <= *addr && *addr < 0xFFFF:
 		logger.Debugf("Writing %#x to %#x on High RAM", v, addr_copy)
 		addr_copy -= 0xFF80
 		m.Ram.SetItemHRAM(addr_copy, v)
-	case *addr == 0xFFFF: // Interrupt Enable Register
-		// fmt.Printf("Writing %#x to %#x on Interrupt Enable Register\n", *value, *addr)
+
+	/*
+	*
+	* WRITE: INTERRUPT ENABLE REGISTER
+	*
+	 */
+	case *addr == 0xFFFF:
+		logger.Debugf("Writing %#x to %#x on Interrupt Enable Register\n", *value, *addr)
 		m.Cpu.Interrupts.IE = v
 	default:
 		internal.Logger.Panicf("Memory write error! Can't write `%#x` to `%#x`\n", *value, *addr)

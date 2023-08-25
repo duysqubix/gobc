@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -18,14 +17,8 @@ import (
 )
 
 var logger = internal.Logger
-
-var (
-	gameWidth  = internal.GB_SCREEN_WIDTH
-	gameHeight = internal.GB_SCREEN_HEIGHT
-	scale      = 2
-	frameTick  *time.Ticker
-	g          *windows.GoBoyColor
-)
+var frameTick *time.Ticker
+var g *windows.GoBoyColor
 
 func setFPS(fps int) {
 	if fps <= 0 {
@@ -35,54 +28,65 @@ func setFPS(fps int) {
 	}
 }
 
-func Update(g windows.Window) {
+func Update(wins []windows.Window) {
 	// update gameboy state
-	g.Update()
+	for _, w := range wins {
+		w.Update()
+	}
 }
 
-func Draw(g windows.Window) {
-	// draw gameboy state
-	g.Draw()
+func Draw(wins []windows.Window) {
+	for _, w := range wins {
+		w.Draw()
+	}
 }
 
 func GameLoop() {
 	setFPS(internal.FRAMES_PER_SECOND)
 
-	windowHeight := float64(gameHeight * scale)
-	windowWidth := float64(gameWidth * scale)
-	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
-		Title:  "gobc v0.1",
-		Bounds: pixel.R(0, 0, windowWidth, windowHeight),
-		VSync:  true,
-	})
-
-	if err != nil {
-		// logger.Panicf("Failed to create window: %s", err)
-		panic(err)
+	if g == nil {
+		logger.Fatal("GoBoyColor core is not initialized")
 	}
 
 	var fps float64
-	var elasped int64 = 0
-	for !win.Closed() {
-		win.SetTitle("gobc v0.1 | FPS: " + fmt.Sprintf("%.2f", fps))
-		start := time.Now()
-		win.Clear(colornames.White)
+	var elasped float64 = 0
+	var frame_cntr int64 = 0
+	var windows []windows.Window = []windows.Window{
+		windows.NewMainGameWindow(g),
+		windows.NewMemoryViewWindow(g),
+	}
 
-		Update(g)
-		Draw(g)
-		win.Update()
+	mainWin := windows[0].Win()
+
+	// run layout once
+	for _, w := range windows {
+		w.SetUp()
+	}
+
+	for !mainWin.Closed() {
+		mainWin.SetTitle("gobc v0.1 | FPS: " + fmt.Sprintf("%.2f", fps))
+		start := time.Now()
+		mainWin.Clear(colornames.White)
+
+		Update(windows)
+		Draw(windows)
 
 		if frameTick != nil {
 			<-frameTick.C
 		}
-		elasped += time.Since(start).Milliseconds()
-		fps = 1000 / float64(elasped)
 
-		// fmt.Println(elasped)
+		elasped += float64(time.Since(start).Milliseconds())
+		frame_cntr++
+
+		if frame_cntr == 50 {
+			fps = 1000.0 / (elasped / 50.0)
+			frame_cntr = 0
+			elasped = 0
+		}
 	}
 }
 
-func MainAction(ctx *cli.Context) error {
+func mainAction(ctx *cli.Context) error {
 	var force_cgb bool = false
 
 	if ctx.Bool("force-cgb") {
@@ -135,7 +139,7 @@ func main() {
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
-			return MainAction(cCtx)
+			return mainAction(cCtx)
 		},
 
 		Flags: []cli.Flag{
@@ -154,7 +158,9 @@ func main() {
 			},
 		},
 	}
+
 	if err := app.Run(os.Args); err != nil {
+
 		log.Fatal(err)
 	}
 }

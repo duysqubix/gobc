@@ -3,6 +3,7 @@ package motherboard
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 
@@ -86,7 +87,7 @@ func (c *CPU) Tick() OpCycles {
 
 	if !c.Halted && (old_pc == c.Registers.PC) && (old_sp == c.Registers.SP) && !c.IsStuck {
 		logger.Errorf("CPU is stuck at PC: %#x SP: %#x", c.Registers.PC, c.Registers.SP)
-		c.DumpState()
+		c.DumpState(os.Stdout)
 		c.IsStuck = true
 	}
 
@@ -133,7 +134,7 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 
 			old_level := logger.Level
 			logger.SetLevel(log.DebugLevel)
-			c.DumpState()
+			c.DumpState(os.Stdout)
 			logger.Debugf("Executing %s [%#x] with value $%X | PC: $%X", internal.OPCODE_NAMES[opcode], opcode, value, pc)
 			logger.SetLevel(old_level)
 			reader.ReadString('\n')
@@ -222,7 +223,7 @@ func (cpu *CPU) Dump(header string) {
 	fmt.Println("*=============================================*")
 }
 
-func (cpu *CPU) DumpState() {
+func (cpu *CPU) DumpState(writer io.Writer) {
 	pc := cpu.Registers.PC
 	pc2 := pc - 1
 	pc3 := pc - 2
@@ -259,10 +260,10 @@ func (cpu *CPU) DumpState() {
 		{"Interrupts Queued", fmt.Sprintf("%t", cpu.Interrupts.Queued)},
 		{"Stopped", fmt.Sprintf("%t", cpu.Stopped)},
 		{"IsStuck", fmt.Sprintf("%t", cpu.IsStuck)},
-		{"Cbg", fmt.Sprintf("%t", cpu.Mb.Cbg)},
+		{"Cbg", fmt.Sprintf("%t", cpu.Mb.Cgb)},
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
+	table := tablewriter.NewWriter(writer)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	for _, v := range report {
 		table.Append(v)

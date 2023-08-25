@@ -1,6 +1,9 @@
 package motherboard
 
-import "math/rand"
+import (
+	"io"
+	"math/rand"
+)
 
 func initWram(ram *[8][4096]uint8, random bool) {
 	var fixed uint8 = 0xFF
@@ -86,12 +89,7 @@ func NewInternalRAM(cbg bool, randomize bool) *InternalRAM {
 
 func (r *InternalRAM) ActiveWramBank() uint8 {
 	logger.Debug("Checking Active WRAM bank...")
-	bank := r.GetItemIO(IO_SVBK)
-
-	if bank > 7 {
-		logger.Errorf("Randomization detected... WRAM bank is %d, defaulting to 1", bank)
-		return 1
-	}
+	bank := r.GetItemIO(IO_SVBK) & 0x7 // force to 3 bits
 
 	if bank == 0 || bank == 1 {
 		return 1
@@ -99,12 +97,16 @@ func (r *InternalRAM) ActiveWramBank() uint8 {
 	return bank
 }
 
+func (r *InternalRAM) ActiveVramBank() uint8 {
+	logger.Debug("Checking Active VRAM bank...")
+	return r.GetItemIO(IO_VBK) & 0x1
+}
+
 func (r *InternalRAM) GetItemWRAM(bank uint8, addr uint16) uint8 {
 	return r.Wram[bank][addr]
 }
 
 func (r *InternalRAM) GetItemIO(addr uint16) uint8 {
-	addr -= IO_START_ADDR
 	return r.IO[addr]
 }
 
@@ -117,6 +119,7 @@ func (r *InternalRAM) GetItemVRAM(bank uint8, addr uint16) uint8 {
 }
 
 func (r *InternalRAM) GetItemOAM(addr uint16) uint8 {
+
 	return r.Oam[addr]
 }
 
@@ -139,4 +142,13 @@ func (r *InternalRAM) SetItemVRAM(bank uint8, addr uint16, value uint8) {
 
 func (r *InternalRAM) SetItemOAM(addr uint16, value uint8) {
 	r.Oam[addr] = value
+}
+
+func (r *InternalRAM) DumpState(writer io.Writer) {
+	// table := tablewriter.NewWriter(writer)
+	// table.SetHeader([]string{"Memory Space", "Values"})
+	// var report [][]string
+
+	// // WRAM
+
 }

@@ -6,12 +6,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/faiface/pixel/pixelgl"
 	"github.com/urfave/cli/v2"
 )
 
 type Window interface {
-	Draw()
-	Update() error
+	Draw()                // draw the window
+	Update() error        // returns error if window should be closed
+	SetUp()               // Setup the window
+	Win() *pixelgl.Window // returns the pixelgl window
 }
 
 func parseRangeBreakpoints(breakpoints string) []uint16 {

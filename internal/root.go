@@ -16,6 +16,15 @@ const DEFAULT_LOG_LEVEL = log.ErrorLevel
 
 var Logger = log.New()
 
+
+func StateDumpFile() *os.File {
+	logfile, err := os.OpenFile("dump.log", os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		Logger.Fatal("Failed to open log file")
+	}
+	return logfile
+}
+
 func init() {
 	// check os.env for LOG_LEVEL
 	log_env_set := os.Getenv("LOG_LEVEL")

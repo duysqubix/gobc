@@ -1,8 +1,6 @@
 package motherboard
 
 import (
-	"fmt"
-
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -31,7 +29,7 @@ var OPCODES = OpCodeMap{
 		c := *mb.Cpu
 
 		// TODO: Implement
-		if mb.Cbg == true {
+		if mb.Cgb == true {
 			var addr uint16 = 0xff04
 			var value uint16 = 0x00
 			mb.SetItem(&addr, &value)
@@ -1638,14 +1636,11 @@ var OPCODES = OpCodeMap{
 	// RET - Pop two bytes from stack & jump to that address (201)
 	0xc9: func(mb *Motherboard, value uint16) OpCycles {
 		c := *mb.Cpu
-		fmt.Printf("RET: %#x, SP: %#x\n", c.Registers.PC, c.Registers.SP)
-
 		sp2 := c.Registers.SP + 1
 		pcl := mb.GetItem(&c.Registers.SP)
 		pch := mb.GetItem(&sp2)
 		c.Registers.SP += 2
 		c.Registers.PC = uint16(pch)<<8 | uint16(pcl)
-		fmt.Printf("RET: %#x, SP: %#x\n", c.Registers.PC, c.Registers.SP)
 		return 16
 	},
 
