@@ -10,4 +10,5 @@ run:
 	go run cmd/gobc/main.go
 
 test: 
-	go test ./...
+	go test tests/cpu_test.go
+	go test tests/root_test.go

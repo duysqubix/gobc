@@ -96,6 +96,28 @@ func (c *CPU) Tick() OpCycles {
 }
 
 func (c *CPU) ExecuteInstruction() OpCycles {
+
+	_pc := c.Registers.PC
+	pc0 := c.Mb.GetItem(&_pc)
+	_pc++
+	pc1 := c.Mb.GetItem(&_pc)
+	_pc++
+	pc2 := c.Mb.GetItem(&_pc)
+	_pc++
+	pc3 := c.Mb.GetItem(&_pc)
+	_pc++
+
+	var sc_set bool = false
+	sc := uint16(0xff02)
+	if c.Mb.GetItem(&sc) == 0x81 {
+		sc_set = true
+	}
+	row := fmt.Sprintf("A: %02X B: %02X C: %02X D: %02X E: %02X F: %02X H: %02X L: %02X SP: %04X PC: %04X (%02X, %02X, %02X, %02X) SCSet: %t\n",
+		c.Registers.A, c.Registers.B, c.Registers.C, c.Registers.D, c.Registers.E, c.Registers.F, c.Registers.H, c.Registers.L, c.Registers.SP, c.Registers.PC,
+		pc0, pc1, pc2, pc3, sc_set,
+	)
+	internal.AppendToLogFile(row)
+
 	var value uint16
 
 	opcode := OpCode(c.Mb.GetItem(&c.Registers.PC))
@@ -140,6 +162,7 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 			reader.ReadString('\n')
 		}
 	}
+
 	return OPCODES[opcode](c.Mb, value)
 }
 

@@ -218,10 +218,22 @@ type Cartridge struct {
 	RomBankSelected uint16
 }
 
-func LoadRomBanks(rom_data []byte) [][]uint8 {
+func LoadRomBanks(rom_data []byte, dummy_data bool) [][]uint8 {
 	logger.Infof("Processing ROM file of size %d bytes", len(rom_data))
 	var rom_banks [][]uint8
+
+	if dummy_data {
+		bank := make([]byte, MEMORY_BANK_SIZE)
+		for j := range bank {
+			bank[j] = 0xff // fill with 0xff
+		}
+		bank[CARTRIDGE_TYPE_ADDR] = 0x0
+		rom_banks = append(rom_banks, bank)
+		return rom_banks
+	}
+
 	rom_len := len(rom_data)
+
 	for i := 0; i < rom_len; i += int(MEMORY_BANK_SIZE) {
 		end := i + int(MEMORY_BANK_SIZE)
 
@@ -241,16 +253,28 @@ func LoadRomBanks(rom_data []byte) [][]uint8 {
 }
 
 func NewCartridge(filename *pathlib.Path) *Cartridge {
-	rom_data, err := filename.ReadFile()
-	if err != nil {
-		internal.Logger.Panicf("Error reading ROM file: %s", err)
-	}
+	var rom_data []byte
+	var err error
+	var rom_banks [][]uint8
+	var fname string
 
-	rom_banks := LoadRomBanks(rom_data)
+	if filename != nil {
+		rom_data, err = filename.ReadFile()
+		fname = filename.Name()
+		if err != nil {
+			internal.Logger.Panicf("Error reading ROM file: %s", err)
+		}
+		rom_banks = LoadRomBanks(rom_data, false)
+
+	} else {
+		logger.Warn("No ROM file specified, running tests")
+		rom_banks = LoadRomBanks(nil, true)
+		fname = ""
+	}
 
 	cart := Cartridge{
 		RomBanks:        rom_banks,
-		filename:        filename.Name(),
+		filename:        fname,
 		RomBanksCount:   uint16(len(rom_banks)),
 		RomBankSelected: 0,
 	}

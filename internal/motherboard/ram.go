@@ -5,7 +5,7 @@ import (
 	"math/rand"
 )
 
-func initWram(ram *[8][4096]uint8, random bool) {
+func initWram(ram *WRAM, random bool) {
 	var fixed uint8 = 0xFF
 	for i := 0; i < 8; i++ {
 		for j := 0; j < 4096; j++ {
@@ -18,7 +18,7 @@ func initWram(ram *[8][4096]uint8, random bool) {
 	}
 }
 
-func initHram(ram *[127]uint8, random bool) {
+func initHram(ram *HRAM, random bool) {
 	var fixed uint8 = 0xFF
 	for i := 0; i < 127; i++ {
 		if random {
@@ -29,7 +29,7 @@ func initHram(ram *[127]uint8, random bool) {
 	}
 }
 
-func initIo(ram *[128]uint8, random bool) {
+func initIo(ram *IO, random bool) {
 	var fixed uint8 = 0xFF
 	for i := 0; i < 128; i++ {
 		if random {
@@ -38,6 +38,9 @@ func initIo(ram *[128]uint8, random bool) {
 			ram[i] = fixed
 		}
 	}
+
+	// delete once LCD is implemented
+	ram[IO_LY] = 0x90
 }
 
 func initVram(ram *VRAM, random bool) {
@@ -53,7 +56,7 @@ func initVram(ram *VRAM, random bool) {
 	}
 }
 
-func initOam(ram *[160]uint8, random bool) {
+func initOam(ram *OAM, random bool) {
 	var fixed uint8 = 0xFF
 
 	for i := 0; i < 160; i++ {
@@ -66,15 +69,18 @@ func initOam(ram *[160]uint8, random bool) {
 }
 
 type InternalRAM struct {
-	Wram      [8][4096]uint8 // 8 banks of 4KB each -- [0,1] are always available, [2,3,4,5,6,7] are switchable in CGB Mode
-	IO        [128]uint8     // 128 bytes of IO
-	Hram      [127]uint8     // 127 bytes of High RAM
-	Vram      VRAM           // 2 banks of 8KB each -- [0] is always available, [1] is switchable in CGB Mode
-	Oam       [160]uint8     // 160 bytes of OAM
-	Randomize bool           // Randomize RAM on startup
+	Wram      WRAM // 8 banks of 4KB each -- [0,1] are always available, [2,3,4,5,6,7] are switchable in CGB Mode
+	IO        IO   // 128 bytes of IO
+	Hram      HRAM // 127 bytes of High RAM
+	Vram      VRAM // 2 banks of 8KB each -- [0] is always available, [1] is switchable in CGB Mode
+	Oam       OAM  // 160 bytes of OAM
+	Randomize bool // Randomize RAM on startup
 }
 
-type VRAM [2][8192]uint8
+type IO [128]uint8
+type HRAM [127]uint8
+type WRAM [8][4096]uint8
+type OAM [160]uint8
 
 func NewInternalRAM(cgb bool, randomize bool) *InternalRAM {
 	ram := &InternalRAM{
@@ -103,6 +109,10 @@ func (r *InternalRAM) GetIO_LCDC(bit uint8) bool {
 }
 
 // //////// VRAM //////////
+
+type VRAM [2][8192]uint8
+type Tile [16]uint8
+
 func (r *InternalRAM) ActiveVramBank() uint8 {
 	logger.Debug("Checking Active VRAM bank...")
 	return r.GetItemIO(IO_VBK) & 0x1

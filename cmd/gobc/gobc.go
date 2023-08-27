@@ -53,7 +53,7 @@ func GameLoop() {
 	var frame_cntr int64 = 0
 	var windows []windows.Window = []windows.Window{
 		windows.NewMainGameWindow(g),
-		windows.NewMemoryViewWindow(g),
+		// windows.NewMemoryViewWindow(g),
 	}
 
 	mainWin := windows[0].Win()

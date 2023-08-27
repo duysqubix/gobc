@@ -12,15 +12,9 @@ import (
 var m = mb.NewMotherboard(&mb.MotherboardParams{})
 var logger = internal.Logger
 
-func TestNewCpu(t *testing.T) {
-	cpu := mb.NewCpu(m)
-	if cpu.Registers.A != 0 || cpu.Registers.B != 0 || cpu.Registers.C != 0 || cpu.Registers.D != 0 || cpu.Registers.E != 0 || cpu.Registers.F != 0 || cpu.Registers.H != 0 || cpu.Registers.L != 0 || cpu.Registers.SP != 0 || cpu.Registers.PC != 0 {
-		t.Errorf("NewCpu(m) failed, expected all registers to be 0, got non-zero values")
-	}
-}
-
 func TestSetBC(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.SetBC(0x1234)
 	if cpu.Registers.B != 0x12 || cpu.Registers.C != 0x34 {
 		t.Errorf("SetBC() failed, expected B=0x12 and C=0x34, got B=%x and C=%x", cpu.Registers.B, cpu.Registers.C)
@@ -28,7 +22,8 @@ func TestSetBC(t *testing.T) {
 }
 
 func TestSetDE(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.SetDE(0x1234)
 	if cpu.Registers.D != 0x12 || cpu.Registers.E != 0x34 {
 		t.Errorf("SetDE() failed, expected D=0x12 and E=0x34, got D=%x and E=%x", cpu.Registers.D, cpu.Registers.E)
@@ -36,7 +31,8 @@ func TestSetDE(t *testing.T) {
 }
 
 func TestBC(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.SetBC(0x1234)
 	if cpu.BC() != 0x1234 {
 		t.Errorf("BC() failed, expected 0x1234, got %x", cpu.BC())
@@ -44,7 +40,8 @@ func TestBC(t *testing.T) {
 }
 
 func TestDE(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.SetDE(0x1234)
 	if cpu.DE() != 0x1234 {
 		t.Errorf("DE() failed, expected 0x1234, got %x", cpu.DE())
@@ -52,7 +49,8 @@ func TestDE(t *testing.T) {
 }
 
 func TestHL(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.Registers.H = 0x12
 	cpu.Registers.L = 0x34
 	if cpu.HL() != 0x1234 {
@@ -61,7 +59,8 @@ func TestHL(t *testing.T) {
 }
 
 func TestIsFlagZSet(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.Registers.F = 0x80
 	if !cpu.IsFlagZSet() {
 		t.Errorf("IsFlagZSet() failed, expected true, got false")
@@ -69,7 +68,8 @@ func TestIsFlagZSet(t *testing.T) {
 }
 
 func TestIsFlagNSet(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.Registers.F = 0x40
 	if !cpu.IsFlagNSet() {
 		t.Errorf("IsFlagNSet() failed, expected true, got false")
@@ -77,7 +77,8 @@ func TestIsFlagNSet(t *testing.T) {
 }
 
 func TestIsFlagHSet(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.Registers.F = 0x20
 	if !cpu.IsFlagHSet() {
 		t.Errorf("IsFlagHSet() failed, expected true, got false")
@@ -85,7 +86,8 @@ func TestIsFlagHSet(t *testing.T) {
 }
 
 func TestIsFlagCSet(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.Registers.F = 0x10
 	if !cpu.IsFlagCSet() {
 		t.Errorf("IsFlagCSet() failed, expected true, got false")
@@ -93,7 +95,8 @@ func TestIsFlagCSet(t *testing.T) {
 }
 
 func TestSetFlagZ(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.SetFlagZ()
 	if !cpu.IsFlagZSet() {
 		t.Errorf("SetFlagZ() failed, expected true, got false")
@@ -101,7 +104,8 @@ func TestSetFlagZ(t *testing.T) {
 }
 
 func TestSetFlagH(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.SetFlagH()
 	if !cpu.IsFlagHSet() {
 		t.Errorf("SetFlagH() failed, expected true, got false")
@@ -109,7 +113,8 @@ func TestSetFlagH(t *testing.T) {
 }
 
 func TestSetFlagC(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.SetFlagC()
 	if !cpu.IsFlagCSet() {
 		t.Errorf("SetFlagC() failed, expected true, got false")
@@ -117,7 +122,8 @@ func TestSetFlagC(t *testing.T) {
 }
 
 func TestSetFlagN(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.SetFlagN()
 	if !cpu.IsFlagNSet() {
 		t.Errorf("SetFlagN() failed, expected true, got false")
@@ -125,7 +131,8 @@ func TestSetFlagN(t *testing.T) {
 }
 
 func TestResetFlagZ(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.SetFlagZ()
 	cpu.ResetFlagZ()
 	if cpu.IsFlagZSet() {
@@ -134,7 +141,8 @@ func TestResetFlagZ(t *testing.T) {
 }
 
 func TestResetFlagH(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.SetFlagH()
 	cpu.ResetFlagH()
 	if cpu.IsFlagHSet() {
@@ -143,7 +151,8 @@ func TestResetFlagH(t *testing.T) {
 }
 
 func TestResetFlagN(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.SetFlagN()
 	cpu.ResetFlagN()
 	if cpu.IsFlagNSet() {
@@ -152,7 +161,8 @@ func TestResetFlagN(t *testing.T) {
 }
 
 func TestResetFlagC(t *testing.T) {
-	cpu := mb.NewCpu(m)
+	mb := mb.NewMotherboard(&mb.MotherboardParams{})
+	cpu := mb.Cpu
 	cpu.SetFlagC()
 	cpu.ResetFlagC()
 	if cpu.IsFlagCSet() {

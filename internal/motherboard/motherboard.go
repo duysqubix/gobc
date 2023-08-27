@@ -37,12 +37,7 @@ type MotherboardParams struct {
 
 func NewMotherboard(params *MotherboardParams) *Motherboard {
 
-	var cart *cartridge.Cartridge
-	if params.Filename != nil {
-		cart = cartridge.NewCartridge(params.Filename)
-	} else {
-		cart = &cartridge.Cartridge{}
-	}
+	var cart *cartridge.Cartridge = cartridge.NewCartridge(params.Filename)
 
 	var bp *Breakpoints
 	if len(params.Breakpoints) > 0 {
@@ -364,7 +359,8 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	 */
 	case 0xFE00 <= *addr && *addr < 0xFEA0:
 		logger.Debugf("Writing %#x to %#x on Sprite Attribute Table (OAM)", v, *addr)
-
+		addr_copy -= 0xFE00
+		m.Ram.SetItemOAM(addr_copy, v)
 	/*
 	*
 	* WRITE: NOT USABLE
@@ -389,6 +385,10 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 		}
 
 		addr_copy -= 0xFF00
+
+		if v == 0x81 && *addr == 0xff02 {
+			fmt.Printf("%c", m.Ram.GetItemIO(IO_SB))
+		}
 		m.Ram.SetItemIO(addr_copy, v)
 
 	/*

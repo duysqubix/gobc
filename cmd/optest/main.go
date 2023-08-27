@@ -3,12 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
-	"time"
 
+	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
+	log "github.com/sirupsen/logrus"
 )
 
 type Register struct {
@@ -29,7 +29,11 @@ type Register struct {
 	IE     uint8  `json:"ie"`
 }
 
+var logger = internal.Logger
+
 func main() {
+	logger.SetLevel(log.DebugLevel)
+
 	opcode := os.Args[1]
 	value := os.Args[2]
 	opcode_i, err := strconv.ParseUint(opcode, 16, 16)
@@ -66,7 +70,7 @@ func do_opcodes(opCodeNum uint16, value uint16) {
 	// mb := motherboard.NewMotherboard()
 	// spew.Dump(mb)
 	c := mb.m.Cpu
-	c.RandomizeRegisters(int64(time.Now().UnixNano()))
+	// c.RandomizeRegisters(int64(time.Now().UnixNano()))
 	// c.RandomizeRegisters(1600)
 
 	reg := Register{
