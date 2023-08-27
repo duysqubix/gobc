@@ -128,7 +128,6 @@ func (r *InternalRAM) SetItemWRAM(bank uint8, addr uint16, value uint8) {
 }
 
 func (r *InternalRAM) SetItemIO(addr uint16, value uint8) {
-	addr -= IO_START_ADDR
 	r.IO[addr] = value
 }
 

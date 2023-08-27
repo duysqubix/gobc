@@ -71,8 +71,12 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	mb.Cgb = mb.Cartridge.CgbModeEnabled() || params.ForceCgb
 	mb.Cpu = NewCpu(mb)
 	mb.Ram = NewInternalRAM(mb.Cgb, params.Randomize)
-	mb.BootRom = NewBootRom(mb.Cartridge.CgbModeEnabled())
+	// mb.BootRom = NewBootRom(mb.Cartridge.CgbModeEnabled())
 
+	if !mb.BootRomEnabled() {
+		logger.Debugf("Boot ROM disabled")
+		mb.Cpu.Registers.PC = 0x100
+	}
 	return mb
 }
 
@@ -123,7 +127,11 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	 */
 	case *addr < 0x4000: // ROM bank 0
 		logger.Debugf("Reading from %#x on ROM bank 0", *addr)
-		return m.Cartridge.CartType.GetItem(*addr)
+		if m.BootRomEnabled() && (*addr < 0x100 || (m.Cgb && 0x200 <= *addr && *addr < 0x900)) {
+			return m.BootRom.GetItem(addr_copy)
+		} else {
+			return m.Cartridge.CartType.GetItem(addr_copy)
+		}
 
 	/*
 	*
@@ -132,7 +140,8 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	 */
 	case 0x4000 <= *addr && *addr < 0x8000: // Switchable ROM bank
 		logger.Debugf("Reading from %#x on Switchable ROM bank", *addr)
-		return m.Cartridge.CartType.GetItem(*addr)
+		addr_copy -= 0x4000
+		return m.Cartridge.CartType.GetItem(addr_copy)
 
 	/*
 	*

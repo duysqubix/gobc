@@ -90,6 +90,7 @@ func mainAction(ctx *cli.Context) error {
 	var force_cgb bool = false
 
 	if ctx.Bool("force-cgb") {
+		logger.Panic("Force CGB is not implemented yet")
 		force_cgb = true
 	}
 

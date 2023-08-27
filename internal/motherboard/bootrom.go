@@ -16,3 +16,7 @@ func NewBootRom(cgb bool) *BootRom {
 		bootrom: bootrom,
 	}
 }
+
+func (br *BootRom) GetItem(addr uint16) uint8 {
+	return br.bootrom[addr]
+}

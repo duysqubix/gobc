@@ -47,7 +47,7 @@ func NewCpu(mb *Motherboard) *CPU {
 			H:  0x1,
 			L:  0x4D,
 			SP: 0xFFFE,
-			PC: 100, // skip bootROM implement this again..
+			PC: 0, // skip bootROM implement this again..
 		},
 		Halted: false,
 		Interrupts: &Interrupts{
