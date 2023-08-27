@@ -65,7 +65,7 @@ func (c *CPU) Tick() OpCycles {
 
 	switch {
 	case c.CheckForInterrupts():
-
+		// logger.Warnf("InterruptsEnabled: %s\n", InterruptFlagDump(c.Interrupts.IE))
 		c.Halted = false
 		return 0
 
@@ -73,6 +73,7 @@ func (c *CPU) Tick() OpCycles {
 		// GBCPUman.pdf page 20
 		// WARNING: The instruction immediately following the HALT instruction is "skipped" when interrupts are
 		// disabled (DI) on the GB,GBP, and SGB.
+		logger.Warnf("Interrupts Queued: %s\n", InterruptFlagDump(c.Interrupts.IF))
 		c.Halted = false
 		c.Registers.PC += 1
 
@@ -89,6 +90,7 @@ func (c *CPU) Tick() OpCycles {
 		logger.Errorf("CPU is stuck at PC: %#x SP: %#x", c.Registers.PC, c.Registers.SP)
 		c.DumpState(os.Stdout)
 		c.IsStuck = true
+		os.Exit(1)
 	}
 
 	c.Interrupts.Queued = false
@@ -107,14 +109,9 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 	pc3 := c.Mb.GetItem(&_pc)
 	_pc++
 
-	var sc_set bool = false
-	sc := uint16(0xff02)
-	if c.Mb.GetItem(&sc) == 0x81 {
-		sc_set = true
-	}
-	row := fmt.Sprintf("A: %02X B: %02X C: %02X D: %02X E: %02X F: %02X H: %02X L: %02X SP: %04X PC: %04X (%02X, %02X, %02X, %02X) SCSet: %t\n",
-		c.Registers.A, c.Registers.B, c.Registers.C, c.Registers.D, c.Registers.E, c.Registers.F, c.Registers.H, c.Registers.L, c.Registers.SP, c.Registers.PC,
-		pc0, pc1, pc2, pc3, sc_set,
+	row := fmt.Sprintf("A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X SP: %04X PC: %04X (%02X, %02X, %02X, %02X)\n",
+		c.Registers.A, c.Registers.F, c.Registers.B, c.Registers.C, c.Registers.D, c.Registers.E, c.Registers.H, c.Registers.L, c.Registers.SP, c.Registers.PC,
+		pc0, pc1, pc2, pc3,
 	)
 	internal.AppendToLogFile(row)
 

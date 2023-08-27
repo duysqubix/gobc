@@ -55,71 +55,61 @@ func (i *Interrupts) ResetTimer()     { internal.ResetBit(&i.IF, INTR_TIMER) }
 func (i *Interrupts) ResetSerial()    { internal.ResetBit(&i.IF, INTR_SERIAL) }
 func (i *Interrupts) ResetHighToLow() { internal.ResetBit(&i.IF, INTR_HIGHTOLOW) }
 
-func (c *CPU) HandleInterrupt(flag uint8, addr uint16) {
-	intr := c.Interrupts
+func (c *CPU) handleInterrupt(flag uint8, addr uint16) bool {
+	if (c.Interrupts.IE&flag) != 0 && (c.Interrupts.IF&flag) != 0 {
+		// clear flag
+		if c.Halted {
+			c.Registers.PC += 1 // Escape HALT on retrun from interrupt
+		}
 
-	pch := uint16(c.Registers.PC >> 8)
-	pcl := uint16(c.Registers.PC & 0xFF)
-	sp1 := c.Registers.SP - 1
-	sp2 := c.Registers.SP - 2
+		// handle interrupt
+		if c.Interrupts.Master_Enable {
+			logger.Warnf("Setting Address to %#x\n", addr)
+			logger.Warnf("IE: %08b, IF: %08b, flag: %08b, addr: %#x\n", c.Interrupts.IE, c.Interrupts.IF, flag, addr)
+			c.Interrupts.IF &^= flag
+			sp1 := c.Registers.SP - 1
+			pc1 := c.Registers.PC >> 8
 
-	if c.Halted {
-		c.Registers.PC += 1 // Escape HALT on retrun from interrupt
+			sp2 := c.Registers.SP - 2
+			pc2 := c.Registers.PC & 0xFF
+			c.Mb.SetItem(&sp1, &pc1)
+			c.Mb.SetItem(&sp2, &pc2)
+			c.Registers.SP -= 2
+			c.Registers.PC = addr
+			c.Interrupts.Master_Enable = false
+		}
+		return true
 	}
-
-	// Handle Interrupt Vector
-	if intr.Master_Enable {
-		intr.ResetInterruptFlag(flag)
-
-		c.Mb.SetItem(&sp1, &pch)
-		c.Mb.SetItem(&sp2, &pcl)
-		c.Registers.SP -= 2
-		c.Registers.PC = addr
-		intr.Master_Enable = false
-
-	}
+	return false
 }
 
 func (c *CPU) CheckForInterrupts() bool {
 	intr := c.Interrupts
 
 	if intr.Queued {
-		// interrupt already queued, will only happen with a debugger -- NOT IMPLEMENTED
 		return false
 	}
 
-	valid_interrupts := intr.CheckValidInterrupts() // holds the interrupts that are enabled and requested
-	intr.Queued = false
-	internal.Logger.Debugf("Valid Interrupts: %08b\n", valid_interrupts)
-
-	// iterate through individual bits of valid_interrupts
-	for i := uint8(0); i < 5; i++ {
-		if internal.IsBitSet(valid_interrupts, i) {
-			switch i {
-			case INTR_VBLANK:
-				c.HandleInterrupt(INTR_VBLANK, INTR_VBLANK_ADDR)
-				intr.Queued = true
-
-			case INTR_LCDSTAT:
-				c.HandleInterrupt(INTR_LCDSTAT, INTR_LCDSTAT_ADDR)
-				intr.Queued = true
-
-			case INTR_TIMER:
-				c.HandleInterrupt(INTR_TIMER, INTR_TIMER_ADDR)
-				intr.Queued = true
-
-			case INTR_SERIAL:
-				c.HandleInterrupt(INTR_SERIAL, INTR_SERIAL_ADDR)
-				intr.Queued = true
-
-			case INTR_HIGHTOLOW:
-				c.HandleInterrupt(INTR_HIGHTOLOW, INTR_HIGHTOLOW_ADDR)
-				intr.Queued = true
-
-			default:
-				internal.Logger.Panicf("Invalid interrupt: %d", i)
-			}
+	if (intr.IF&0b11111)&(intr.IE&0b11111) != 0 {
+		switch {
+		case c.handleInterrupt(INTR_VBLANK, INTR_VBLANK_ADDR):
+			intr.Queued = true
+		case c.handleInterrupt(INTR_LCDSTAT, INTR_LCDSTAT_ADDR):
+			intr.Queued = true
+		case c.handleInterrupt(INTR_TIMER, INTR_TIMER_ADDR):
+			intr.Queued = true
+		case c.handleInterrupt(INTR_SERIAL, INTR_SERIAL_ADDR):
+			intr.Queued = true
+		case c.handleInterrupt(INTR_HIGHTOLOW, INTR_HIGHTOLOW_ADDR):
+			intr.Queued = true
+		default:
+			internal.Logger.Error("No interrupt triggered, but it should!")
+			intr.Queued = false
 		}
+		return true
+	} else {
+		intr.Queued = false
+		return false
 	}
-	return intr.Queued
+
 }

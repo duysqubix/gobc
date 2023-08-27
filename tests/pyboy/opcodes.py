@@ -2049,6 +2049,7 @@ def RET_C0(cpu): # C0 RET NZ
     if cpu.f_nz():
         cpu.PC = cpu.mb.getitem((cpu.SP + 1) & 0xFFFF) << 8 # High
         cpu.PC |= cpu.mb.getitem(cpu.SP) # Low
+        print("pch", hex(cpu.mb.getitem((cpu.SP + 1) & 0xFFFF) << 8),", pcl ", hex(cpu.mb.getitem(cpu.SP)), " , SP ", hex(cpu.SP))
         cpu.SP += 2
         cpu.SP &= 0xFFFF
         return 20

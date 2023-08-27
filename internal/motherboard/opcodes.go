@@ -1,6 +1,8 @@
 package motherboard
 
 import (
+	"fmt"
+
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -136,7 +138,7 @@ var OPCODES = OpCodeMap{
 			spadd1 := c.Registers.SP + 1
 			pch = mb.GetItem(&spadd1)
 			pcl = mb.GetItem(&c.Registers.SP)
-
+			fmt.Printf("pch: %x, pcl: %x SP: %x\n", pch, pcl, c.Registers.SP)
 			c.Registers.PC = (uint16(pch) << 8) | uint16(pcl)
 
 			c.Registers.SP += 2
@@ -616,6 +618,7 @@ var OPCODES = OpCodeMap{
 	0xf3: func(mb *Motherboard, value uint16) OpCycles {
 		c := *mb.Cpu
 		c.Interrupts.Master_Enable = false
+		logger.Warnf("Setting DI: %t", c.Interrupts.Master_Enable)
 		c.Registers.PC += 1
 		return 4
 	},
@@ -1935,6 +1938,7 @@ var OPCODES = OpCodeMap{
 	0xfb: func(mb *Motherboard, value uint16) OpCycles {
 		c := *mb.Cpu
 		c.Interrupts.Master_Enable = true
+		logger.Warn("Interrupts enabled")
 		c.Registers.PC += 1
 		return 4
 	},

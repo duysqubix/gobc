@@ -1,5 +1,7 @@
 package motherboard
 
+import "github.com/duysqubix/gobc/internal"
+
 const (
 	// IO Addresses
 	IO_START_ADDR uint16 = 0xFF00                 // Start of IO addresses
@@ -140,4 +142,26 @@ func MemoryMapName(addr uint16) string {
 	default:
 		return "Unknown"
 	}
+}
+
+func InterruptFlagDump(v uint8) string {
+	var msg string = ""
+
+	for i := uint8(0); i < 5; i++ {
+		if internal.IsBitSet(v, i) {
+			switch i {
+			case INTR_VBLANK:
+				msg += "VBLANK "
+			case INTR_LCDSTAT:
+				msg += "LCDSTAT "
+			case INTR_TIMER:
+				msg += "TIMER "
+			case INTR_SERIAL:
+				msg += "SERIAL "
+			case INTR_HIGHTOLOW:
+				msg += "HIGHTOLOW "
+			}
+		}
+	}
+	return msg
 }

@@ -135,7 +135,6 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	 */
 	case 0x4000 <= *addr && *addr < 0x8000: // Switchable ROM bank
 		logger.Debugf("Reading from %#x on Switchable ROM bank", *addr)
-		addr_copy -= 0x4000
 		return m.Cartridge.CartType.GetItem(addr_copy)
 
 	/*
@@ -159,7 +158,6 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	 */
 	case 0xA000 <= *addr && *addr < 0xC000: // 8K External RAM (Cartridge)
 		logger.Debugf("Reading from %#x on External RAM", *addr)
-		addr_copy -= 0xA000
 		return m.Cartridge.CartType.GetItem(addr_copy)
 
 	/*
@@ -278,6 +276,12 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	 */
 	case *addr < 0x4000:
 		logger.Debugf("Writing %#x to %#x on ROM bank 0", v, *addr)
+
+		switch *addr {
+		case INTR_TIMER_ADDR:
+			logger.Errorf("Writing %#x to %#x on ROM bank 0", v, *addr)
+		}
+
 		m.Cartridge.CartType.SetItem(addr_copy, v)
 
 	/*
@@ -384,8 +388,13 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 			m.BootRom = nil
 		}
 
-		addr_copy -= 0xFF00
+		if *addr == 0xFF0F {
+			logger.Debugf("Writing %#x to %#x on IF", v, *addr)
+			m.Cpu.Interrupts.IF = v
+			break
+		}
 
+		addr_copy -= 0xFF00
 		if v == 0x81 && *addr == 0xff02 {
 			fmt.Printf("%c", m.Ram.GetItemIO(IO_SB))
 		}

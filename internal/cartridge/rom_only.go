@@ -19,7 +19,7 @@ func (c *RomOnlyCartridge) SetItem(addr uint16, value uint8) {
 		if value == 0 {
 			value = 1
 		}
-		c.parent.RomBankSelected = uint16(value & 0b1)
+		c.parent.RomBankSelected = uint8(value & 0b1)
 		logger.Warnf("Cartridge: Switching to ROM Bank %d\n", c.parent.RomBankSelected)
 	case 0x4000 <= addr && addr < 0xC000:
 		logger.Warn("Cartridge: Writing to RAM is not implemented yet")

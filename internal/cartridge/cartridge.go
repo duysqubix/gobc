@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
@@ -144,6 +145,7 @@ const (
 
 	// Memory Bank Size
 	MEMORY_BANK_SIZE uint16 = 16_384 // 16 KiB (1024*16)
+	RAM_BANK_SIZE    uint16 = 8_192  // 8 KiB (1024*8)
 
 	// Cartridge Types
 	ROM_ONLY uint8 = 0x00
@@ -196,7 +198,13 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 	},
 
 	0x01: func(c *Cartridge) CartridgeType {
-		return &RomOnlyCartridge{parent: c, sram: false, battery: false, rtc: false}
+		return &Mbc1Cartridge{parent: c,
+			sram:                false,
+			battery:             false,
+			rtc:                 false,
+			bankSelectRegister1: 1,
+			bankSelectRegister2: 0,
+		}
 	},
 
 	// MBC3+TIMER+RAM+BATTERY
@@ -210,12 +218,15 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 }
 
 type Cartridge struct {
-	filename        string    // filename of the ROM
-	RomBanks        [][]uint8 // slice of ROM banks
-	RamBanks        [][]uint8 // slice of RAM banks
-	RomBanksCount   uint16    // number of ROM banks
-	CartType        CartridgeType
-	RomBankSelected uint16
+	filename        string        // filename of the ROM
+	RomBanks        [][]uint8     // slice of ROM banks
+	RamBanks        [][]uint8     // slice of RAM banks
+	RomBanksCount   uint8         // number of ROM banks
+	CartType        CartridgeType // type of cartridge
+	RomBankSelected uint8         // currently selected ROM bank
+	RamBankSelected uint8         // currently selected RAM bank
+	RamBankEnabled  bool          // whether RAM bank is enabled
+	MemoryModel     uint8         // 0 = 16/8, 1 = 4/32
 }
 
 func LoadRomBanks(rom_data []byte, dummy_data bool) [][]uint8 {
@@ -275,8 +286,10 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 	cart := Cartridge{
 		RomBanks:        rom_banks,
 		filename:        fname,
-		RomBanksCount:   uint16(len(rom_banks)),
+		RomBanksCount:   uint8(len(rom_banks)),
 		RomBankSelected: 0,
+		RamBankSelected: 0,
+		MemoryModel:     0,
 	}
 
 	cart_type_addr := rom_banks[0][CARTRIDGE_TYPE_ADDR]
@@ -291,8 +304,16 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 	if !valid {
 		internal.Logger.Panicf("Checksum invalid. Expected %02X, got %02X", cart.RomBanks[0][HEADER_CHECKSUM_ADDR], calc_checksum)
 	}
+
+	// initialize RAM banks to maximum size of 128KiB
+	for i := 0; i < 16; i++ {
+		bank := make([]uint8, RAM_BANK_SIZE)
+		cart.RamBanks = append(cart.RamBanks, bank)
+	}
+	logger.Info("Cartridge RAM Initialized")
 	cart.Dump(os.Stdout)
 	logger.Infof("ROM file loaded successfully: %s", filename)
+	logger.Infof("Cartridge Initialized: %s", reflect.TypeOf(cart.CartType))
 	return &cart
 }
 
