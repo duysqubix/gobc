@@ -74,7 +74,7 @@ type InternalRAM struct {
 	Randomize bool           // Randomize RAM on startup
 }
 
-func NewInternalRAM(cbg bool, randomize bool) *InternalRAM {
+func NewInternalRAM(cgb bool, randomize bool) *InternalRAM {
 	ram := &InternalRAM{
 		Randomize: randomize,
 	}

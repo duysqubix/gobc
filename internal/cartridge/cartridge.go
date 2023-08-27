@@ -283,7 +283,7 @@ func (c *Cartridge) ValidateChecksum() (uint8, bool) {
 
 }
 
-func (c *Cartridge) CbgModeEnabled() bool {
+func (c *Cartridge) CgbModeEnabled() bool {
 	if c.RomBanksCount == 0 {
 		// no ROM banks loaded -- only possible if we're running tests
 		return false
@@ -308,10 +308,10 @@ func (c *Cartridge) Dump(writer io.Writer) {
 		sbg_mode_enabled = "Yes"
 	}
 
-	cbg_mode := c.RomBanks[0][CBG_FLAG_ADDR]
+	cgb_mode := c.RomBanks[0][CBG_FLAG_ADDR]
 	var cgb_mode_desc string
-	if c.CbgModeEnabled() {
-		cgb_mode_desc = CbgFlagMap[cbg_mode]
+	if c.CgbModeEnabled() {
+		cgb_mode_desc = CgbFlagMap[cgb_mode]
 	} else {
 		cgb_mode_desc = "CGB Not Supported"
 	}
@@ -476,7 +476,7 @@ func (c *Cartridge) RawHeaderDump() {
 	table.Render()
 }
 
-var CbgFlagMap = map[uint8]string{
+var CgbFlagMap = map[uint8]string{
 	0x80: "CGB Only",
 	0xC0: "CGB Supported",
 }

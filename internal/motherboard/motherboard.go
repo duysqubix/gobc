@@ -20,6 +20,7 @@ type Motherboard struct {
 	Cpu         *CPU                 // CPU
 	Cartridge   *cartridge.Cartridge // Cartridge
 	Ram         *InternalRAM         // Internal RAM
+	BootRom     *BootRom             // Boot ROM
 	Cgb         bool                 // Color Gameboy
 	Randomize   bool                 // Randomize RAM on startup
 	Decouple    bool                 // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
@@ -67,11 +68,16 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 		Breakpoints: bp,
 	}
 
-	mb.Cgb = mb.Cartridge.CbgModeEnabled() || params.ForceCgb
+	mb.Cgb = mb.Cartridge.CgbModeEnabled() || params.ForceCgb
 	mb.Cpu = NewCpu(mb)
 	mb.Ram = NewInternalRAM(mb.Cgb, params.Randomize)
+	mb.BootRom = NewBootRom(mb.Cartridge.CgbModeEnabled())
 
 	return mb
+}
+
+func (m *Motherboard) BootRomEnabled() bool {
+	return m.BootRom != nil
 }
 
 func (m *Motherboard) Tick() (bool, OpCycles) {
@@ -268,7 +274,7 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	 */
 	case *addr < 0x4000:
 		logger.Debugf("Writing %#x to %#x on ROM bank 0", v, *addr)
-		m.Cartridge.CartType.SetItem(*addr, v)
+		m.Cartridge.CartType.SetItem(addr_copy, v)
 
 	/*
 	*
@@ -277,7 +283,8 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	 */
 	case 0x4000 <= *addr && *addr < 0x8000:
 		logger.Debugf("Writing %#x to %#x on Switchable ROM bank", v, *addr)
-		m.Cartridge.CartType.SetItem(*addr, v)
+		addr_copy -= 0x4000
+		m.Cartridge.CartType.SetItem(addr_copy, v)
 
 	/*
 	*
@@ -364,7 +371,16 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	 */
 	case 0xFF00 <= *addr && *addr < 0xFF80:
 		logger.Debugf("Writing %#x to %#x on IO", v, *addr)
-		m.Ram.SetItemIO(*addr, v)
+
+		if m.BootRomEnabled() &&
+			*addr == 0xFF50 &&
+			(v == 0x1 || v == 0x11) {
+			logger.Debugf("Disabling boot rom")
+			m.BootRom = nil
+		}
+
+		addr_copy -= 0xFF00
+		m.Ram.SetItemIO(addr_copy, v)
 
 	/*
 	*

@@ -260,7 +260,7 @@ func (cpu *CPU) DumpState(writer io.Writer) {
 		{"Interrupts Queued", fmt.Sprintf("%t", cpu.Interrupts.Queued)},
 		{"Stopped", fmt.Sprintf("%t", cpu.Stopped)},
 		{"IsStuck", fmt.Sprintf("%t", cpu.IsStuck)},
-		{"Cbg", fmt.Sprintf("%t", cpu.Mb.Cgb)},
+		{"Cgb", fmt.Sprintf("%t", cpu.Mb.Cgb)},
 	}
 
 	table := tablewriter.NewWriter(writer)
