@@ -105,3 +105,31 @@ type OpLogic func(mb *Motherboard, value uint16) OpCycles // Operation logic
 type OpCodeMap map[OpCode]OpLogic                         // Map of opcodes to their logic
 
 
+func MemoryMapName(addr uint16) string {
+	switch {
+	case addr < 0x4000:
+		return "ROM Bank 0"
+	case 0x4000 <= addr && addr < 0x8000:
+		return "Switchable ROM Bank"
+	case 0x8000 <= addr && addr < 0xA000:
+		return "Video RAM"
+	case 0xA000 <= addr && addr < 0xC000:
+		return "Switchable RAM Bank"
+	case 0xC000 <= addr && addr < 0xE000:
+		return "Internal RAM"
+	case 0xE000 <= addr && addr < 0xFE00:
+		return "Echo RAM"
+	case 0xFE00 <= addr && addr < 0xFEA0:
+		return "Object Attribute Memory (OAM)"
+	case 0xFEA0 <= addr && addr < 0xFF00:
+		return "Not Usable"
+	case 0xFF00 <= addr && addr < 0xFF80:
+		return "IO"
+	case 0xFF80 <= addr && addr < 0xFFFF:
+		return "High RAM"
+	case addr == 0xFFFF:
+		return "Interrupt Enable Register"
+	default:
+		return "Unknown"
+	}
+}

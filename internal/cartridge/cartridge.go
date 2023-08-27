@@ -195,6 +195,10 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 		return &RomOnlyCartridge{parent: c, sram: false, battery: false, rtc: false}
 	},
 
+	0x01: func(c *Cartridge) CartridgeType {
+		return &RomOnlyCartridge{parent: c, sram: false, battery: false, rtc: false}
+	},
+
 	// MBC3+TIMER+RAM+BATTERY
 	0x10: func(c *Cartridge) CartridgeType {
 		return &Mbc3Cartridge{parent: c, sram: true, battery: true, rtc: true}
@@ -208,6 +212,7 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 type Cartridge struct {
 	filename        string    // filename of the ROM
 	RomBanks        [][]uint8 // slice of ROM banks
+	RamBanks        [][]uint8 // slice of RAM banks
 	RomBanksCount   uint16    // number of ROM banks
 	CartType        CartridgeType
 	RomBankSelected uint16
@@ -367,7 +372,6 @@ func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
 				opcode = uint16(bank[addr]) + 0x100
 				notes = "CB Prefix"
 			}
-
 
 			switch oplen {
 			case 2:

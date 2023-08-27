@@ -135,12 +135,12 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	 */
 	case 0x8000 <= *addr && *addr < 0xA000: // 8K Video RAM
 		logger.Debugf("Reading from %#x on Video RAM", *addr)
-
+		addr_copy -= 0x8000
 		if m.Cgb {
-			return m.Ram.GetItemVRAM(m.Ram.ActiveVramBank(), *addr)
+			return m.Ram.GetItemVRAM(m.Ram.ActiveVramBank(), addr_copy)
 		}
 
-		return m.Ram.GetItemVRAM(0, *addr)
+		return m.Ram.GetItemVRAM(0, addr_copy)
 
 	/*
 	*
@@ -149,7 +149,8 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	 */
 	case 0xA000 <= *addr && *addr < 0xC000: // 8K External RAM (Cartridge)
 		logger.Debugf("Reading from %#x on External RAM", *addr)
-		return m.Cartridge.CartType.GetItem(*addr)
+		addr_copy -= 0xA000
+		return m.Cartridge.CartType.GetItem(addr_copy)
 
 	/*
 	*
@@ -158,7 +159,8 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	 */
 	case 0xC000 <= *addr && *addr < 0xD000: // 4K Work RAM bank 0
 		logger.Debugf("Reading from %#x on Work RAM Bank 0", *addr)
-		return m.Ram.GetItemWRAM(0, *addr)
+		addr_copy -= 0xC000
+		return m.Ram.GetItemWRAM(0, addr_copy)
 
 	/*
 	*
@@ -184,7 +186,16 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	 */
 	case 0xE000 <= *addr && *addr < 0xFE00:
 		logger.Debugf("Reading from %#x on Echo of 8K Internal RAM", *addr)
-		return m.Ram.GetItemWRAM(0, addr_copy-0x2000)
+		addr_copy = addr_copy - 0x2000 - 0xC000
+		if addr_copy >= 0x1000 {
+			addr_copy -= 0x1000
+			if m.Cgb {
+				bank := m.Ram.ActiveWramBank()
+				return m.Ram.GetItemWRAM(bank, addr_copy)
+			}
+			return m.Ram.GetItemWRAM(1, addr_copy)
+		}
+		return m.Ram.GetItemWRAM(0, addr_copy)
 
 	/*
 	*
@@ -193,6 +204,7 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	 */
 	case 0xFE00 <= *addr && *addr < 0xFEA0:
 		logger.Debugf("Reading from %#x on Sprite Attribute Table (OAM)", *addr)
+
 	/*
 	*
 	* READ: NOT USABLE
@@ -207,8 +219,9 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	*
 	 */
 	case 0xFF00 <= *addr && *addr < 0xFF80:
+		addr_copy -= 0xFF00
 		logger.Debugf("Reading from %#x on IO", *addr)
-		return m.Ram.GetItemIO(*addr)
+		return m.Ram.GetItemIO(addr_copy)
 
 	/*
 	*
@@ -272,12 +285,12 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	*
 	 */
 	case 0x8000 <= *addr && *addr < 0xA000:
-		// add checks here for CBG, for the switchable bank option
+		addr_copy -= 0x8000
 		logger.Debugf("Writing %#x to %#x on Video RAM", v, *addr)
 		if m.Cgb {
-			m.Ram.SetItemVRAM(m.Ram.ActiveVramBank(), *addr, v)
+			m.Ram.SetItemVRAM(m.Ram.ActiveVramBank(), addr_copy, v)
 		}
-		m.Ram.SetItemVRAM(0, *addr, v)
+		m.Ram.SetItemVRAM(0, addr_copy, v)
 
 	/*
 	*
@@ -285,8 +298,9 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	*
 	 */
 	case 0xA000 <= *addr && *addr < 0xC000:
+		addr_copy -= 0xA000
 		logger.Debugf("Writing %#x to %#x on External RAM", v, *addr)
-		m.Cartridge.CartType.SetItem(*addr, v)
+		m.Cartridge.CartType.SetItem(addr_copy, v)
 
 	/*
 	*
@@ -323,8 +337,9 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	*
 	 */
 	case 0xE000 <= *addr && *addr < 0xFE00:
+		addr_copy = addr_copy - 0x2000 - 0xC000
 		logger.Debugf("Writing %#x to %#x on Echo of 8K Internal RAM", v, *addr)
-		m.Ram.SetItemWRAM(0, addr_copy-0x2000, v)
+		m.Ram.SetItemWRAM(0, addr_copy, v)
 
 	/*
 	*

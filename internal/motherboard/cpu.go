@@ -39,15 +39,15 @@ func NewCpu(mb *Motherboard) *CPU {
 	return &CPU{
 		Registers: &Registers{
 			A:  0x1,
-			B:  0,
-			C:  0,
-			D:  0,
-			E:  0x8F,
-			F:  0xD0,
-			H:  0,
-			L:  0x87,
+			B:  0x00,
+			C:  0x13,
+			D:  0x00,
+			E:  0xD8,
+			F:  0x40,
+			H:  0x1,
+			L:  0x4D,
 			SP: 0xFFFE,
-			PC: 0,
+			PC: 100, // skip bootROM implement this again..
 		},
 		Halted: false,
 		Interrupts: &Interrupts{

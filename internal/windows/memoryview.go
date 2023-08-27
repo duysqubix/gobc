@@ -4,35 +4,35 @@ import (
 	"fmt"
 
 	"github.com/duysqubix/gobc/internal"
+	"github.com/duysqubix/gobc/internal/motherboard"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
+	"github.com/olekukonko/tablewriter"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
-	"golang.org/x/image/font/inconsolata"
 )
 
 const (
-	memScreenWidth  = 670
+	memScreenWidth  = 750
 	memScreenHeight = 1000
 	memScale        = 1
 	memTrueWidth    = float64(memScreenWidth * memScale)
 	memTrueHeight   = float64(memScreenHeight * memScale)
 	fontBuffer      = 4
-	addr_offset     = 10
 )
 
 var (
 	defaultFont *basicfont.Face
 	logger      = internal.Logger
 	mock_memory []uint8
-	max_chars   int
 	max_rows    int
-	row_ptr     int = 1 // starting at the top of the screen
-	begin_addr  int
-	end_addr    int
-
-	consoleTxt *text.Text
+	// row_ptr     int = 1 // starting at the top of the screen
+	begin_addr     int
+	end_addr       int
+	addr_offset    int = 10
+	consoleTxt     *text.Text
+	memTableWriter *tablewriter.Table
 )
 
 func init() {
@@ -43,17 +43,16 @@ func init() {
 	}
 
 	// set up font
-	defaultFont = inconsolata.Regular8x16
+	defaultFont = basicfont.Face7x13
 
-	// max_chars = memTrueWidth / defaultFont.Width
-	// max_rows = memTrueHeight / (defaultFont.Height + 2)
+	max_rows = int(memTrueHeight) / (defaultFont.Height + 2)
 
 	begin_addr = 0
 	end_addr = (max_rows-addr_offset-1)*0x10 + begin_addr
 }
 
 type MemoryViewWindow struct {
-	mw      *GoBoyColor
+	hw      *GoBoyColor
 	YOffset float64
 	Window  *pixelgl.Window
 }
@@ -72,7 +71,7 @@ func NewMemoryViewWindow(gobc *GoBoyColor) *MemoryViewWindow {
 	return &MemoryViewWindow{
 		Window:  memWin,
 		YOffset: 0,
-		mw:      gobc,
+		hw:      gobc,
 	}
 }
 
@@ -84,54 +83,80 @@ func (mw *MemoryViewWindow) SetUp() {
 	mw.Window.SetTitle("gobc v0.1 | Memory View")
 	mw.Window.SetBounds(pixel.R(0, 0, memTrueWidth, memTrueHeight))
 	consoleTxt = text.New(
-		pixel.V(0, mw.Window.Bounds().Max.Y/2),
-		text.NewAtlas(basicfont.Face7x13, text.ASCII),
+		pixel.V(10, mw.Window.Bounds().Max.Y-20),
+		text.NewAtlas(defaultFont, text.ASCII),
+		// text.NewAtlas(inconsolata.Regular8x16, text.ASCII),
 	)
-
+	memTableWriter = tablewriter.NewWriter(consoleTxt)
+	memTableWriter.SetAutoWrapText(false)
+	memTableWriter.SetAlignment(tablewriter.ALIGN_LEFT)
+	memTableWriter.SetBorder(true)
+	memTableWriter.SetHeader([]string{"Addr", "Data", "Section"})
 }
 
 func (mw *MemoryViewWindow) Draw() {
 	mw.Window.Clear(colornames.Black)
-	fmt.Fprintf(consoleTxt, "Hello world")
+	memTableWriter.ClearRows()
 
-	consoleTxt.Draw(mw.Window, pixel.IM.Scaled(consoleTxt.Orig, 4))
-	// PrintAt(screen, strings.Repeat("-", max_chars))
-	// PrintAt(screen, fmt.Sprintf("Memory Address: 0x%04x - 0x%04x", begin_addr, end_addr))
-	// PrintAt(screen, strings.Repeat("-", max_chars))
+	consoleTxt.Color = colornames.White
 
-	// // print rows from memory
-	// for i := 0; i < max_rows-addr_offset; i++ {
+	var data [][]string
+	// print rows from memory
+	for i := 0; i < (max_rows - addr_offset); i++ {
+		row_str := ""
+		row_addr_start := (i * 0x10) + (int(mw.YOffset) * 0x10)
+		row_addr := fmt.Sprintf("0x%04x", row_addr_start)
+		for j := 0; j < 16; j++ {
+			addr := uint16(j + row_addr_start)
+			row_str += fmt.Sprintf("%02x ", mw.hw.Mb.GetItem(&addr))
+		}
+		data = append(data, []string{row_addr, row_str, motherboard.MemoryMapName(uint16(row_addr_start))})
+	}
 
-	// 	row_addr_start := (i * 0x10) + (int(g.YOffset) * 0x10)
-	// 	row_str := fmt.Sprintf("0x%04x |", row_addr_start)
-	// 	for j := 0; j < 16; j++ {
-	// 		row_str += fmt.Sprintf(" %02x ", 0xDE) //g.memory[j+row_addr_start])
-	// 	}
-	// 	PrintAt(screen, row_str)
-	// }
-	// PrintAt(screen, strings.Repeat("-", max_chars))
-	// row_ptr = 1
+	for _, d := range data {
+		memTableWriter.Append(d)
+	}
+	memTableWriter.Render()
+	consoleTxt.Draw(mw.Window, pixel.IM.Scaled(consoleTxt.Orig, 1.25))
 	consoleTxt.Clear()
 	mw.Window.Update()
 }
 
 func (mw *MemoryViewWindow) Update() error {
-	// if repeatingKeyPressed(ebiten.KeyPageDown) {
-	// 	g.YOffset += float64(max_rows) - float64(addr_offset) - 1
-	// }
+	if mw.Window.JustPressed(pixelgl.KeyRight) || mw.Window.Repeated(pixelgl.KeyRight) {
+		mw.YOffset += float64(max_rows) - float64(addr_offset) - 1
+	}
 
-	// if repeatingKeyPressed(ebiten.KeyPageUp) {
-	// 	g.YOffset -= float64(max_rows) - float64(addr_offset) - 1
-	// }
+	if mw.Window.JustPressed(pixelgl.KeyUp) || mw.Window.Repeated(pixelgl.KeyUp) {
+		mw.YOffset -= 1
+	}
 
-	// _, dy := ebiten.Wheel()
-	// g.YOffset -= dy
-	// if g.YOffset < 0 {
-	// 	g.YOffset = 0.0
-	// }
+	if mw.Window.JustPressed(pixelgl.KeyLeft) || mw.Window.Repeated(pixelgl.KeyLeft) {
+		mw.YOffset -= float64(max_rows) - float64(addr_offset) - 1
+	}
 
-	// begin_addr = int(g.YOffset) * 0x10
-	// end_addr = (max_rows-addr_offset-1)*0x10 + begin_addr
+	if mw.Window.JustPressed(pixelgl.KeyDown) || mw.Window.Repeated(pixelgl.KeyDown) {
+		mw.YOffset += 1
+	}
+
+	dy := mw.Window.MouseScroll().Y
+	mw.YOffset -= dy
+	if mw.YOffset < 0 {
+		mw.YOffset = 0.0
+	}
+
+	maxYOffset := float64(0xffff-(max_rows-addr_offset-1)*0x10) / float64(0x10)
+
+	if mw.YOffset > maxYOffset {
+		mw.YOffset = maxYOffset
+	}
+	begin_addr = int(mw.YOffset) * 0x10
+	end_addr = (max_rows-addr_offset-1)*0x10 + begin_addr
+
+	if end_addr > 0xffff {
+		end_addr = 0xffff
+	}
+
 	return nil
 }
 

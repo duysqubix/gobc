@@ -53,7 +53,7 @@ func GameLoop() {
 	var frame_cntr int64 = 0
 	var windows []windows.Window = []windows.Window{
 		windows.NewMainGameWindow(g),
-		windows.NewMemoryViewWindow(g),
+		// windows.NewMemoryViewWindow(g),
 	}
 
 	mainWin := windows[0].Win()
@@ -113,9 +113,6 @@ func mainAction(ctx *cli.Context) error {
 	g = windows.NewGoBoyColor(romfile, breakpoints, force_cgb)
 
 	if ctx.Bool("debug") {
-		// spin up Memory Window and show ROMs Memory Map
-		// g.Debug_MemoryView = windows.NewMemoryViewWindow(gobc)
-		// gobc.DebugMode = true
 		logger.SetLevel(log.DebugLevel)
 	}
 
