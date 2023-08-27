@@ -97,13 +97,21 @@ const (
 	INTR_SERIAL_ADDR    uint16 = 0x0058 // Serial interrupt Memory address
 	INTR_HIGHTOLOW_ADDR uint16 = 0x0060 // Joypad interrupt Memory address
 
+	LCDC_ENABLE uint8 = 0x80 // Bit 7 - LCD Display Enable             (0=Off, 1=On)
+	LCDC_WINMAP uint8 = 0x40 // Bit 6 - Window Tile Map Display Select (0=9800-9BFF, 1=9C00-9FFF)
+	LCDC_WINEN  uint8 = 0x20 // Bit 5 - Window Display Enable          (0=Off, 1=On)
+	LCDC_BGMAP  uint8 = 0x10 // Bit 4 - BG & Window Tile Data Select   (0=8800-97FF, 1=8000-8FFF)
+	LCDC_BGWIN  uint8 = 0x08 // Bit 3 - BG Tile Map Display Select     (0=9800-9BFF, 1=9C00-9FFF)
+	LCDC_OBJSZ  uint8 = 0x04 // Bit 2 - OBJ (Sprite) Size              (0=8x8, 1=8x16)
+	LCDC_OBJEN  uint8 = 0x02 // Bit 1 - OBJ (Sprite) Display Enable    (0=Off, 1=On)
+	LCDC_BGEN   uint8 = 0x01 // Bit 0 - BG Display (for CGB see below) (0=Off, 1=On)
+
 )
 
 type OpCode uint16                                        // 16-bit opcodes
 type OpCycles uint8                                       // Number of cycles an operation takes
 type OpLogic func(mb *Motherboard, value uint16) OpCycles // Operation logic
 type OpCodeMap map[OpCode]OpLogic                         // Map of opcodes to their logic
-
 
 func MemoryMapName(addr uint16) string {
 	switch {
