@@ -145,8 +145,10 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 	default:
 		value = 0
 	}
-	// fmt.Printf("Post-Execution :Opcode: %s [%#x] | PC: %#x | SP: %#x | Value: %#x\n", internal.OPCODE_NAMES[opcode], opcode, c.Registers.PC, c.Registers.SP, value)
-
+	i := c.Registers.PC - 1
+	if opcode == 0xfe && c.Mb.GetItem(&i) == 0x2a {
+		fmt.Printf("Post-Execution :Opcode: %s [%#x] | PC: %#x | SP: %#x | Value: %#x\n", internal.OPCODE_NAMES[opcode], opcode, c.Registers.PC, c.Registers.SP, value)
+	}
 	if c.Mb.Breakpoints.Enabled {
 		if internal.IsInUint16Array(pc, c.Mb.Breakpoints.Addrs) {
 			reader := bufio.NewReader(os.Stdin)

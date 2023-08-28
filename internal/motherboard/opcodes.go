@@ -1,8 +1,6 @@
 package motherboard
 
 import (
-	"fmt"
-
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -138,7 +136,6 @@ var OPCODES = OpCodeMap{
 			spadd1 := c.Registers.SP + 1
 			pch = mb.GetItem(&spadd1)
 			pcl = mb.GetItem(&c.Registers.SP)
-			fmt.Printf("pch: %x, pcl: %x SP: %x\n", pch, pcl, c.Registers.SP)
 			c.Registers.PC = (uint16(pch) << 8) | uint16(pcl)
 
 			c.Registers.SP += 2
@@ -2043,7 +2040,11 @@ var OPCODES = OpCodeMap{
 	// CALL Z, a16 - Call routine at 16-bit address if Z flag is set (204)
 	0xcc: func(mb *Motherboard, value uint16) OpCycles {
 		c := *mb.Cpu
+		c.Registers.PC += 3
+
 		if c.IsFlagZSet() {
+			// c.Dump("PRE CALL Z, Flag Z is set")
+
 			sp1 := c.Registers.SP - 1
 			sp2 := c.Registers.SP - 2
 
@@ -2054,9 +2055,11 @@ var OPCODES = OpCodeMap{
 			c.Registers.SP -= 2
 
 			c.Registers.PC = value
+			// c.Dump("POST CALL Z, Flag Z is set")
+			// os.Exit(0)
 			return 24
 		}
-		c.Registers.PC += 3
+
 		return 12
 	},
 

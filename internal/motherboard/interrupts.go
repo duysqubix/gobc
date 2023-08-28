@@ -55,7 +55,9 @@ func (i *Interrupts) ResetTimer()     { internal.ResetBit(&i.IF, INTR_TIMER) }
 func (i *Interrupts) ResetSerial()    { internal.ResetBit(&i.IF, INTR_SERIAL) }
 func (i *Interrupts) ResetHighToLow() { internal.ResetBit(&i.IF, INTR_HIGHTOLOW) }
 
-func (c *CPU) handleInterrupt(flag uint8, addr uint16) bool {
+func (c *CPU) handleInterrupt(f uint8, addr uint16) bool {
+	flag := uint8(1 << f)
+
 	if (c.Interrupts.IE&flag) != 0 && (c.Interrupts.IF&flag) != 0 {
 		// clear flag
 		if c.Halted {
@@ -66,6 +68,7 @@ func (c *CPU) handleInterrupt(flag uint8, addr uint16) bool {
 		if c.Interrupts.Master_Enable {
 			logger.Warnf("Setting Address to %#x\n", addr)
 			logger.Warnf("IE: %08b, IF: %08b, flag: %08b, addr: %#x\n", c.Interrupts.IE, c.Interrupts.IF, flag, addr)
+			logger.Warnf("Interrupts Active: %s\n", InterruptFlagDump(c.Interrupts.IF))
 			c.Interrupts.IF &^= flag
 			sp1 := c.Registers.SP - 1
 			pc1 := c.Registers.PC >> 8
@@ -74,6 +77,7 @@ func (c *CPU) handleInterrupt(flag uint8, addr uint16) bool {
 			pc2 := c.Registers.PC & 0xFF
 			c.Mb.SetItem(&sp1, &pc1)
 			c.Mb.SetItem(&sp2, &pc2)
+			logger.Warnf("sp1: %#x, pc1: %#x, sp2: %#x, pc2: %#x\n", sp1, pc1, sp2, pc2)
 			c.Registers.SP -= 2
 			c.Registers.PC = addr
 			c.Interrupts.Master_Enable = false
