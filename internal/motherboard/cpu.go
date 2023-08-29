@@ -12,6 +12,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var tickCycles OpCycles
+
 // Registers is a struct that represents the CPU registers
 type Registers struct {
 	A  uint8  // Accumulator
@@ -31,6 +33,7 @@ type CPU struct {
 	Halted     bool         // CPU halted
 	Interrupts *Interrupts  // Interrupts
 	Mb         *Motherboard // Motherboard
+	Timer      *Timer       // Timer
 	IsStuck    bool         // CPU is stuck
 	Stopped    bool         // CPU is stopped
 }
@@ -43,7 +46,7 @@ func NewCpu(mb *Motherboard) *CPU {
 			C:  0x13,
 			D:  0x00,
 			E:  0xD8,
-			F:  0x40,
+			F:  0xB0,
 			H:  0x1,
 			L:  0x4D,
 			SP: 0xFFFE,
@@ -56,18 +59,66 @@ func NewCpu(mb *Motherboard) *CPU {
 			IF:            0,
 			Queued:        false,
 		},
-		Mb: mb,
+		Mb:    mb,
+		Timer: NewTimer(),
 	}
 
 }
 
+var (
+	divTimerCycles   int64 = -1 // number of cycles that needs to pass before a timer tick occurs
+	timaTimerCycles  int64 = -1
+	divTimerCounter  int64 = 0
+	timaTimerCounter int64 = 0
+)
+
+func (c *CPU) divTimerCycles() int64 {
+	// TODO: double speed mode
+	if divTimerCycles < 0 {
+		divTimerCycles = int64(c.Mb.CpuFreq) / int64(TIMER_DIV_HZ)
+	}
+	return divTimerCycles
+}
+
+func (c *CPU) timaTimerCycles() int64 {
+	timaTimerCycles = c.Timer.Speed(int64(c.Mb.CpuFreq))
+	return timaTimerCycles
+}
+
 func (c *CPU) Tick() OpCycles {
 
+	// increment DIV by 1
+	if divTimerCounter >= c.divTimerCycles() {
+		c.Timer.DIV++
+		divTimerCounter = 0
+	}
+
+	// increment TIMA by 1
+	if c.Timer.Enabled() {
+		logger.Warnf("DivTimerCounter: %d, DivTimerCycles: %d, TimaTimerCounter: %d, TimaTimerCycles: %d\n", divTimerCounter, c.divTimerCycles(), timaTimerCounter, c.timaTimerCycles())
+
+		if timaTimerCounter >= c.timaTimerCycles() {
+			c.Timer.TIMA++
+			if c.Timer.TIMA > 0xFF {
+
+				// TIMA overflowed, reset to TMA
+				c.Timer.TIMA = uint16(c.Timer.TMA)
+				// request interrupt
+				c.Interrupts.IF |= INTR_TIMER
+
+			}
+
+			timaTimerCounter = 0
+		}
+	}
+
+	// Need to increment TIMER DIV register by 16384Hz, 1,638 times per second
+	tickCycles = 0
 	switch {
 	case c.CheckForInterrupts():
 		// logger.Warnf("InterruptsEnabled: %s\n", InterruptFlagDump(c.Interrupts.IE))
 		c.Halted = false
-		return 0
+		return tickCycles // 0
 
 	case c.Halted && c.Interrupts.Queued:
 		// GBCPUman.pdf page 20
@@ -78,13 +129,18 @@ func (c *CPU) Tick() OpCycles {
 		c.Registers.PC += 1
 
 	case c.Halted:
-		return 4
+		tickCycles = 4
+		divTimerCounter += int64(tickCycles)
+		timaTimerCounter += int64(tickCycles)
+		return tickCycles
 	default:
 	}
 
 	old_pc := c.Registers.PC
 	old_sp := c.Registers.SP
-	cycles := c.ExecuteInstruction()
+	tickCycles = c.ExecuteInstruction()
+	divTimerCounter += int64(tickCycles)
+	timaTimerCounter += int64(tickCycles)
 
 	if !c.Halted && (old_pc == c.Registers.PC) && (old_sp == c.Registers.SP) && !c.IsStuck {
 		logger.Errorf("CPU is stuck at PC: %#x SP: %#x", c.Registers.PC, c.Registers.SP)
@@ -94,7 +150,7 @@ func (c *CPU) Tick() OpCycles {
 	}
 
 	c.Interrupts.Queued = false
-	return cycles
+	return tickCycles
 }
 
 func (c *CPU) ExecuteInstruction() OpCycles {
@@ -109,7 +165,7 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 	pc3 := c.Mb.GetItem(&_pc)
 	_pc++
 
-	row := fmt.Sprintf("A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X SP: %04X PC: %04X (%02X, %02X, %02X, %02X)\n",
+	row := fmt.Sprintf("A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X SP: %04X PC: 00:%04X (%02X %02X %02X %02X)\n",
 		c.Registers.A, c.Registers.F, c.Registers.B, c.Registers.C, c.Registers.D, c.Registers.E, c.Registers.H, c.Registers.L, c.Registers.SP, c.Registers.PC,
 		pc0, pc1, pc2, pc3,
 	)
@@ -145,10 +201,7 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 	default:
 		value = 0
 	}
-	i := c.Registers.PC - 1
-	if opcode == 0xfe && c.Mb.GetItem(&i) == 0x2a {
-		fmt.Printf("Post-Execution :Opcode: %s [%#x] | PC: %#x | SP: %#x | Value: %#x\n", internal.OPCODE_NAMES[opcode], opcode, c.Registers.PC, c.Registers.SP, value)
-	}
+
 	if c.Mb.Breakpoints.Enabled {
 		if internal.IsInUint16Array(pc, c.Mb.Breakpoints.Addrs) {
 			reader := bufio.NewReader(os.Stdin)

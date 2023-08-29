@@ -22,6 +22,7 @@ type Motherboard struct {
 	Ram         *InternalRAM         // Internal RAM
 	BootRom     *BootRom             // Boot ROM
 	Cgb         bool                 // Color Gameboy
+	CpuFreq     uint32               // CPU frequency
 	Randomize   bool                 // Randomize RAM on startup
 	Decouple    bool                 // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
 	Breakpoints *Breakpoints         // Breakpoints
@@ -64,6 +65,12 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	}
 
 	mb.Cgb = mb.Cartridge.CgbModeEnabled() || params.ForceCgb
+	mb.CpuFreq = internal.DMG_CLOCK_SPEED
+
+	if mb.Cgb {
+		mb.CpuFreq = internal.CGB_CLOCK_SPEED
+	}
+
 	mb.Cpu = NewCpu(mb)
 	mb.Ram = NewInternalRAM(mb.Cgb, params.Randomize)
 	// mb.BootRom = NewBootRom(mb.Cartridge.CgbModeEnabled())
@@ -72,8 +79,10 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 		logger.Debugf("Boot ROM disabled")
 		mb.Cpu.Registers.PC = 0x100
 	}
+
 	return mb
 }
+
 
 func (m *Motherboard) BootRomEnabled() bool {
 	return m.BootRom != nil
@@ -227,6 +236,20 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	*
 	 */
 	case 0xFF00 <= *addr && *addr < 0xFF80:
+
+		switch *addr {
+		case 0xFF0F:
+			logger.Debugf("Reading from %#x - IF Register", *addr)
+			return m.Cpu.Interrupts.IF
+		case 0xFF04:
+			logger.Debugf("Reading from %#x - DIV Register", *addr)
+			return m.Cpu.Timer.DIV
+
+		case 0xFF07:
+			logger.Debugf("Reading from %#x - TAC Register", *addr)
+			return m.Cpu.Timer.TAC
+		}
+
 		addr_copy -= 0xFF00
 		logger.Debugf("Reading from %#x on IO", *addr)
 		return m.Ram.GetItemIO(addr_copy)
@@ -388,16 +411,29 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 			m.BootRom = nil
 		}
 
-		if *addr == 0xFF0F {
+		switch *addr {
+		case 0xFF0F:
 			logger.Debugf("Writing %#x to %#x on IF", v, *addr)
 			m.Cpu.Interrupts.IF = v
-			break
+			return
+		case 0xFF04:
+			logger.Debugf("Writing %#x to %#x on DIV", v, *addr)
+			m.Cpu.Timer.DIV = 0
+			return
+
+		case 0xFF07:
+			logger.Debugf("Writing %#x to %#x on TAC", v, *addr)
+			m.Cpu.Timer.TAC = v
+			return
 		}
 
 		addr_copy -= 0xFF00
+
+		/// prints serial output to termain ///
 		if v == 0x81 && *addr == 0xff02 {
 			fmt.Printf("%c", m.Ram.GetItemIO(IO_SB))
 		}
+		////////////////////////////////////
 		m.Ram.SetItemIO(addr_copy, v)
 
 	/*

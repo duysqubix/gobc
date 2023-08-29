@@ -108,6 +108,14 @@ const (
 	LCDC_OBJEN  uint8 = 0x02 // Bit 1 - OBJ (Sprite) Display Enable    (0=Off, 1=On)
 	LCDC_BGEN   uint8 = 0x01 // Bit 0 - BG Display (for CGB see below) (0=Off, 1=On)
 
+	TAC_ENABLE     = 0x04 // Timer enable (0b100)
+	TAC_SPEED_1024 = 0x00 // CPU_CLOCK / 1024 (0b00)
+	TAC_SPEED_16   = 0x01 // CPU_CLOCK / 16 (0b01)
+	TAC_SPEED_64   = 0x02 // CPU_CLOCK / 64 (0b10)
+	TAC_SPEED_256  = 0x03 // CPU_CLOCK / 256 (0b11)
+
+	TIMER_DIV_HZ uint32 = 16384 // 16384 Hz
+
 )
 
 type OpCode uint16                                        // 16-bit opcodes

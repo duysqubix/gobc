@@ -28,13 +28,14 @@ var OPCODES = OpCodeMap{
 	0x10: func(mb *Motherboard, value uint16) OpCycles {
 		c := *mb.Cpu
 
-		// TODO: Implement
-		if mb.Cgb == true {
+		if mb.Cgb {
 			var addr uint16 = 0xff04
 			var value uint16 = 0x00
 			mb.SetItem(&addr, &value)
 		}
 
+		// reset timer
+		c.Timer.DIV = 0x00
 		c.Registers.PC += 2
 		return 4
 	},

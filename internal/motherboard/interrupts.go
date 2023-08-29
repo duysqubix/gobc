@@ -66,10 +66,11 @@ func (c *CPU) handleInterrupt(f uint8, addr uint16) bool {
 
 		// handle interrupt
 		if c.Interrupts.Master_Enable {
-			logger.Warnf("Setting Address to %#x\n", addr)
-			logger.Warnf("IE: %08b, IF: %08b, flag: %08b, addr: %#x\n", c.Interrupts.IE, c.Interrupts.IF, flag, addr)
-			logger.Warnf("Interrupts Active: %s\n", InterruptFlagDump(c.Interrupts.IF))
+			// logger.Warnf("Setting Address to %#x\n", addr)
+			// logger.Warnf("PRE: IE: %08b, IF: %08b, flag: %08b, addr: %#x\n", c.Interrupts.IE, c.Interrupts.IF, flag, addr)
+			// logger.Warnf("Interrupts Active: %s\n", InterruptFlagDump(c.Interrupts.IF))
 			c.Interrupts.IF &^= flag
+
 			sp1 := c.Registers.SP - 1
 			pc1 := c.Registers.PC >> 8
 
@@ -77,10 +78,12 @@ func (c *CPU) handleInterrupt(f uint8, addr uint16) bool {
 			pc2 := c.Registers.PC & 0xFF
 			c.Mb.SetItem(&sp1, &pc1)
 			c.Mb.SetItem(&sp2, &pc2)
-			logger.Warnf("sp1: %#x, pc1: %#x, sp2: %#x, pc2: %#x\n", sp1, pc1, sp2, pc2)
+			// logger.Warnf("sp1: %#x, pc1: %#x, sp2: %#x, pc2: %#x\n", sp1, pc1, sp2, pc2)
 			c.Registers.SP -= 2
 			c.Registers.PC = addr
 			c.Interrupts.Master_Enable = false
+			// logger.Warnf("POST: IE: %08b, IF: %08b, flag: %08b, addr: %#x\n", c.Interrupts.IE, c.Interrupts.IF, flag, addr)
+
 		}
 		return true
 	}
