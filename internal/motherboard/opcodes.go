@@ -993,7 +993,6 @@ var OPCODES = OpCodeMap{
 	0x76: func(mb *Motherboard, value uint16) OpCycles {
 
 		mb.Cpu.Halted = true
-		logger.Error("HALTING")
 		return 4
 	},
 

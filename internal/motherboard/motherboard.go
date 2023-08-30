@@ -21,6 +21,7 @@ type Motherboard struct {
 	Cartridge   *cartridge.Cartridge // Cartridge
 	Ram         *InternalRAM         // Internal RAM
 	BootRom     *BootRom             // Boot ROM
+	Timer       *Timer               // Timer
 	Cgb         bool                 // Color Gameboy
 	CpuFreq     uint32               // CPU frequency
 	Randomize   bool                 // Randomize RAM on startup
@@ -61,6 +62,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 		Cartridge:   cart,
 		Randomize:   params.Randomize,
 		Decouple:    params.Decouple,
+		Timer:       NewTimer(),
 		Breakpoints: bp,
 	}
 
@@ -83,16 +85,11 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	return mb
 }
 
-
 func (m *Motherboard) BootRomEnabled() bool {
 	return m.BootRom != nil
 }
 
 func (m *Motherboard) Tick() (bool, OpCycles) {
-	if m.Cpu.Stopped || m.Cpu.Halted || m.Cpu.IsStuck {
-		return false, 0
-	}
-
 	defer func() {
 		if r := recover(); r != nil {
 			df := internal.StateDumpFile()
@@ -108,7 +105,25 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 			logger.Panic()
 		}
 	}()
-	cycles := m.Cpu.Tick()
+	var cycles OpCycles = 0
+
+	if m.Cpu.Stopped || m.Cpu.IsStuck {
+		return false, cycles
+	}
+
+	cycles = m.Cpu.Tick()
+
+	if m.Cpu.Halted {
+		// fast forward to next interrupt
+		cycles = min([]OpCycles{
+			m.Timer.CyclesToInterrupt(),
+		})
+	}
+
+	if m.Timer.Tick(cycles) {
+		logger.Debugf("Timer Tick Returned True, Setting Interrupt Flag, cycles: %d\n", cycles)
+		m.Cpu.SetInterruptFlag(INTR_TIMER)
+	}
 
 	return true, cycles
 }
@@ -243,11 +258,11 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 			return m.Cpu.Interrupts.IF
 		case 0xFF04:
 			logger.Debugf("Reading from %#x - DIV Register", *addr)
-			return m.Cpu.Timer.DIV
+			return uint8(m.Timer.DIV)
 
 		case 0xFF07:
 			logger.Debugf("Reading from %#x - TAC Register", *addr)
-			return m.Cpu.Timer.TAC
+			return uint8(m.Timer.TAC)
 		}
 
 		addr_copy -= 0xFF00
@@ -299,11 +314,6 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 	 */
 	case *addr < 0x4000:
 		logger.Debugf("Writing %#x to %#x on ROM bank 0", v, *addr)
-
-		switch *addr {
-		case INTR_TIMER_ADDR:
-			logger.Errorf("Writing %#x to %#x on ROM bank 0", v, *addr)
-		}
 
 		m.Cartridge.CartType.SetItem(addr_copy, v)
 
@@ -418,12 +428,12 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 			return
 		case 0xFF04:
 			logger.Debugf("Writing %#x to %#x on DIV", v, *addr)
-			m.Cpu.Timer.DIV = 0
+			m.Timer.DIV = 0
 			return
 
 		case 0xFF07:
 			logger.Debugf("Writing %#x to %#x on TAC", v, *addr)
-			m.Cpu.Timer.TAC = v
+			m.Timer.TAC = uint16(v)
 			return
 		}
 

@@ -55,6 +55,10 @@ func (i *Interrupts) ResetTimer()     { internal.ResetBit(&i.IF, INTR_TIMER) }
 func (i *Interrupts) ResetSerial()    { internal.ResetBit(&i.IF, INTR_SERIAL) }
 func (i *Interrupts) ResetHighToLow() { internal.ResetBit(&i.IF, INTR_HIGHTOLOW) }
 
+func (c *CPU) SetInterruptFlag(f uint8) {
+	c.Interrupts.IF |= uint8(1 << f)
+}
+
 func (c *CPU) handleInterrupt(f uint8, addr uint16) bool {
 	flag := uint8(1 << f)
 

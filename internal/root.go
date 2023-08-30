@@ -90,6 +90,7 @@ func IsInUint16Array(value uint16, array []uint16) bool {
 	return false
 }
 
+
 // used to know how many bytes to read after the opcode
 // during instruction decoding from Program Counter
 var OPCODE_LENGTHS = [512]uint8{

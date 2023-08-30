@@ -33,7 +33,6 @@ type CPU struct {
 	Halted     bool         // CPU halted
 	Interrupts *Interrupts  // Interrupts
 	Mb         *Motherboard // Motherboard
-	Timer      *Timer       // Timer
 	IsStuck    bool         // CPU is stuck
 	Stopped    bool         // CPU is stopped
 }
@@ -59,65 +58,15 @@ func NewCpu(mb *Motherboard) *CPU {
 			IF:            0,
 			Queued:        false,
 		},
-		Mb:    mb,
-		Timer: NewTimer(),
+		Mb: mb,
 	}
 
-}
-
-var (
-	divTimerCycles   int64 = -1 // number of cycles that needs to pass before a timer tick occurs
-	timaTimerCycles  int64 = -1
-	divTimerCounter  int64 = 0
-	timaTimerCounter int64 = 0
-)
-
-func (c *CPU) divTimerCycles() int64 {
-	// TODO: double speed mode
-	if divTimerCycles < 0 {
-		divTimerCycles = int64(c.Mb.CpuFreq) / int64(TIMER_DIV_HZ)
-	}
-	return divTimerCycles
-}
-
-func (c *CPU) timaTimerCycles() int64 {
-	timaTimerCycles = c.Timer.Speed(int64(c.Mb.CpuFreq))
-	return timaTimerCycles
 }
 
 func (c *CPU) Tick() OpCycles {
-
-	// increment DIV by 1
-	if divTimerCounter >= c.divTimerCycles() {
-		c.Timer.DIV++
-		divTimerCounter = 0
-	}
-
-	// increment TIMA by 1
-	if c.Timer.Enabled() {
-		// logger.Warnf("DivTimerCounter: %d, DivTimerCycles: %d, TimaTimerCounter: %d, TimaTimerCycles: %d\n", divTimerCounter, c.divTimerCycles(), timaTimerCounter, c.timaTimerCycles())
-
-		if timaTimerCounter >= c.timaTimerCycles() {
-			c.Timer.TIMA++
-			if c.Timer.TIMA > 0xFF {
-
-				// TIMA overflowed, reset to TMA
-				c.Timer.TIMA = uint16(c.Timer.TMA)
-				// request interrupt
-				c.Interrupts.IF |= INTR_TIMER
-				logger.Warnf("Timer Overflowed, requesting interrupt\n")
-
-			}
-
-			timaTimerCounter = 0
-		}
-	}
-
-	// Need to increment TIMER DIV register by 16384Hz, 1,638 times per second
 	tickCycles = 0
 	switch {
 	case c.CheckForInterrupts():
-		// logger.Warnf("InterruptsEnabled: %s\n", InterruptFlagDump(c.Interrupts.IE))
 		c.Halted = false
 		return tickCycles // 0
 
@@ -131,8 +80,6 @@ func (c *CPU) Tick() OpCycles {
 
 	case c.Halted:
 		tickCycles = 4
-		divTimerCounter += int64(tickCycles)
-		timaTimerCounter += int64(tickCycles)
 		return tickCycles
 	default:
 	}
@@ -140,8 +87,10 @@ func (c *CPU) Tick() OpCycles {
 	old_pc := c.Registers.PC
 	old_sp := c.Registers.SP
 	tickCycles = c.ExecuteInstruction()
-	divTimerCounter += int64(tickCycles)
-	timaTimerCounter += int64(tickCycles)
+
+	if c.Halted {
+		logger.Warnf("HALT DETECTED POST EXECUTE ")
+	}
 
 	if !c.Halted && (old_pc == c.Registers.PC) && (old_sp == c.Registers.SP) && !c.IsStuck {
 		logger.Errorf("CPU is stuck at PC: %#x SP: %#x", c.Registers.PC, c.Registers.SP)
@@ -151,26 +100,27 @@ func (c *CPU) Tick() OpCycles {
 	}
 
 	c.Interrupts.Queued = false
+
 	return tickCycles
 }
 
 func (c *CPU) ExecuteInstruction() OpCycles {
 
-	_pc := c.Registers.PC
-	pc0 := c.Mb.GetItem(&_pc)
-	_pc++
-	pc1 := c.Mb.GetItem(&_pc)
-	_pc++
-	pc2 := c.Mb.GetItem(&_pc)
-	_pc++
-	pc3 := c.Mb.GetItem(&_pc)
-	_pc++
+	// _pc := c.Registers.PC
+	// pc0 := c.Mb.GetItem(&_pc)
+	// _pc++
+	// pc1 := c.Mb.GetItem(&_pc)
+	// _pc++
+	// pc2 := c.Mb.GetItem(&_pc)
+	// _pc++
+	// pc3 := c.Mb.GetItem(&_pc)
+	// _pc++
 
-	row := fmt.Sprintf("A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X SP: %04X PC: 00:%04X (%02X %02X %02X %02X)\n",
-		c.Registers.A, c.Registers.F, c.Registers.B, c.Registers.C, c.Registers.D, c.Registers.E, c.Registers.H, c.Registers.L, c.Registers.SP, c.Registers.PC,
-		pc0, pc1, pc2, pc3,
-	)
-	internal.AppendToLogFile(row)
+	// row := fmt.Sprintf("A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X SP: %04X PC: 00:%04X (%02X %02X %02X %02X)\n",
+	// 	c.Registers.A, c.Registers.F, c.Registers.B, c.Registers.C, c.Registers.D, c.Registers.E, c.Registers.H, c.Registers.L, c.Registers.SP, c.Registers.PC,
+	// 	pc0, pc1, pc2, pc3,
+	// )
+	// internal.AppendToLogFile(row)
 
 	var value uint16
 
