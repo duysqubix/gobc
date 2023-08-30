@@ -1061,6 +1061,7 @@ var OPCODES = OpCodeMap{
 		v := uint8(value)
 		c.Registers.A = c.AndSetFlags(c.Registers.A, v)
 		c.Registers.PC += 2
+		logger.Warnf("A: %#X, v: %#X", c.Registers.A, v)
 		return 8
 	},
 

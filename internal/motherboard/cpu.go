@@ -95,7 +95,7 @@ func (c *CPU) Tick() OpCycles {
 
 	// increment TIMA by 1
 	if c.Timer.Enabled() {
-		logger.Warnf("DivTimerCounter: %d, DivTimerCycles: %d, TimaTimerCounter: %d, TimaTimerCycles: %d\n", divTimerCounter, c.divTimerCycles(), timaTimerCounter, c.timaTimerCycles())
+		// logger.Warnf("DivTimerCounter: %d, DivTimerCycles: %d, TimaTimerCounter: %d, TimaTimerCycles: %d\n", divTimerCounter, c.divTimerCycles(), timaTimerCounter, c.timaTimerCycles())
 
 		if timaTimerCounter >= c.timaTimerCycles() {
 			c.Timer.TIMA++
@@ -105,6 +105,7 @@ func (c *CPU) Tick() OpCycles {
 				c.Timer.TIMA = uint16(c.Timer.TMA)
 				// request interrupt
 				c.Interrupts.IF |= INTR_TIMER
+				logger.Warnf("Timer Overflowed, requesting interrupt\n")
 
 			}
 
