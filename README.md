@@ -79,9 +79,4 @@ Contribute
 ==========
 Any contribution is appreciated. The currently known problems are tracked in the Issues tab. Feel free to take a swing at any one of them.
 
-For the more major features, there are the following that you can give a try. They are also described in more detail in the [project list](https://github.com/Baekalfen/PyBoy/raw/master/Projects/Projects.pdf):
-* Link Cable
-* _(Experimental)_ AI - use the `botsupport` or game wrappers to train a neural network
-* _(Experimental)_ Game Wrappers - make wrappers for popular games
-
 If you want to implement something which is not on the list, feel free to do so anyway. If you want to merge it into our repo, then just send a pull request and we will have a look at it.
