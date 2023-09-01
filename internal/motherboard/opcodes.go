@@ -2838,19 +2838,21 @@ var OPCODES = OpCodeMap{
 	// SLA C - Shift C left into Carry. LSB of C set to 0 (289) [minus 0xFF for CB prefix]
 	0x121: func(mb *Motherboard, value uint16) OpCycles {
 
-		b := mb.Cpu.Registers.C
-		mb.Cpu.ResetFlagZ()
-		mb.Cpu.ResetFlagN()
-		mb.Cpu.ResetFlagH()
+		t := (uint16(mb.Cpu.Registers.C) << 1)
 
-		if internal.IsBitSet(b, 7) {
-			mb.Cpu.SetFlagC()
-		} else {
-			mb.Cpu.ResetFlagC()
+		var flag uint8 = 0b00000000
+
+		if t > 0xFF {
+			flag += (1 << FLAGC)
 		}
 
-		b = (b << 1) & 0xff
-		mb.Cpu.Registers.C = b
+		if t&0xff == 0 {
+			flag += (1 << FLAGZ)
+		}
+		mb.Cpu.Registers.F |= flag
+
+		t &= 0xff
+		mb.Cpu.Registers.C = uint8(t)
 		mb.Cpu.Registers.PC += 2
 		return 8
 	},
@@ -4800,20 +4802,24 @@ var OPCODES = OpCodeMap{
 	// RRC D - Rotate D right. Old bit 0 to Carry flag (266) [minus 0xFF for CB prefix]
 	0x10a: func(mb *Motherboard, value uint16) OpCycles {
 
-		b := mb.Cpu.Registers.D
+		d := uint16(mb.Cpu.Registers.D)
+		v := uint16((d >> 1) | ((d & 1) << 7) | ((d & 1) << 8))
+
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
+		mb.Cpu.ResetFlagC()
 
-		if internal.IsBitSet(b, 0) {
-			mb.Cpu.SetFlagC()
-			b = (b >> 1) + 0x80
-		} else {
-			mb.Cpu.ResetFlagC()
-			b = (b >> 1)
+		if v&0xFF == 0 {
+			mb.Cpu.SetFlagZ()
 		}
 
-		mb.Cpu.Registers.D = b
+		if v > 0xFF {
+			mb.Cpu.SetFlagC()
+		}
+
+		mb.Cpu.Registers.D = uint8(v & 0xFF)
+
 		mb.Cpu.Registers.PC += 2
 		return 8
 	},
@@ -4821,26 +4827,28 @@ var OPCODES = OpCodeMap{
 	// RR D - Rotate D right through Carry flag (282) [minus 0xFF for CB prefix]
 	0x11a: func(mb *Motherboard, value uint16) OpCycles {
 
-		b := mb.Cpu.Registers.D
+		b := uint16(mb.Cpu.Registers.D)
+
+		var oldCarry uint16 = 0
+		if mb.Cpu.IsFlagCSet() {
+			oldCarry = 1
+		}
+		v := uint16(b>>1) + uint16((oldCarry << 7)) + uint16((b&1)<<8)
+
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
+		mb.Cpu.ResetFlagC()
 
-		oldCarry := mb.Cpu.IsFlagCSet()
+		if v&0xFF == 0 {
+			mb.Cpu.SetFlagZ()
+		}
 
-		if internal.IsBitSet(b, 0) {
+		if v > 0xFF {
 			mb.Cpu.SetFlagC()
-		} else {
-			mb.Cpu.ResetFlagC()
 		}
 
-		// shift register D to the right by one bit
-		b = (b >> 1) & 0xff
-		if oldCarry {
-			b |= 0x80
-		}
-
-		mb.Cpu.Registers.D = b
+		mb.Cpu.Registers.D = uint8(v & 0xFF)
 		mb.Cpu.Registers.PC += 2
 		return 8
 	},
@@ -5023,20 +5031,24 @@ var OPCODES = OpCodeMap{
 	// RRC E - Rotate E right. Old bit 0 to Carry flag (267) [minus 0xFF for CB prefix]
 	0x10b: func(mb *Motherboard, value uint16) OpCycles {
 
-		b := mb.Cpu.Registers.E
+		d := uint16(mb.Cpu.Registers.E)
+		v := uint16((d >> 1) | ((d & 1) << 7) | ((d & 1) << 8))
+
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
+		mb.Cpu.ResetFlagC()
 
-		if internal.IsBitSet(b, 0) {
-			mb.Cpu.SetFlagC()
-			b = (b >> 1) + 0x80
-		} else {
-			mb.Cpu.ResetFlagC()
-			b = (b >> 1)
+		if v&0xFF == 0 {
+			mb.Cpu.SetFlagZ()
 		}
 
-		mb.Cpu.Registers.E = b
+		if v > 0xFF {
+			mb.Cpu.SetFlagC()
+		}
+
+		mb.Cpu.Registers.E = uint8(v & 0xFF)
+
 		mb.Cpu.Registers.PC += 2
 		return 8
 	},
@@ -5044,26 +5056,28 @@ var OPCODES = OpCodeMap{
 	// RR E - Rotate E right through Carry flag (283) [minus 0xFF for CB prefix]
 	0x11b: func(mb *Motherboard, value uint16) OpCycles {
 
-		b := mb.Cpu.Registers.E
+		b := uint16(mb.Cpu.Registers.E)
+
+		var oldCarry uint16 = 0
+		if mb.Cpu.IsFlagCSet() {
+			oldCarry = 1
+		}
+		v := uint16(b>>1) + uint16((oldCarry << 7)) + uint16((b&1)<<8)
+
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
+		mb.Cpu.ResetFlagC()
 
-		oldCarry := mb.Cpu.IsFlagCSet()
+		if v&0xFF == 0 {
+			mb.Cpu.SetFlagZ()
+		}
 
-		if internal.IsBitSet(b, 0) {
+		if v > 0xFF {
 			mb.Cpu.SetFlagC()
-		} else {
-			mb.Cpu.ResetFlagC()
 		}
 
-		// shift register E to the right by one bit
-		b = (b >> 1) & 0xff
-		if oldCarry {
-			b |= 0x80
-		}
-
-		mb.Cpu.Registers.E = b
+		mb.Cpu.Registers.E = uint8(v & 0xFF)
 		mb.Cpu.Registers.PC += 2
 		return 8
 	},
@@ -5245,21 +5259,24 @@ var OPCODES = OpCodeMap{
 	/****************************** 0xnc **********************/
 	// RRC H - Rotate H right. Old bit 0 to Carry flag (268) [minus 0xFF for CB prefix]
 	0x10c: func(mb *Motherboard, value uint16) OpCycles {
+		d := uint16(mb.Cpu.Registers.H)
+		v := uint16((d >> 1) | ((d & 1) << 7) | ((d & 1) << 8))
 
-		b := mb.Cpu.Registers.H
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
+		mb.Cpu.ResetFlagC()
 
-		if internal.IsBitSet(b, 0) {
-			mb.Cpu.SetFlagC()
-			b = (b >> 1) + 0x80
-		} else {
-			mb.Cpu.ResetFlagC()
-			b = (b >> 1)
+		if v&0xFF == 0 {
+			mb.Cpu.SetFlagZ()
 		}
 
-		mb.Cpu.Registers.H = b
+		if v > 0xFF {
+			mb.Cpu.SetFlagC()
+		}
+
+		mb.Cpu.Registers.H = uint8(v & 0xFF)
+
 		mb.Cpu.Registers.PC += 2
 		return 8
 	},
@@ -5267,26 +5284,28 @@ var OPCODES = OpCodeMap{
 	// RR H - Rotate H right through Carry flag (284) [minus 0xFF for CB prefix]
 	0x11c: func(mb *Motherboard, value uint16) OpCycles {
 
-		b := mb.Cpu.Registers.H
+		b := uint16(mb.Cpu.Registers.H)
+
+		var oldCarry uint16 = 0
+		if mb.Cpu.IsFlagCSet() {
+			oldCarry = 1
+		}
+		v := uint16(b>>1) + uint16((oldCarry << 7)) + uint16((b&1)<<8)
+
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
+		mb.Cpu.ResetFlagC()
 
-		oldCarry := mb.Cpu.IsFlagCSet()
+		if v&0xFF == 0 {
+			mb.Cpu.SetFlagZ()
+		}
 
-		if internal.IsBitSet(b, 0) {
+		if v > 0xFF {
 			mb.Cpu.SetFlagC()
-		} else {
-			mb.Cpu.ResetFlagC()
 		}
 
-		// shift register H to the right by one bit
-		b = (b >> 1) & 0xff
-		if oldCarry {
-			b |= 0x80
-		}
-
-		mb.Cpu.Registers.H = b
+		mb.Cpu.Registers.H = uint8(v & 0xFF)
 		mb.Cpu.Registers.PC += 2
 		return 8
 	},
@@ -5470,47 +5489,52 @@ var OPCODES = OpCodeMap{
 	// RRC L - Rotate L right. Old bit 0 to Carry flag (269) [minus 0xFF for CB prefix]
 	0x10d: func(mb *Motherboard, value uint16) OpCycles {
 
-		b := mb.Cpu.Registers.L
+		d := uint16(mb.Cpu.Registers.L)
+		v := uint16((d >> 1) | ((d & 1) << 7) | ((d & 1) << 8))
+
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
+		mb.Cpu.ResetFlagC()
 
-		if internal.IsBitSet(b, 0) {
-			mb.Cpu.SetFlagC()
-			b = (b >> 1) + 0x80
-		} else {
-			mb.Cpu.ResetFlagC()
-			b = (b >> 1)
+		if v&0xFF == 0 {
+			mb.Cpu.SetFlagZ()
 		}
 
-		mb.Cpu.Registers.L = b
+		if v > 0xFF {
+			mb.Cpu.SetFlagC()
+		}
+
+		mb.Cpu.Registers.L = uint8(v & 0xFF)
+
 		mb.Cpu.Registers.PC += 2
 		return 8
 	},
 
 	// RR L - Rotate L right through Carry flag (285) [minus 0xFF for CB prefix]
 	0x11d: func(mb *Motherboard, value uint16) OpCycles {
+		b := uint16(mb.Cpu.Registers.L)
 
-		b := mb.Cpu.Registers.L
+		var oldCarry uint16 = 0
+		if mb.Cpu.IsFlagCSet() {
+			oldCarry = 1
+		}
+		v := uint16(b>>1) + uint16((oldCarry << 7)) + uint16((b&1)<<8)
+
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
+		mb.Cpu.ResetFlagC()
 
-		oldCarry := mb.Cpu.IsFlagCSet()
+		if v&0xFF == 0 {
+			mb.Cpu.SetFlagZ()
+		}
 
-		if internal.IsBitSet(b, 0) {
+		if v > 0xFF {
 			mb.Cpu.SetFlagC()
-		} else {
-			mb.Cpu.ResetFlagC()
 		}
 
-		// shift register L to the right by one bit
-		b = (b >> 1) & 0xff
-		if oldCarry {
-			b |= 0x80
-		}
-
-		mb.Cpu.Registers.L = b
+		mb.Cpu.Registers.L = uint8(v & 0xFF)
 		mb.Cpu.Registers.PC += 2
 		return 8
 	},
@@ -5962,47 +5986,52 @@ var OPCODES = OpCodeMap{
 	// RRC A - Rotate A right. Old bit 0 to Carry flag (271) [minus 0xFF for CB prefix]
 	0x10f: func(mb *Motherboard, value uint16) OpCycles {
 
-		b := mb.Cpu.Registers.A
+		d := uint16(mb.Cpu.Registers.A)
+		v := uint16((d >> 1) | ((d & 1) << 7) | ((d & 1) << 8))
+
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
+		mb.Cpu.ResetFlagC()
 
-		if internal.IsBitSet(b, 0) {
-			mb.Cpu.SetFlagC()
-			b = (b >> 1) + 0x80
-		} else {
-			mb.Cpu.ResetFlagC()
-			b = (b >> 1)
+		if v&0xFF == 0 {
+			mb.Cpu.SetFlagZ()
 		}
 
-		mb.Cpu.Registers.A = b
+		if v > 0xFF {
+			mb.Cpu.SetFlagC()
+		}
+
+		mb.Cpu.Registers.A = uint8(v & 0xFF)
+
 		mb.Cpu.Registers.PC += 2
 		return 8
 	},
 
 	// RR A - Rotate A right through Carry flag (287) [minus 0xFF for CB prefix]
 	0x11f: func(mb *Motherboard, value uint16) OpCycles {
+		b := uint16(mb.Cpu.Registers.A)
 
-		b := mb.Cpu.Registers.A
+		var oldCarry uint16 = 0
+		if mb.Cpu.IsFlagCSet() {
+			oldCarry = 1
+		}
+		v := uint16(b>>1) + uint16((oldCarry << 7)) + uint16((b&1)<<8)
+
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
+		mb.Cpu.ResetFlagC()
 
-		oldCarry := mb.Cpu.IsFlagCSet()
+		if v&0xFF == 0 {
+			mb.Cpu.SetFlagZ()
+		}
 
-		if internal.IsBitSet(b, 0) {
+		if v > 0xFF {
 			mb.Cpu.SetFlagC()
-		} else {
-			mb.Cpu.ResetFlagC()
 		}
 
-		// shift register A to the right by one bit
-		b = (b >> 1) & 0xff
-		if oldCarry {
-			b |= 0x80
-		}
-
-		mb.Cpu.Registers.A = b
+		mb.Cpu.Registers.A = uint8(v & 0xFF)
 		mb.Cpu.Registers.PC += 2
 		return 8
 	},

@@ -2988,6 +2988,7 @@ def RR_119(cpu): # 119 RR C
 
 def RR_11A(cpu): # 11A RR D
     t = (cpu.D >> 1) + (cpu.f_c() << 7) + ((cpu.D & 1) << 8)
+    print(f"F:{cpu.F:02X} , {cpu.D >> 1:02X} + {cpu.f_c() << 7:02X} + {(cpu.D & 1) << 8:02X} = {t:02X}| {cpu.D:02X}, {cpu.f_c():02X}")
     flag = 0b00000000
     flag += ((t & 0xFF) == 0) << FLAGZ
     flag += (t > 0xFF) << FLAGC
