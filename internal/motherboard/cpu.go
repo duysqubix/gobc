@@ -207,6 +207,8 @@ func (c *CPU) ResetFlagN() { internal.ResetBit(&c.Registers.F, uint8(FLAGN)) }
 func (c *CPU) ResetFlagH() { internal.ResetBit(&c.Registers.F, uint8(FLAGH)) }
 func (c *CPU) ResetFlagC() { internal.ResetBit(&c.Registers.F, uint8(FLAGC)) }
 
+func (c *CPU) ResetAllFlags() { c.Registers.F = 0 }
+
 func (c *CPU) SetBC(value uint16) {
 	c.Registers.B = uint8(value >> 8)
 	c.Registers.C = uint8(value & 0xFF)

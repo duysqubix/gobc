@@ -2838,21 +2838,19 @@ var OPCODES = OpCodeMap{
 	// SLA C - Shift C left into Carry. LSB of C set to 0 (289) [minus 0xFF for CB prefix]
 	0x121: func(mb *Motherboard, value uint16) OpCycles {
 
-		t := (uint16(mb.Cpu.Registers.C) << 1)
+		c := mb.Cpu.Registers.C
+		mb.Cpu.ResetAllFlags()
 
-		var flag uint8 = 0b00000000
-
-		if t > 0xFF {
-			flag += (1 << FLAGC)
+		if (c & 0x80) != 0 {
+			mb.Cpu.SetFlagC()
 		}
 
-		if t&0xff == 0 {
-			flag += (1 << FLAGZ)
-		}
-		mb.Cpu.Registers.F |= flag
+		result := (c << 1) & 0xff
+		mb.Cpu.Registers.C = result
 
-		t &= 0xff
-		mb.Cpu.Registers.C = uint8(t)
+		if result == 0 {
+			mb.Cpu.SetFlagZ()
+		}
 		mb.Cpu.Registers.PC += 2
 		return 8
 	},
@@ -5732,6 +5730,10 @@ var OPCODES = OpCodeMap{
 			b = (b >> 1)
 		}
 
+		if b == 0 {
+			mb.Cpu.SetFlagZ()
+		}
+
 		b16 := uint16(b)
 		mb.SetItem(&hl, &b16)
 		mb.Cpu.Registers.PC += 2
@@ -5761,6 +5763,10 @@ var OPCODES = OpCodeMap{
 			b |= 0x80
 		}
 
+		if b == 0 {
+			mb.Cpu.SetFlagZ()
+		}
+
 		b16 := uint16(b)
 		mb.SetItem(&hl, &b16)
 		mb.Cpu.Registers.PC += 2
@@ -5772,21 +5778,31 @@ var OPCODES = OpCodeMap{
 
 		hl := mb.Cpu.HL()
 		b := mb.GetItem(&hl)
-		mb.Cpu.ResetFlagZ()
-		mb.Cpu.ResetFlagN()
-		mb.Cpu.ResetFlagH()
+		mb.Cpu.ResetAllFlags()
 
-		if internal.IsBitSet(b, 0) {
+		if b&0x01 != 0 {
 			mb.Cpu.SetFlagC()
-		} else {
-			mb.Cpu.ResetFlagC()
 		}
 
-		// shift value pointed by HL to the right by one bit
-		b = (b >> 1) & 0xff
-		if internal.IsBitSet(mb.Cpu.Registers.L, 7) {
+		if b&0x80 != 0 {
+			b >>= 1
 			b |= 0x80
+		} else {
+			b >>= 1
 		}
+
+		if b == 0 {
+			mb.Cpu.SetFlagZ()
+		}
+		// // shift value pointed by HL to the right by one bit
+		// b = (b >> 1) & 0xff
+		// if internal.IsBitSet(mb.Cpu.Registers.L, 7) {
+		// 	b |= 0x80
+		// }
+
+		// if b == 0 {
+		// 	mb.Cpu.SetFlagZ()
+		// }
 
 		b16 := uint16(b)
 		mb.SetItem(&hl, &b16)

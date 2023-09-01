@@ -1,4 +1,87 @@
-# Go Boy Color
+<p align="center">
+<img src="docs/gobc_logo.png" width="480">
+</p>
 
-A modern Gameboy Color Emulator Written in Golang
+__If you have any questions, or just want to chat, [join us on Discord](https://discord.gg/eZg8bEYy).__
 
+
+Standing on the shoulders of giants, this is a fun project to create, _yet another_, GameBoy emulator in Golang. 
+
+<!---
+Generate GIF with the layout and captions
+-->
+<table>
+  <tbody>
+    <tr>
+      <td align="center">CPU_INSTRS<br>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="docs/cpu_instrs.png" width="400">
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+Supported Features
+==================
+- [x] Emulated CPU (LR35902)
+- [ ] DMG Sound
+- [x] Interrupts
+    * [] V-Blank
+    * [] LCD STAT
+    * [x] Timer
+    * [] Serial
+    * [] Joypad
+- [ ] Cartridges
+    - [x] Cartridge RAM_ONLY
+    - [x] Cartridge MBC1
+    - [ ] Cartridge MBC2
+    - [x] Cartridge MBC3
+    - [ ] Cartridge MBC5
+    - [ ] Cartridge HuC1
+    - [ ] Cartridge HuC3
+    - [ ] Cartridge MMM01
+    - [ ] Cartridge Pocket Camera
+    - [ ] Cartridge Bandai TAMA5
+    - [ ] Cartridge Hudson HuC-1
+    - [ ] Cartridge Hudson HuC-3
+- [ ] Graphics 
+- [x] RAM
+- [x] Opcodes
+
+
+Installation
+============
+Compiled on Go 1.21.1, build each binary with 
+```bash 
+go build -o bin/cartdump cmd/cartdump/main.go && \  # Disassemble a ROM
+go build -o bin/gobc cmd/gobc/main.go && \          # Main GoBC Emulator
+go build -o bin/opbenchmark cmd/opbenchmark/main.go # Benchmark the CPU on current system
+```
+
+
+Contributors
+============
+
+Thanks to all the people who have contributed to the project and we welcome anyone to 
+join and help out!
+
+Original Developers
+-------------------
+
+ * Duan Uys- [duysqubix](https://github.com/duysqubix)
+
+
+
+Contribute
+==========
+Any contribution is appreciated. The currently known problems are tracked in the Issues tab. Feel free to take a swing at any one of them.
+
+For the more major features, there are the following that you can give a try. They are also described in more detail in the [project list](https://github.com/Baekalfen/PyBoy/raw/master/Projects/Projects.pdf):
+* Link Cable
+* _(Experimental)_ AI - use the `botsupport` or game wrappers to train a neural network
+* _(Experimental)_ Game Wrappers - make wrappers for popular games
+
+If you want to implement something which is not on the list, feel free to do so anyway. If you want to merge it into our repo, then just send a pull request and we will have a look at it.

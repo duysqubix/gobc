@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
@@ -70,7 +71,7 @@ func do_opcodes(opCodeNum uint16, value uint16) {
 	// mb := motherboard.NewMotherboard()
 	// spew.Dump(mb)
 	c := mb.m.Cpu
-	// c.RandomizeRegisters(int64(time.Now().UnixNano()))
+	c.RandomizeRegisters(int64(time.Now().UnixNano()))
 	// c.RandomizeRegisters(1600)
 
 	reg := Register{
