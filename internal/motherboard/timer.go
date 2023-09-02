@@ -46,16 +46,22 @@ func (t *Timer) GetDivider() OpCycles {
 	return t.Dividers[idx]
 }
 
-func (t *Timer) Tick(cycles OpCycles) bool {
+func (t *Timer) updateDividerRegister(cycles OpCycles) {
+	t.DIV += uint16(cycles)
 
-	t.DivCounter += cycles
-	t.DIV += uint16(t.DivCounter >> 8)
-	t.DivCounter &= 0xFF
-	t.DIV &= 0xFF
+	if t.DIV > 0xFF {
+		t.DIV -= 0xFF
+	}
+}
+
+func (t *Timer) Tick(cycles OpCycles) bool {
+	var rqInterrupt bool = false
+
+	t.updateDividerRegister(cycles)
 
 	// check if timer is enabled
 	if !t.Enabled() {
-		return false
+		return rqInterrupt
 	}
 
 	t.TimaCounter += cycles
@@ -63,15 +69,15 @@ func (t *Timer) Tick(cycles OpCycles) bool {
 
 	if t.TimaCounter >= divider {
 		t.TimaCounter -= divider
-		t.TIMA++
 
-		if t.TIMA > 0xFF {
+		if t.TIMA == 0xFF {
 			t.TIMA = t.TMA
-			t.TIMA &= 0xFF
-			return true
+			rqInterrupt = true
+		} else {
+			t.TIMA++
 		}
 	}
-	return false
+	return rqInterrupt
 }
 
 func (t *Timer) CyclesToInterrupt() OpCycles {

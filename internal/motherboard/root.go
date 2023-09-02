@@ -119,7 +119,7 @@ const (
 )
 
 type OpCode uint16                                        // 16-bit opcodes
-type OpCycles uint64                                      // Number of cycles an operation takes
+type OpCycles uint16                                      // Number of cycles an operation takes
 type OpLogic func(mb *Motherboard, value uint16) OpCycles // Operation logic
 type OpCodeMap map[OpCode]OpLogic                         // Map of opcodes to their logic
 

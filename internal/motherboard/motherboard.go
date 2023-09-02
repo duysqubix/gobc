@@ -105,7 +105,7 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 			logger.Panic()
 		}
 	}()
-	var cycles OpCycles = 0
+	var cycles OpCycles = 4
 
 	if m.Cpu.Stopped || m.Cpu.IsStuck {
 		return false, cycles
@@ -121,7 +121,6 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 	}
 
 	if m.Timer.Tick(cycles) {
-		logger.Debugf("Timer Tick Returned True, Setting Interrupt Flag, cycles: %d\n", cycles)
 		m.Cpu.SetInterruptFlag(INTR_TIMER)
 	}
 
@@ -253,16 +252,26 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	case 0xFF00 <= *addr && *addr < 0xFF80:
 
 		switch *addr {
-		case 0xFF0F:
-			logger.Debugf("Reading from %#x - IF Register", *addr)
-			return m.Cpu.Interrupts.IF
+
 		case 0xFF04:
 			logger.Debugf("Reading from %#x - DIV Register", *addr)
 			return uint8(m.Timer.DIV)
 
+		case 0xFF05:
+			logger.Debugf("Reading from %#x - TIMA Register", *addr)
+			return uint8(m.Timer.TIMA)
+
+		case 0xFF06:
+			logger.Debugf("Reading from %#x - TMA Register", *addr)
+			return uint8(m.Timer.TMA)
+
 		case 0xFF07:
 			logger.Debugf("Reading from %#x - TAC Register", *addr)
 			return uint8(m.Timer.TAC)
+
+		case 0xFF0F:
+			logger.Debugf("Reading from %#x - IF Register", *addr)
+			return m.Cpu.Interrupts.IF
 		}
 
 		addr_copy -= 0xFF00
@@ -286,6 +295,7 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	 */
 	case *addr == 0xFFFF:
 		logger.Debugf("Reading from %#x on Interrupt Enable Register\n", *addr)
+		return m.Cpu.Interrupts.IE
 
 	default:
 		logger.Panicf("Memory read error! Can't read from %#x\n", *addr)
@@ -422,18 +432,30 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 		}
 
 		switch *addr {
-		case 0xFF0F:
-			logger.Debugf("Writing %#x to %#x on IF", v, *addr)
-			m.Cpu.Interrupts.IF = v
-			return
+
 		case 0xFF04:
 			logger.Debugf("Writing %#x to %#x on DIV", v, *addr)
 			m.Timer.DIV = 0
 			return
 
+		case 0xFF05:
+			logger.Debugf("Writing %#x to %#x on TIMA", v, *addr)
+			m.Timer.TIMA = uint16(v)
+			return
+
+		case 0xFF06:
+			logger.Debugf("Writing %#x to %#x on TMA", v, *addr)
+			m.Timer.TMA = uint16(v)
+			return
+
 		case 0xFF07:
 			logger.Debugf("Writing %#x to %#x on TAC", v, *addr)
 			m.Timer.TAC = uint16(v)
+			return
+
+		case 0xFF0F:
+			logger.Debugf("Writing %#x to %#x on IF", v, *addr)
+			m.Cpu.Interrupts.IF = v
 			return
 		}
 

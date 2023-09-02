@@ -105,22 +105,23 @@ func (c *CPU) Tick() OpCycles {
 }
 
 func (c *CPU) ExecuteInstruction() OpCycles {
+	// if os.Getenv("PC_DUMP") == "true" {
+	// 	_pc := c.Registers.PC
+	// 	pc0 := c.Mb.GetItem(&_pc)
+	// 	_pc++
+	// 	pc1 := c.Mb.GetItem(&_pc)
+	// 	_pc++
+	// 	pc2 := c.Mb.GetItem(&_pc)
+	// 	_pc++
+	// 	pc3 := c.Mb.GetItem(&_pc)
+	// 	_pc++
 
-	// _pc := c.Registers.PC
-	// pc0 := c.Mb.GetItem(&_pc)
-	// _pc++
-	// pc1 := c.Mb.GetItem(&_pc)
-	// _pc++
-	// pc2 := c.Mb.GetItem(&_pc)
-	// _pc++
-	// pc3 := c.Mb.GetItem(&_pc)
-	// _pc++
-
-	// row := fmt.Sprintf("A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X SP: %04X PC: 00:%04X (%02X %02X %02X %02X)\n",
-	// 	c.Registers.A, c.Registers.F, c.Registers.B, c.Registers.C, c.Registers.D, c.Registers.E, c.Registers.H, c.Registers.L, c.Registers.SP, c.Registers.PC,
-	// 	pc0, pc1, pc2, pc3,
-	// )
-	// internal.AppendToLogFile(row)
+	// 	row := fmt.Sprintf("A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X SP: %04X PC: 00:%04X (%02X %02X %02X %02X)\n",
+	// 		c.Registers.A, c.Registers.F, c.Registers.B, c.Registers.C, c.Registers.D, c.Registers.E, c.Registers.H, c.Registers.L, c.Registers.SP, c.Registers.PC,
+	// 		pc0, pc1, pc2, pc3,
+	// 	)
+	// 	internal.AppendToLogFile(row)
+	// }
 
 	var value uint16
 

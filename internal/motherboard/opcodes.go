@@ -2294,9 +2294,11 @@ var OPCODES = OpCodeMap{
 	// CP (HL) - Compare value pointed by HL against A (190)
 	0xbe: func(mb *Motherboard, value uint16) OpCycles {
 
-		hl := mb.Cpu.HL()
-		mb.Cpu.CpSetFlags(mb.Cpu.Registers.A, mb.GetItem(&hl))
+		addr := mb.Cpu.HL()
+		hl := mb.GetItem(&addr)
+		mb.Cpu.CpSetFlags(mb.Cpu.Registers.A, hl)
 		mb.Cpu.Registers.PC += 1
+		logger.Warnf("HL: %04x, A: %02X, F: %04b", hl, mb.Cpu.Registers.A, mb.Cpu.Registers.F>>4)
 		return 8
 	},
 
@@ -5794,15 +5796,6 @@ var OPCODES = OpCodeMap{
 		if b == 0 {
 			mb.Cpu.SetFlagZ()
 		}
-		// // shift value pointed by HL to the right by one bit
-		// b = (b >> 1) & 0xff
-		// if internal.IsBitSet(mb.Cpu.Registers.L, 7) {
-		// 	b |= 0x80
-		// }
-
-		// if b == 0 {
-		// 	mb.Cpu.SetFlagZ()
-		// }
 
 		b16 := uint16(b)
 		mb.SetItem(&hl, &b16)
