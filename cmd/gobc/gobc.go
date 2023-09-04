@@ -41,6 +41,8 @@ func Draw(wins []windows.Window) {
 	}
 }
 
+var DEBUG_WINDOWS bool = false
+
 func GameLoop() {
 	setFPS(internal.FRAMES_PER_SECOND)
 
@@ -55,6 +57,8 @@ func GameLoop() {
 		windows.NewMainGameWindow(g),
 		// windows.NewMemoryViewWindow(g),
 	}
+	
+	
 
 	mainWin := windows[0].Win()
 
