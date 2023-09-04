@@ -93,7 +93,7 @@ echo ""
 date +%Y-%m-%d:%H:%M:%S
 echo ""
 
-ILLEGAL_OPCODES=(D3 DB DD E3 E4 EB EC ED F4 FC FD F8)
+ILLEGAL_OPCODES=( CB D3 DB DD E3 E4 EB EC ED F4 FC FD F8)
 for (( j=$start; j<=$end; j++))
 do
     opcode_hex=$(printf '%02X' $j)
