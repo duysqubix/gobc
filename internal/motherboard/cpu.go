@@ -76,10 +76,10 @@ func (c *CPU) Tick() OpCycles {
 	}
 
 	if !c.Halted && (old_pc == c.Registers.PC) && (old_sp == c.Registers.SP) && !c.IsStuck {
-		logger.Errorf("CPU is stuck at PC: %#x SP: %#x", c.Registers.PC, c.Registers.SP)
+		logger.Warnf("CPU is stuck at PC: %#x SP: %#x", c.Registers.PC, c.Registers.SP)
 		c.IsStuck = true
-		// c.DumpState(os.Stdout)
-		os.Exit(1)
+		c.DumpState(os.Stdout)
+		os.Exit(0)
 	}
 
 	return tickCycles

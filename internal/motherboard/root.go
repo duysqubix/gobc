@@ -159,30 +159,17 @@ func InterruptFlagDump(v uint8) string {
 		if internal.IsBitSet(v, i) {
 			switch i {
 			case INTR_VBLANK:
-				msg += "VBLANK "
+				msg += "VBLANK, "
 			case INTR_LCDSTAT:
-				msg += "LCDSTAT "
+				msg += "LCDSTAT, "
 			case INTR_TIMER:
-				msg += "TIMER "
+				msg += "TIMER, "
 			case INTR_SERIAL:
-				msg += "SERIAL "
+				msg += "SERIAL, "
 			case INTR_HIGHTOLOW:
-				msg += "HIGHTOLOW "
+				msg += "HIGHTOLOW, "
 			}
 		}
 	}
 	return msg
-}
-
-func min(val []OpCycles) OpCycles {
-	if len(val) == 0 {
-		logger.Panic("Cannot find min of empty slice")
-	}
-	var min OpCycles = val[0]
-	for _, v := range val {
-		if v < min {
-			min = v
-		}
-	}
-	return min
 }

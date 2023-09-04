@@ -65,7 +65,6 @@ func (t *Timer) Tick(cycles OpCycles, c *CPU) {
 
 	t.updateDividerRegister(cycles)
 
-	// check if timer is enabled
 	if t.Enabled() {
 
 		t.TimaCounter += cycles

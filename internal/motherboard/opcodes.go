@@ -2301,7 +2301,6 @@ var OPCODES = OpCodeMap{
 		hl := mb.GetItem(&addr)
 		mb.Cpu.CpSetFlags(mb.Cpu.Registers.A, hl)
 		mb.Cpu.Registers.PC += 1
-		logger.Warnf("HL: %04x, A: %02X, F: %04b", hl, mb.Cpu.Registers.A, mb.Cpu.Registers.F>>4)
 		return 8
 	},
 
