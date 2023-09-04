@@ -4,11 +4,21 @@ import (
 	"github.com/duysqubix/gobc/internal"
 )
 
+var interruptAddresses = map[byte]uint16{
+	0: INTR_VBLANK_ADDR,    // V-Blank
+	1: INTR_LCDSTAT_ADDR,   // LCDC Status
+	2: INTR_TIMER_ADDR,     // Timer Overflow
+	3: INTR_SERIAL_ADDR,    // Serial Transfer
+	4: INTR_HIGHTOLOW_ADDR, // Hi-Lo P10-P13
+}
+
 type Interrupts struct {
-	Master_Enable bool  // Master interrupt enable
-	IE            uint8 // Interrupt enable register
-	IF            uint8 // Interrupt flag register
-	Queued        bool  // Interrupt queued
+	// Master_Enable bool  // Master interrupt enable
+
+	InterruptsEnabling bool  // Interrupts are being enabled
+	InterruptsOn       bool  // Interrupts are on
+	IE                 uint8 // Interrupt enable register
+	IF                 uint8 // Interrupt flag register
 
 }
 
@@ -25,104 +35,99 @@ func (i *Interrupts) CheckValidInterrupts() uint8 {
 	return valid_interrupts
 }
 
-func (i *Interrupts) SetInterruptFlag(flag uint8)   { internal.SetBit(&i.IF, flag) }
-func (i *Interrupts) SetInterruptEnable(flag uint8) { internal.SetBit(&i.IE, flag) }
-
-func (i *Interrupts) ResetInterruptFlag(flag uint8)   { internal.ResetBit(&i.IF, flag) }
-func (i *Interrupts) ResetInterruptEnable(flag uint8) { internal.ResetBit(&i.IE, flag) }
-
-func (i *Interrupts) VBlankEnabled() bool    { return internal.IsBitSet(i.IE, INTR_VBLANK) }
-func (i *Interrupts) LCDStatEnabled() bool   { return internal.IsBitSet(i.IE, INTR_LCDSTAT) }
-func (i *Interrupts) TimerEnabled() bool     { return internal.IsBitSet(i.IE, INTR_TIMER) }
-func (i *Interrupts) SerialEnabled() bool    { return internal.IsBitSet(i.IE, INTR_SERIAL) }
-func (i *Interrupts) HighToLowEnabled() bool { return internal.IsBitSet(i.IE, INTR_HIGHTOLOW) }
-
-func (i *Interrupts) IsVBlankSet() bool    { return internal.IsBitSet(i.IF, INTR_VBLANK) }
-func (i *Interrupts) IsLCDStatSet() bool   { return internal.IsBitSet(i.IF, INTR_LCDSTAT) }
-func (i *Interrupts) IsTimerSet() bool     { return internal.IsBitSet(i.IF, INTR_TIMER) }
-func (i *Interrupts) IsSerialSet() bool    { return internal.IsBitSet(i.IF, INTR_SERIAL) }
-func (i *Interrupts) IsHighToLowSet() bool { return internal.IsBitSet(i.IF, INTR_HIGHTOLOW) }
-
-func (i *Interrupts) SetVBlank()    { internal.SetBit(&i.IF, INTR_VBLANK) }
-func (i *Interrupts) SetLCDStat()   { internal.SetBit(&i.IF, INTR_LCDSTAT) }
-func (i *Interrupts) SetTimer()     { internal.SetBit(&i.IF, INTR_TIMER) }
-func (i *Interrupts) SetSerial()    { internal.SetBit(&i.IF, INTR_SERIAL) }
-func (i *Interrupts) SetHighToLow() { internal.SetBit(&i.IF, INTR_HIGHTOLOW) }
-
-func (i *Interrupts) ResetVBlank()    { internal.ResetBit(&i.IF, INTR_VBLANK) }
-func (i *Interrupts) ResetLCDStat()   { internal.ResetBit(&i.IF, INTR_LCDSTAT) }
-func (i *Interrupts) ResetTimer()     { internal.ResetBit(&i.IF, INTR_TIMER) }
-func (i *Interrupts) ResetSerial()    { internal.ResetBit(&i.IF, INTR_SERIAL) }
-func (i *Interrupts) ResetHighToLow() { internal.ResetBit(&i.IF, INTR_HIGHTOLOW) }
-
 func (c *CPU) SetInterruptFlag(f uint8) {
-	c.Interrupts.IF |= uint8(1 << f)
+	req := c.Interrupts.IF | 0xE0
+	c.Interrupts.IF = req | (1 << f)
 }
 
-func (c *CPU) handleInterrupt(f uint8, addr uint16) bool {
-	flag := uint8(1 << f)
-
-	if (c.Interrupts.IE&flag) != 0 && (c.Interrupts.IF&flag) != 0 {
-		// clear flag
-		if c.Halted {
-			c.Registers.PC += 1 // Escape HALT on retrun from interrupt
-		}
-
-		// handle interrupt
-		// logger.Warnf("Interrupts Active: %s\n", InterruptFlagDump(c.Interrupts.IF))
-
-		if c.Interrupts.Master_Enable {
-			// logger.Warnf("Setting Address to %#x\n", addr)
-			// logger.Warnf("PRE: IE: %08b, IF: %08b, flag: %08b, addr: %#x\n", c.Interrupts.IE, c.Interrupts.IF, flag, addr)
-			logger.Warnf("Interrupts Active: %s\n", InterruptFlagDump(c.Interrupts.IF))
-			c.Interrupts.IF &^= flag
-
-			sp1 := c.Registers.SP - 1
-			pc1 := c.Registers.PC >> 8
-
-			sp2 := c.Registers.SP - 2
-			pc2 := c.Registers.PC & 0xFF
-			c.Mb.SetItem(&sp1, &pc1)
-			c.Mb.SetItem(&sp2, &pc2)
-			// logger.Warnf("sp1: %#x, pc1: %#x, sp2: %#x, pc2: %#x\n", sp1, pc1, sp2, pc2)
-			c.Registers.SP -= 2
-			c.Registers.PC = addr
-			c.Interrupts.Master_Enable = false
-			// logger.Warnf("POST: IE: %08b, IF: %08b, flag: %08b, addr: %#x\n", c.Interrupts.IE, c.Interrupts.IF, flag, addr)
-
-		}
-		return true
+func (c *CPU) ServiceInterrupt(interrupt uint8) {
+	if !c.Interrupts.InterruptsOn && c.Halted {
+		c.Halted = false
+		c.Mb.Cpu.Registers.PC++
+		return
 	}
-	return false
+
+	c.Interrupts.InterruptsOn = false
+	c.Halted = false
+	c.Interrupts.IF &^= (1 << interrupt)
+	sp := c.Registers.SP
+	pc := c.Registers.PC
+
+	sp1 := sp - 1
+	sp2 := sp - 2
+	pc1 := (pc & 0xff00) >> 8
+	pc2 := pc & 0xFF
+
+	c.Mb.SetItem(&sp1, &pc1)
+	c.Mb.SetItem(&sp2, &pc2)
+	c.Registers.SP -= 2
+	c.Registers.PC = interruptAddresses[interrupt]
 }
 
-func (c *CPU) CheckForInterrupts() bool {
-	intr := c.Interrupts
+// func (c *CPU) handleInterrupt(f uint8, addr uint16) bool {
+// 	flag := uint8(1 << f)
 
-	if intr.Queued {
-		return false
-	}
+// 	if (c.Interrupts.IE&flag) != 0 && (c.Interrupts.IF&flag) != 0 {
+// 		// clear flag
+// 		if c.Halted {
+// 			c.Registers.PC += 1 // Escape HALT on retrun from interrupt
+// 		}
 
-	if (intr.IF&0b11111)&(intr.IE&0b11111) != 0 {
-		switch {
-		case c.handleInterrupt(INTR_VBLANK, INTR_VBLANK_ADDR):
-			intr.Queued = true
-		case c.handleInterrupt(INTR_LCDSTAT, INTR_LCDSTAT_ADDR):
-			intr.Queued = true
-		case c.handleInterrupt(INTR_TIMER, INTR_TIMER_ADDR):
-			intr.Queued = true
-		case c.handleInterrupt(INTR_SERIAL, INTR_SERIAL_ADDR):
-			intr.Queued = true
-		case c.handleInterrupt(INTR_HIGHTOLOW, INTR_HIGHTOLOW_ADDR):
-			intr.Queued = true
-		default:
-			internal.Logger.Error("No interrupt triggered, but it should!")
-			intr.Queued = false
-		}
-		return true
-	} else {
-		intr.Queued = false
-		return false
-	}
+// 		// handle interrupt
+// 		// logger.Warnf("Interrupts Active: %s\n", InterruptFlagDump(c.Interrupts.IF))
 
-}
+// 		if c.Interrupts.Master_Enable {
+// 			// logger.Warnf("Setting Address to %#x\n", addr)
+// 			// logger.Warnf("PRE: IE: %08b, IF: %08b, flag: %08b, addr: %#x\n", c.Interrupts.IE, c.Interrupts.IF, flag, addr)
+// 			logger.Warnf("Interrupts Active: %s\n", InterruptFlagDump(c.Interrupts.IF))
+// 			c.Interrupts.IF &^= flag
+
+// 			sp1 := c.Registers.SP - 1
+// 			pc1 := c.Registers.PC >> 8
+
+// 			sp2 := c.Registers.SP - 2
+// 			pc2 := c.Registers.PC & 0xFF
+// 			c.Mb.SetItem(&sp1, &pc1)
+// 			c.Mb.SetItem(&sp2, &pc2)
+// 			// logger.Warnf("sp1: %#x, pc1: %#x, sp2: %#x, pc2: %#x\n", sp1, pc1, sp2, pc2)
+// 			c.Registers.SP -= 2
+// 			c.Registers.PC = addr
+// 			c.Interrupts.Master_Enable = false
+// 			// logger.Warnf("POST: IE: %08b, IF: %08b, flag: %08b, addr: %#x\n", c.Interrupts.IE, c.Interrupts.IF, flag, addr)
+
+// 		}
+// 		return true
+// 	}
+// 	return false
+// }
+
+// func (c *CPU) CheckForInterrupts() bool {
+// 	intr := c.Interrupts
+
+// 	if intr.Queued {
+// 		return false
+// 	}
+
+// 	if (intr.IF&0b11111)&(intr.IE&0b11111) != 0 {
+// 		switch {
+// 		case c.handleInterrupt(INTR_VBLANK, INTR_VBLANK_ADDR):
+// 			intr.Queued = true
+// 		case c.handleInterrupt(INTR_LCDSTAT, INTR_LCDSTAT_ADDR):
+// 			intr.Queued = true
+// 		case c.handleInterrupt(INTR_TIMER, INTR_TIMER_ADDR):
+// 			intr.Queued = true
+// 		case c.handleInterrupt(INTR_SERIAL, INTR_SERIAL_ADDR):
+// 			intr.Queued = true
+// 		case c.handleInterrupt(INTR_HIGHTOLOW, INTR_HIGHTOLOW_ADDR):
+// 			intr.Queued = true
+// 		default:
+// 			internal.Logger.Error("No interrupt triggered, but it should!")
+// 			intr.Queued = false
+// 		}
+// 		return true
+// 	} else {
+// 		intr.Queued = false
+// 		return false
+// 	}
+
+// }

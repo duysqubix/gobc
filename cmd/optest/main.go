@@ -87,7 +87,7 @@ func do_opcodes(opCodeNum uint16, value uint16) {
 		PC:     int(c.Registers.PC),
 		ARGS:   fmt.Sprint(mb.args),
 		CYCLES: uint8(mb.cycles),
-		IME:    c.Interrupts.Master_Enable,
+		IME:    c.Interrupts.InterruptsEnabling,
 		IF:     c.Interrupts.IF,
 		IE:     c.Interrupts.IE,
 	}
@@ -117,7 +117,7 @@ func do_opcodes(opCodeNum uint16, value uint16) {
 		PC:     int(c.Registers.PC),
 		ARGS:   fmt.Sprint(mb.args),
 		CYCLES: uint8(mb.cycles),
-		IME:    c.Interrupts.Master_Enable,
+		IME:    c.Interrupts.InterruptsEnabling,
 		IF:     c.Interrupts.IF,
 		IE:     c.Interrupts.IE,
 	}

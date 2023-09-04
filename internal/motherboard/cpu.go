@@ -53,10 +53,11 @@ func NewCpu(mb *Motherboard) *CPU {
 		},
 		Halted: false,
 		Interrupts: &Interrupts{
-			Master_Enable: false,
-			IE:            0,
-			IF:            0,
-			Queued:        false,
+			// Master_Enable: false,
+			InterruptsEnabling: false,
+			InterruptsOn:       false,
+			IE:                 0,
+			IF:                 0,
 		},
 		Mb: mb,
 	}
@@ -65,24 +66,6 @@ func NewCpu(mb *Motherboard) *CPU {
 
 func (c *CPU) Tick() OpCycles {
 	tickCycles = 0
-	switch {
-	case c.CheckForInterrupts():
-		c.Halted = false
-		return tickCycles // 0
-
-	case c.Halted && c.Interrupts.Queued:
-		// GBCPUman.pdf page 20
-		// WARNING: The instruction immediately following the HALT instruction is "skipped" when interrupts are
-		// disabled (DI) on the GB,GBP, and SGB.
-		logger.Warnf("Interrupts Queued: %s\n", InterruptFlagDump(c.Interrupts.IF))
-		c.Halted = false
-		c.Registers.PC += 1
-
-	case c.Halted:
-		tickCycles = 4
-		return tickCycles
-	default:
-	}
 
 	old_pc := c.Registers.PC
 	old_sp := c.Registers.SP
@@ -94,34 +77,32 @@ func (c *CPU) Tick() OpCycles {
 
 	if !c.Halted && (old_pc == c.Registers.PC) && (old_sp == c.Registers.SP) && !c.IsStuck {
 		logger.Errorf("CPU is stuck at PC: %#x SP: %#x", c.Registers.PC, c.Registers.SP)
-		c.DumpState(os.Stdout)
 		c.IsStuck = true
+		// c.DumpState(os.Stdout)
 		os.Exit(1)
 	}
-
-	c.Interrupts.Queued = false
 
 	return tickCycles
 }
 
 func (c *CPU) ExecuteInstruction() OpCycles {
-	// if os.Getenv("PC_DUMP") == "true" {
-	// 	_pc := c.Registers.PC
-	// 	pc0 := c.Mb.GetItem(&_pc)
-	// 	_pc++
-	// 	pc1 := c.Mb.GetItem(&_pc)
-	// 	_pc++
-	// 	pc2 := c.Mb.GetItem(&_pc)
-	// 	_pc++
-	// 	pc3 := c.Mb.GetItem(&_pc)
-	// 	_pc++
+	if os.Getenv("PC_DUMP") == "true" {
+		_pc := c.Registers.PC
+		pc0 := c.Mb.GetItem(&_pc)
+		_pc++
+		pc1 := c.Mb.GetItem(&_pc)
+		_pc++
+		pc2 := c.Mb.GetItem(&_pc)
+		_pc++
+		pc3 := c.Mb.GetItem(&_pc)
+		_pc++
 
-	// 	row := fmt.Sprintf("A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X SP: %04X PC: 00:%04X (%02X %02X %02X %02X)\n",
-	// 		c.Registers.A, c.Registers.F, c.Registers.B, c.Registers.C, c.Registers.D, c.Registers.E, c.Registers.H, c.Registers.L, c.Registers.SP, c.Registers.PC,
-	// 		pc0, pc1, pc2, pc3,
-	// 	)
-	// 	internal.AppendToLogFile(row)
-	// }
+		row := fmt.Sprintf("A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X SP: %04X PC: 00:%04X (%02X %02X %02X %02X)\n",
+			c.Registers.A, c.Registers.F, c.Registers.B, c.Registers.C, c.Registers.D, c.Registers.E, c.Registers.H, c.Registers.L, c.Registers.SP, c.Registers.PC,
+			pc0, pc1, pc2, pc3,
+		)
+		internal.AppendToLogFile(row)
+	}
 
 	var value uint16
 
@@ -282,11 +263,11 @@ func (cpu *CPU) DumpState(writer io.Writer) {
 		{"L", fmt.Sprintf("$%X", cpu.Registers.L)},
 		{"SP", fmt.Sprintf("$%X", cpu.Registers.SP)},
 		{"PC", fmt.Sprintf("$%X", cpu.Registers.PC)},
-		{"IME", fmt.Sprintf("%t", cpu.Interrupts.Master_Enable)},
+		{"IME", fmt.Sprintf("%t", cpu.Interrupts.InterruptsOn)},
 		{"IE", fmt.Sprintf("%0b", cpu.Interrupts.IE)},
 		{"IF", fmt.Sprintf("%0b", cpu.Interrupts.IF)},
 		{"Halted", fmt.Sprintf("%t", cpu.Halted)},
-		{"Interrupts Queued", fmt.Sprintf("%t", cpu.Interrupts.Queued)},
+		{"Interrupts Queued", fmt.Sprintf("%t", cpu.Interrupts.InterruptsEnabling)},
 		{"Stopped", fmt.Sprintf("%t", cpu.Stopped)},
 		{"IsStuck", fmt.Sprintf("%t", cpu.IsStuck)},
 		{"Cgb", fmt.Sprintf("%t", cpu.Mb.Cgb)},

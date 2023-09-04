@@ -111,26 +111,48 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 		return false, cycles
 	}
 
-	cycles = m.Cpu.Tick()
-
-	if m.Cpu.Halted {
-		// fast forward to next interrupt
-		cycles = min([]OpCycles{
-			m.Timer.CyclesToInterrupt(),
-		})
+	if !m.Cpu.Halted {
+		cycles = m.Cpu.Tick()
 	}
 
-	if m.Timer.Tick(cycles) {
-		m.Cpu.SetInterruptFlag(INTR_TIMER)
-	}
+	m.Cpu.Mb.Timer.Tick(cycles, m.Cpu)
+
+	cycles += m.handleInterrupts()
 
 	return true, cycles
+}
+
+func (m *Motherboard) handleInterrupts() OpCycles {
+
+	if m.Cpu.Interrupts.InterruptsEnabling {
+		m.Cpu.Interrupts.InterruptsOn = true
+		m.Cpu.Interrupts.InterruptsEnabling = false
+		return 0
+	}
+
+	if !m.Cpu.Interrupts.InterruptsOn && !m.Cpu.Halted {
+		return 0
+	}
+
+	req := m.Cpu.Interrupts.IF | 0xE0
+	enabled := m.Cpu.Interrupts.IE
+
+	if req > 0 {
+		var i uint8
+		for i = 0; i < 5; i++ {
+			if internal.IsBitSet(req, i) && internal.IsBitSet(enabled, i) {
+				m.Cpu.ServiceInterrupt(i)
+				return 20
+			}
+		}
+	}
+
+	return 0
 }
 
 func (m *Motherboard) GetItem(addr *uint16) uint8 {
 	addr_copy := *addr
 
-	// logger.Debugf("Reading from %#x on Motherboard\n", *addr)
 	if m.Decouple {
 		logger.Warn("Decoupled Motherboard from other components. Memory read is mocked")
 		return 0xDA // mock return value
@@ -271,7 +293,7 @@ func (m *Motherboard) GetItem(addr *uint16) uint8 {
 
 		case 0xFF0F:
 			logger.Debugf("Reading from %#x - IF Register", *addr)
-			return m.Cpu.Interrupts.IF
+			return m.Cpu.Interrupts.IF | 0xE0
 		}
 
 		addr_copy -= 0xFF00
@@ -435,22 +457,29 @@ func (m *Motherboard) SetItem(addr *uint16, value *uint16) {
 
 		case 0xFF04:
 			logger.Debugf("Writing %#x to %#x on DIV", v, *addr)
+			m.Timer.TimaCounter = 0
+			m.Timer.DivCounter = 0
 			m.Timer.DIV = 0
 			return
 
 		case 0xFF05:
 			logger.Debugf("Writing %#x to %#x on TIMA", v, *addr)
-			m.Timer.TIMA = uint16(v)
+			m.Timer.TIMA = uint32(v)
 			return
 
 		case 0xFF06:
 			logger.Debugf("Writing %#x to %#x on TMA", v, *addr)
-			m.Timer.TMA = uint16(v)
+			m.Timer.TMA = uint32(v)
 			return
 
 		case 0xFF07:
 			logger.Debugf("Writing %#x to %#x on TAC", v, *addr)
-			m.Timer.TAC = uint16(v)
+			currentFreq := m.Timer.TAC & 0x03
+			m.Timer.TAC = uint32(v) | 0xF8
+			newFreq := m.Timer.TAC & 0x03
+			if currentFreq != newFreq {
+				m.Timer.TimaCounter = 0
+			}
 			return
 
 		case 0xFF0F:

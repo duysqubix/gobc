@@ -110,11 +110,17 @@ func (g *GoBoyColor) updateInternalGameState() bool {
 		return false
 	}
 
-	var still_good bool
+	var still_good bool = true
 
 	internalCycleCounter = 0
 	for internalCycleCounter < CyclesFrameSBG {
-		still_good = g.Tick()
+		logger.Debug("----------------Tick-----------------")
+
+		if g.Stopped {
+			still_good = false
+			break
+		}
+		
 		if !g.Paused {
 			internalStatus, internalCycleReturn = g.Mb.Tick()
 			internalCycleCounter += int(internalCycleReturn)
@@ -131,14 +137,6 @@ func (g *GoBoyColor) updateInternalGameState() bool {
 		g.Stop()
 	}
 	return still_good
-}
-
-func (g *GoBoyColor) Tick() bool {
-	if g.Stopped {
-		return false
-	}
-	logger.Debug("----------------Tick-----------------")
-	return true
 }
 
 func (g *GoBoyColor) Stop() {

@@ -26,7 +26,7 @@ var OPCODES = OpCodeMap{
 
 	// STOP 0 - Stop CPU & LCD display until button pressed (16)
 	0x10: func(mb *Motherboard, value uint16) OpCycles {
-
+		mb.Cpu.Halted = true
 		if mb.Cgb {
 			var addr uint16 = 0xff04
 			var value uint16 = 0x00
@@ -610,8 +610,9 @@ var OPCODES = OpCodeMap{
 
 	// DI - Disable interrupts (243)
 	0xf3: func(mb *Motherboard, value uint16) OpCycles {
-
-		mb.Cpu.Interrupts.Master_Enable = false
+		// logger.Error("DI - Disable interrupts (243)")
+		// mb.Cpu.Interrupts.Master_Enable = false
+		mb.Cpu.Interrupts.InterruptsOn = false
 		mb.Cpu.Registers.PC += 1
 		return 4
 	},
@@ -1640,7 +1641,8 @@ var OPCODES = OpCodeMap{
 	// RETI - Pop two bytes from stack & jump to that address then enable interrupts (217)
 	0xd9: func(mb *Motherboard, value uint16) OpCycles {
 
-		mb.Cpu.Interrupts.Master_Enable = true
+		// mb.Cpu.Interrupts.Master_Enable = true
+		mb.Cpu.Interrupts.InterruptsEnabling = true
 		sp2 := mb.Cpu.Registers.SP + 1
 		pcl := mb.GetItem(&mb.Cpu.Registers.SP)
 		pch := mb.GetItem(&sp2)
@@ -1927,7 +1929,8 @@ var OPCODES = OpCodeMap{
 	// EI - Enable interrupts (235)
 	0xfb: func(mb *Motherboard, value uint16) OpCycles {
 
-		mb.Cpu.Interrupts.Master_Enable = true
+		// mb.Cpu.Interrupts.Master_Enable = true
+		mb.Cpu.Interrupts.InterruptsEnabling = true
 		mb.Cpu.Registers.PC += 1
 		return 4
 	},
@@ -3981,7 +3984,7 @@ var OPCODES = OpCodeMap{
 			mb.Cpu.ResetFlagZ()
 		}
 		mb.Cpu.Registers.PC += 2
-		return 16
+		return 12
 	},
 
 	// BIT 2, (HL) - Test bit 2 of value pointed by HL (342) [minus 0xFF for CB prefix]
@@ -3997,7 +4000,7 @@ var OPCODES = OpCodeMap{
 			mb.Cpu.ResetFlagZ()
 		}
 		mb.Cpu.Registers.PC += 2
-		return 16
+		return 12
 	},
 
 	// BIT 4, (HL) - Test bit 4 of value pointed by HL (358) [minus 0xFF for CB prefix]
@@ -4013,7 +4016,7 @@ var OPCODES = OpCodeMap{
 			mb.Cpu.ResetFlagZ()
 		}
 		mb.Cpu.Registers.PC += 2
-		return 16
+		return 12
 	},
 
 	// BIT 6, (HL) - Test bit 6 of value pointed by HL (374) [minus 0xFF for CB prefix]
@@ -4028,7 +4031,7 @@ var OPCODES = OpCodeMap{
 			mb.Cpu.ResetFlagZ()
 		}
 		mb.Cpu.Registers.PC += 2
-		return 16
+		return 12
 	},
 
 	// RES 0, (HL) - Reset bit 0 of value pointed by HL (390) [minus 0xFF for CB prefix]
@@ -5844,7 +5847,7 @@ var OPCODES = OpCodeMap{
 			mb.Cpu.ResetFlagZ()
 		}
 		mb.Cpu.Registers.PC += 2
-		return 16
+		return 12
 	},
 
 	// BIT 3, (HL) - Test bit 3 of value pointed by HL (350) [minus 0xFF for CB prefix]
@@ -5860,7 +5863,7 @@ var OPCODES = OpCodeMap{
 			mb.Cpu.ResetFlagZ()
 		}
 		mb.Cpu.Registers.PC += 2
-		return 16
+		return 12
 	},
 
 	// BIT 5, (HL) - Test bit 5 of value pointed by HL (366) [minus 0xFF for CB prefix]
@@ -5876,7 +5879,7 @@ var OPCODES = OpCodeMap{
 			mb.Cpu.ResetFlagZ()
 		}
 		mb.Cpu.Registers.PC += 2
-		return 16
+		return 12
 	},
 
 	// BIT 7, (HL) - Test bit 7 of value pointed by HL (382) [minus 0xFF for CB prefix]
@@ -5892,7 +5895,7 @@ var OPCODES = OpCodeMap{
 			mb.Cpu.ResetFlagZ()
 		}
 		mb.Cpu.Registers.PC += 2
-		return 16
+		return 12
 	},
 
 	// RES 1, (HL) - Reset bit 1 of value pointed by HL (398) [minus 0xFF for CB prefix]
