@@ -107,7 +107,6 @@ func (r *InternalRAM) ActiveVramBank() uint8 {
 ////////// WRAM //////////
 
 func (r *InternalRAM) ActiveWramBank() uint8 {
-	logger.Debug("Checking Active WRAM bank...")
 	bank := r.IO[IO_SVBK-IO_START_ADDR] & 0x7 // force to 3 bits
 
 	if bank == 0 || bank == 1 {
@@ -115,7 +114,6 @@ func (r *InternalRAM) ActiveWramBank() uint8 {
 	}
 	return bank
 }
-
 
 func (r *InternalRAM) DumpState(writer io.Writer) {
 
