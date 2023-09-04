@@ -21,7 +21,12 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.21'
-
+        
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libxcursor-dev
+        
     - name: Build GoBC Binary
       run: go build -v -o gobc cmd/gobc/gobc.go
 
