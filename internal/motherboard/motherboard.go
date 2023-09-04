@@ -380,8 +380,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	*
 	 */
 	case 0xE000 <= addr && addr < 0xFE00:
-		addr = addr - 0x2000 - 0xC000
-		m.Ram.Wram[0][addr] = v
+		m.Ram.Wram[0][addr-0x2000-0xC000] = v
 
 	/*
 	*

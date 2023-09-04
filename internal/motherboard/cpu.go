@@ -148,16 +148,16 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 func (c *CPU) RandomizeRegisters(seed int64) {
 	r := rand.New(rand.NewSource(seed))
 
-	c.Registers.A = uint8(r.Intn(0xffff))
-	c.Registers.B = uint8(r.Intn(0xffff))
-	c.Registers.C = uint8(r.Intn(0xffff))
-	c.Registers.D = uint8(r.Intn(0xffff))
-	c.Registers.E = uint8(r.Intn(0xffff))
-	c.Registers.F = uint8((r.Intn(0x0f) << 4))
-	c.Registers.H = uint8(r.Intn(0xffff))
-	c.Registers.L = uint8(r.Intn(0xffff))
-	c.Registers.SP = uint16(r.Intn(0xffffff))
-	c.Registers.PC = uint16(r.Intn(0xffffff))
+	c.Registers.A = uint8(r.Intn(0xf))
+	c.Registers.B = uint8(r.Intn(0xf))
+	c.Registers.C = uint8(r.Intn(0xf))
+	c.Registers.D = uint8(r.Intn(0xf))
+	c.Registers.E = uint8(r.Intn(0xf))
+	c.Registers.F = uint8((r.Intn(0xf) << 4))
+	c.Registers.H = uint8(r.Intn(0xf))
+	c.Registers.L = uint8(r.Intn(0xf))
+	c.Registers.SP = uint16(r.Intn(0xff))
+	c.Registers.PC = uint16(r.Intn(0xff))
 
 }
 
