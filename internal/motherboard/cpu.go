@@ -145,6 +145,34 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 	return OPCODES[opcode](c.Mb, value)
 }
 
+func (c *CPU) handleInterrupts() OpCycles {
+
+	if c.Interrupts.InterruptsEnabling {
+		c.Interrupts.InterruptsOn = true
+		c.Interrupts.InterruptsEnabling = false
+		return 0
+	}
+
+	if !c.Interrupts.InterruptsOn && !c.Halted {
+		return 0
+	}
+
+	req := c.Interrupts.IF | 0xE0
+	enabled := c.Interrupts.IE
+
+	if req > 0 {
+		var i uint8
+		for i = 0; i < 5; i++ {
+			if internal.IsBitSet(req, i) && internal.IsBitSet(enabled, i) {
+				c.ServiceInterrupt(i)
+				return 20
+			}
+		}
+	}
+
+	return 0
+}
+
 func (c *CPU) RandomizeRegisters(seed int64) {
 	r := rand.New(rand.NewSource(seed))
 

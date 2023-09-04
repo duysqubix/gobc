@@ -117,37 +117,9 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 
 	m.Cpu.Mb.Timer.Tick(cycles, m.Cpu)
 
-	cycles += m.handleInterrupts()
+	cycles += m.Cpu.handleInterrupts()
 
 	return true, cycles
-}
-
-func (m *Motherboard) handleInterrupts() OpCycles {
-
-	if m.Cpu.Interrupts.InterruptsEnabling {
-		m.Cpu.Interrupts.InterruptsOn = true
-		m.Cpu.Interrupts.InterruptsEnabling = false
-		return 0
-	}
-
-	if !m.Cpu.Interrupts.InterruptsOn && !m.Cpu.Halted {
-		return 0
-	}
-
-	req := m.Cpu.Interrupts.IF | 0xE0
-	enabled := m.Cpu.Interrupts.IE
-
-	if req > 0 {
-		var i uint8
-		for i = 0; i < 5; i++ {
-			if internal.IsBitSet(req, i) && internal.IsBitSet(enabled, i) {
-				m.Cpu.ServiceInterrupt(i)
-				return 20
-			}
-		}
-	}
-
-	return 0
 }
 
 func (m *Motherboard) GetItem(addr uint16) uint8 {
