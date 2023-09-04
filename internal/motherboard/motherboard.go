@@ -19,7 +19,7 @@ type Breakpoints struct {
 type Motherboard struct {
 	Cpu         *CPU                 // CPU
 	Cartridge   *cartridge.Cartridge // Cartridge
-	Ram         *InternalRAM         // Internal RAM
+	Memory      *Memory              // Internal RAM
 	BootRom     *BootRom             // Boot ROM
 	Timer       *Timer               // Timer
 	Cgb         bool                 // Color Gameboy
@@ -74,7 +74,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	}
 
 	mb.Cpu = NewCpu(mb)
-	mb.Ram = NewInternalRAM(mb.Cgb, params.Randomize)
+	mb.Memory = NewInternalRAM(mb.Cgb, params.Randomize)
 	// mb.BootRom = NewBootRom(mb.Cartridge.CgbModeEnabled())
 
 	if !mb.BootRomEnabled() {
@@ -99,7 +99,7 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 			fmt.Fprintln(df, "----- CPU STATE -----")
 			m.Cpu.DumpState(df)
 			fmt.Fprintln(df, "----- MEMORY STATE -----")
-			m.Ram.DumpState(df)
+			m.Memory.DumpState(df)
 			fmt.Fprintln(df, "-----END CRASH-----")
 			fmt.Println("Crash detected.. check log file for more details")
 			logger.Panic()
@@ -157,12 +157,12 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 	 */
 	case 0x8000 <= addr && addr < 0xA000: // 8K Video RAM
 		if m.Cgb {
-			activeBank := m.Ram.ActiveVramBank()
-			// return m.Ram.GetItemVRAM(activeBank, addr-0x8000)
-			return m.Ram.Vram[activeBank][addr-0x8000]
+			activeBank := m.Memory.ActiveVramBank()
+			// return m.Memory.GetItemVRAM(activeBank, addr-0x8000)
+			return m.Memory.Vram[activeBank][addr-0x8000]
 		}
 
-		return m.Ram.Vram[0][addr-0x8000]
+		return m.Memory.Vram[0][addr-0x8000]
 
 	/*
 	*
@@ -178,7 +178,7 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 	*
 	 */
 	case 0xC000 <= addr && addr < 0xD000: // 4K Work RAM bank 0
-		return m.Ram.Wram[0][addr-0xC000]
+		return m.Memory.Wram[0][addr-0xC000]
 
 	/*
 	*
@@ -187,10 +187,10 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 	 */
 	case 0xD000 <= addr && addr < 0xE000:
 		if m.Cgb {
-			bank := m.Ram.ActiveWramBank()
-			return m.Ram.Wram[bank][addr-0xD000]
+			bank := m.Memory.ActiveWramBank()
+			return m.Memory.Wram[bank][addr-0xD000]
 		}
-		return m.Ram.Wram[1][addr-0xD000]
+		return m.Memory.Wram[1][addr-0xD000]
 
 	/*
 	*
@@ -202,12 +202,12 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 		if addr >= 0x1000 {
 			addr -= 0x1000
 			if m.Cgb {
-				bank := m.Ram.ActiveWramBank()
-				return m.Ram.Wram[bank][addr]
+				bank := m.Memory.ActiveWramBank()
+				return m.Memory.Wram[bank][addr]
 			}
-			return m.Ram.Wram[1][addr]
+			return m.Memory.Wram[1][addr]
 		}
-		return m.Ram.Wram[0][addr]
+		return m.Memory.Wram[0][addr]
 
 	/*
 	*
@@ -247,7 +247,7 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 		case 0xFF0F: /* IF */
 			return m.Cpu.Interrupts.IF | 0xE0
 		default:
-			return m.Ram.IO[addr-0xFF00]
+			return m.Memory.IO[addr-0xFF00]
 		}
 
 	/*
@@ -256,7 +256,7 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 	*
 	 */
 	case 0xFF80 <= addr && addr < 0xFFFF:
-		return m.Ram.Hram[addr-0xFF80]
+		return m.Memory.Hram[addr-0xFF80]
 
 	/*
 	*
@@ -309,10 +309,10 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	 */
 	case 0x8000 <= addr && addr < 0xA000:
 		if m.Cgb {
-			bank := m.Ram.ActiveVramBank()
-			m.Ram.Vram[bank][addr-0x8000] = v
+			bank := m.Memory.ActiveVramBank()
+			m.Memory.Vram[bank][addr-0x8000] = v
 		}
-		m.Ram.Vram[0][addr-0x8000] = v
+		m.Memory.Vram[0][addr-0x8000] = v
 
 	/*
 	*
@@ -328,7 +328,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	*
 	 */
 	case 0xC000 <= addr && addr < 0xD000:
-		m.Ram.Wram[0][addr-0xC000] = v
+		m.Memory.Wram[0][addr-0xC000] = v
 
 	/*
 	*
@@ -340,11 +340,11 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 		// check if CGB mode
 		if m.Cgb {
 			// check what bank to read from
-			bank := m.Ram.ActiveWramBank()
-			m.Ram.Wram[bank][addr-0xD000] = v
+			bank := m.Memory.ActiveWramBank()
+			m.Memory.Wram[bank][addr-0xD000] = v
 			break
 		}
-		m.Ram.Wram[1][addr-0xD000] = v
+		m.Memory.Wram[1][addr-0xD000] = v
 
 	/*
 	*
@@ -352,7 +352,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	*
 	 */
 	case 0xE000 <= addr && addr < 0xFE00:
-		m.Ram.Wram[0][addr-0x2000-0xC000] = v
+		m.Memory.Wram[0][addr-0x2000-0xC000] = v
 
 	/*
 	*
@@ -360,7 +360,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	*
 	 */
 	case 0xFE00 <= addr && addr < 0xFEA0:
-		m.Ram.Oam[addr-0xFE00] = v
+		m.Memory.Oam[addr-0xFE00] = v
 	/*
 	*
 	* WRITE: NOT USABLE
@@ -412,12 +412,12 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 			return
 
 		default:
-			m.Ram.IO[addr-0xFF00] = v
+			m.Memory.IO[addr-0xFF00] = v
 		}
 
 		/// prints serial output to terminal ///
 		if v == 0x81 && addr == IO_SC {
-			fmt.Printf("%c", m.Ram.IO[IO_SB-IO_START_ADDR])
+			fmt.Printf("%c", m.Memory.IO[IO_SB-IO_START_ADDR])
 		}
 		////////////////////////////////////
 
@@ -427,7 +427,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	*
 	 */
 	case 0xFF80 <= addr && addr < 0xFFFF:
-		m.Ram.Hram[addr-0xFF80] = v
+		m.Memory.Hram[addr-0xFF80] = v
 
 	/*
 	*

@@ -68,7 +68,7 @@ func initOam(ram *OAM, random bool) {
 	}
 }
 
-type InternalRAM struct {
+type Memory struct {
 	Wram      WRAM // 8 banks of 4KB each -- [0,1] are always available, [2,3,4,5,6,7] are switchable in CGB Mode
 	IO        IO   // 128 bytes of IO
 	Hram      HRAM // 127 bytes of High RAM
@@ -82,8 +82,8 @@ type HRAM [127]uint8
 type WRAM [8][4096]uint8
 type OAM [160]uint8
 
-func NewInternalRAM(cgb bool, randomize bool) *InternalRAM {
-	ram := &InternalRAM{
+func NewInternalRAM(cgb bool, randomize bool) *Memory {
+	ram := &Memory{
 		Randomize: randomize,
 	}
 	initWram(&ram.Wram, randomize)
@@ -100,13 +100,13 @@ func NewInternalRAM(cgb bool, randomize bool) *InternalRAM {
 type VRAM [2][8192]uint8
 type Tile [16]uint8
 
-func (r *InternalRAM) ActiveVramBank() uint8 {
+func (r *Memory) ActiveVramBank() uint8 {
 	return r.IO[IO_VBK-IO_START_ADDR] & 0x1
 }
 
 ////////// WRAM //////////
 
-func (r *InternalRAM) ActiveWramBank() uint8 {
+func (r *Memory) ActiveWramBank() uint8 {
 	bank := r.IO[IO_SVBK-IO_START_ADDR] & 0x7 // force to 3 bits
 
 	if bank == 0 || bank == 1 {
@@ -115,6 +115,6 @@ func (r *InternalRAM) ActiveWramBank() uint8 {
 	return bank
 }
 
-func (r *InternalRAM) DumpState(writer io.Writer) {
+func (r *Memory) DumpState(writer io.Writer) {
 
 }
