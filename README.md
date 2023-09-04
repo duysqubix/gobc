@@ -15,10 +15,15 @@ Generate GIF with the layout and captions
     <tr>
       <td align="center">CPU_INSTRS<br>
       </td>
+      <td align="center">INSTR_TIMING<br>
+      </td>
     </tr>
     <tr>
       <td align="center">
         <img src="docs/cpu_instrs.png" width="400">
+      </td>
+      <td align="center">
+        <img src="docs/instr_timing.png" width="400">
       </td>
     </tr>
   </tbody>
