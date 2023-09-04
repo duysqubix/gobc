@@ -87,15 +87,10 @@ func (c *CPU) Tick() OpCycles {
 
 func (c *CPU) ExecuteInstruction() OpCycles {
 	if os.Getenv("PC_DUMP") == "true" {
-		_pc := c.Registers.PC
-		pc0 := c.Mb.GetItem(&_pc)
-		_pc++
-		pc1 := c.Mb.GetItem(&_pc)
-		_pc++
-		pc2 := c.Mb.GetItem(&_pc)
-		_pc++
-		pc3 := c.Mb.GetItem(&_pc)
-		_pc++
+		pc0 := c.Mb.GetItem(c.Registers.PC)
+		pc1 := c.Mb.GetItem(c.Registers.PC + 1)
+		pc2 := c.Mb.GetItem(c.Registers.PC + 2)
+		pc3 := c.Mb.GetItem(c.Registers.PC + 3)
 
 		row := fmt.Sprintf("A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X SP: %04X PC: 00:%04X (%02X %02X %02X %02X)\n",
 			c.Registers.A, c.Registers.F, c.Registers.B, c.Registers.C, c.Registers.D, c.Registers.E, c.Registers.H, c.Registers.L, c.Registers.SP, c.Registers.PC,
@@ -106,11 +101,10 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 
 	var value uint16
 
-	opcode := OpCode(c.Mb.GetItem(&c.Registers.PC))
+	opcode := OpCode(c.Mb.GetItem(c.Registers.PC))
 	// fmt.Printf("Pre-Execution :Opcode: %s [%#x] | PC: %#x | SP: %#x\n", internal.OPCODE_NAMES[opcode], opcode, c.Registers.PC, c.Registers.SP)
 	if opcode.CBPrefix() {
-		pcn := c.Registers.PC + 1
-		opcode = OpCode(c.Mb.GetItem(&pcn))
+		opcode = OpCode(c.Mb.GetItem(c.Registers.PC + 1))
 		opcode = opcode.Shift()
 
 	}
@@ -120,15 +114,15 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 
 	// 8 bit immediate
 	case 2:
-		pc += 1
-		value = uint16(c.Mb.GetItem(&pc))
+		pc++
+		value = uint16(c.Mb.GetItem(pc))
 
 	// 16 bit immediate
 	case 3:
-		pc += 1
-		b := uint16(c.Mb.GetItem(&pc))
-		pc += 1
-		a := uint16(c.Mb.GetItem(&pc))
+		pc++
+		b := uint16(c.Mb.GetItem(pc))
+		pc++
+		a := uint16(c.Mb.GetItem(pc))
 		value = (a << 8) | b
 
 	default:
@@ -235,12 +229,10 @@ func (cpu *CPU) Dump(header string) {
 
 func (cpu *CPU) DumpState(writer io.Writer) {
 	pc := cpu.Registers.PC
-	pc2 := pc - 1
-	pc3 := pc - 2
 	opdata := []OpCode{
-		OpCode(cpu.Mb.GetItem(&pc)),
-		OpCode(cpu.Mb.GetItem(&pc2)),
-		OpCode(cpu.Mb.GetItem(&pc3)),
+		OpCode(cpu.Mb.GetItem(pc)),
+		OpCode(cpu.Mb.GetItem(pc - 1)),
+		OpCode(cpu.Mb.GetItem(pc - 2)),
 	}
 
 	opdata1 := opdata[0]

@@ -108,7 +108,7 @@ func (mw *MemoryViewWindow) Draw() {
 		row_addr := fmt.Sprintf("0x%04x", row_addr_start)
 		for j := 0; j < 16; j++ {
 			addr := uint16(j + row_addr_start)
-			row_str += fmt.Sprintf("%02x ", mw.hw.Mb.GetItem(&addr))
+			row_str += fmt.Sprintf("%02x ", mw.hw.Mb.GetItem(addr))
 		}
 		data = append(data, []string{row_addr, row_str, motherboard.MemoryMapName(uint16(row_addr_start))})
 	}

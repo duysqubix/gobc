@@ -40,7 +40,7 @@ func initIo(ram *IO, random bool) {
 	}
 
 	// delete once LCD is implemented
-	ram[IO_LY] = 0x90
+	ram[IO_LY-IO_START_ADDR] = 0x90
 }
 
 func initVram(ram *VRAM, random bool) {
@@ -95,42 +95,20 @@ func NewInternalRAM(cgb bool, randomize bool) *InternalRAM {
 	return ram
 }
 
-// //////// IO //////////
-func (r *InternalRAM) GetItemIO(addr uint16) uint8 {
-	return r.IO[addr]
-}
-
-func (r *InternalRAM) SetItemIO(addr uint16, value uint8) {
-	r.IO[addr] = value
-}
-
-func (r *InternalRAM) GetIO_LCDC(bit uint8) bool {
-	return r.GetItemIO(IO_LCDC)>>bit&0x1 == 1
-}
-
 // //////// VRAM //////////
 
 type VRAM [2][8192]uint8
 type Tile [16]uint8
 
 func (r *InternalRAM) ActiveVramBank() uint8 {
-	logger.Debug("Checking Active VRAM bank...")
-	return r.GetItemIO(IO_VBK) & 0x1
-}
-
-func (r *InternalRAM) GetItemVRAM(bank uint8, addr uint16) uint8 {
-	return r.Vram[bank][addr]
-}
-
-func (r *InternalRAM) SetItemVRAM(bank uint8, addr uint16, value uint8) {
-	r.Vram[bank][addr] = value
+	return r.IO[IO_VBK-IO_START_ADDR] & 0x1
 }
 
 ////////// WRAM //////////
 
 func (r *InternalRAM) ActiveWramBank() uint8 {
 	logger.Debug("Checking Active WRAM bank...")
-	bank := r.GetItemIO(IO_SVBK) & 0x7 // force to 3 bits
+	bank := r.IO[IO_SVBK-IO_START_ADDR] & 0x7 // force to 3 bits
 
 	if bank == 0 || bank == 1 {
 		return 1
@@ -138,33 +116,6 @@ func (r *InternalRAM) ActiveWramBank() uint8 {
 	return bank
 }
 
-func (r *InternalRAM) GetItemWRAM(bank uint8, addr uint16) uint8 {
-	return r.Wram[bank][addr]
-}
-
-func (r *InternalRAM) SetItemWRAM(bank uint8, addr uint16, value uint8) {
-	r.Wram[bank][addr] = value
-}
-
-// //////// HRAM //////////
-func (r *InternalRAM) GetItemHRAM(addr uint16) uint8 {
-	return r.Hram[addr]
-}
-
-func (r *InternalRAM) SetItemHRAM(addr uint16, value uint8) {
-	r.Hram[addr] = value
-}
-
-////////// OAM //////////
-
-func (r *InternalRAM) GetItemOAM(addr uint16) uint8 {
-
-	return r.Oam[addr]
-}
-
-func (r *InternalRAM) SetItemOAM(addr uint16, value uint8) {
-	r.Oam[addr] = value
-}
 
 func (r *InternalRAM) DumpState(writer io.Writer) {
 

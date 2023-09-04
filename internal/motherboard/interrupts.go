@@ -53,13 +53,8 @@ func (c *CPU) ServiceInterrupt(interrupt uint8) {
 	sp := c.Registers.SP
 	pc := c.Registers.PC
 
-	sp1 := sp - 1
-	sp2 := sp - 2
-	pc1 := (pc & 0xff00) >> 8
-	pc2 := pc & 0xFF
-
-	c.Mb.SetItem(&sp1, &pc1)
-	c.Mb.SetItem(&sp2, &pc2)
+	c.Mb.SetItem(sp-1, (pc & 0xff00) >> 8)
+	c.Mb.SetItem(sp-2,  pc & 0xFF)
 	c.Registers.SP -= 2
 	c.Registers.PC = interruptAddresses[interrupt]
 }

@@ -30,7 +30,7 @@ var OPCODES = OpCodeMap{
 		if mb.Cgb {
 			var addr uint16 = 0xff04
 			var value uint16 = 0x00
-			mb.SetItem(&addr, &value)
+			mb.SetItem(addr, value)
 		}
 
 		// reset timer
@@ -90,7 +90,7 @@ var OPCODES = OpCodeMap{
 
 		hl := mb.Cpu.HL()
 		b := uint16(mb.Cpu.Registers.B)
-		mb.SetItem(&hl, &b)
+		mb.SetItem(hl, b)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -133,8 +133,8 @@ var OPCODES = OpCodeMap{
 		var pch, pcl uint8
 		if !mb.Cpu.IsFlagZSet() {
 			spadd1 := mb.Cpu.Registers.SP + 1
-			pch = mb.GetItem(&spadd1)
-			pcl = mb.GetItem(&mb.Cpu.Registers.SP)
+			pch = mb.GetItem(spadd1)
+			pcl = mb.GetItem(mb.Cpu.Registers.SP)
 			mb.Cpu.Registers.PC = (uint16(pch) << 8) | uint16(pcl)
 
 			mb.Cpu.Registers.SP += 2
@@ -151,8 +151,8 @@ var OPCODES = OpCodeMap{
 		var pch, pcl uint8
 		if !mb.Cpu.IsFlagCSet() {
 			spadd1 := mb.Cpu.Registers.SP + 1
-			pch = mb.GetItem(&spadd1)
-			pcl = mb.GetItem(&mb.Cpu.Registers.SP)
+			pch = mb.GetItem(spadd1)
+			pcl = mb.GetItem(mb.Cpu.Registers.SP)
 
 			mb.Cpu.Registers.PC = (uint16(pch) << 8) | uint16(pcl)
 
@@ -169,7 +169,7 @@ var OPCODES = OpCodeMap{
 
 		var addr uint16 = 0xff00 + value
 		a := uint16(mb.Cpu.Registers.A)
-		mb.SetItem(&addr, &a)
+		mb.SetItem(addr, a)
 		mb.Cpu.Registers.PC += 2
 		return 12
 	},
@@ -178,7 +178,7 @@ var OPCODES = OpCodeMap{
 	0xf0: func(mb *Motherboard, value uint16) OpCycles {
 
 		var addr uint16 = 0xff00 + value
-		a := mb.GetItem(&addr)
+		a := mb.GetItem(addr)
 		mb.Cpu.Registers.A = a
 		mb.Cpu.Registers.PC += 2
 		return 12
@@ -246,7 +246,7 @@ var OPCODES = OpCodeMap{
 
 		hl := mb.Cpu.HL()
 		cr := uint16(mb.Cpu.Registers.C)
-		mb.SetItem(&hl, &cr)
+		mb.SetItem(hl, cr)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -288,8 +288,8 @@ var OPCODES = OpCodeMap{
 
 		var pch, pcl uint8
 		spadd1 := mb.Cpu.Registers.SP + 1
-		pch = mb.GetItem(&spadd1)
-		pcl = mb.GetItem(&mb.Cpu.Registers.SP)
+		pch = mb.GetItem(spadd1)
+		pcl = mb.GetItem(mb.Cpu.Registers.SP)
 
 		mb.Cpu.SetBC((uint16(pch) << 8) | uint16(pcl))
 
@@ -303,8 +303,8 @@ var OPCODES = OpCodeMap{
 
 		var pch, pcl uint8
 		spadd1 := mb.Cpu.Registers.SP + 1
-		pch = mb.GetItem(&spadd1)
-		pcl = mb.GetItem(&mb.Cpu.Registers.SP)
+		pch = mb.GetItem(spadd1)
+		pcl = mb.GetItem(mb.Cpu.Registers.SP)
 
 		mb.Cpu.SetDE((uint16(pch) << 8) | uint16(pcl))
 
@@ -318,8 +318,8 @@ var OPCODES = OpCodeMap{
 
 		var pch, pcl uint8
 		spadd1 := mb.Cpu.Registers.SP + 1
-		pch = mb.GetItem(&spadd1)
-		pcl = mb.GetItem(&mb.Cpu.Registers.SP)
+		pch = mb.GetItem(spadd1)
+		pcl = mb.GetItem(mb.Cpu.Registers.SP)
 
 		mb.Cpu.SetHL((uint16(pch) << 8) | uint16(pcl))
 
@@ -332,8 +332,8 @@ var OPCODES = OpCodeMap{
 	0xf1: func(mb *Motherboard, value uint16) OpCycles {
 
 		spadd1 := mb.Cpu.Registers.SP + 1
-		mb.Cpu.Registers.A = mb.GetItem(&spadd1)
-		mb.Cpu.Registers.F = mb.GetItem(&mb.Cpu.Registers.SP) & 0xF0 & 0xF0
+		mb.Cpu.Registers.A = mb.GetItem(spadd1)
+		mb.Cpu.Registers.F = mb.GetItem(mb.Cpu.Registers.SP) & 0xF0 & 0xF0
 
 		mb.Cpu.Registers.SP += 2
 		mb.Cpu.Registers.PC += 1
@@ -346,7 +346,7 @@ var OPCODES = OpCodeMap{
 
 		bc := mb.Cpu.BC()
 		a := (uint16)(mb.Cpu.Registers.A)
-		mb.SetItem(&bc, &a)
+		mb.SetItem(bc, a)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -356,7 +356,7 @@ var OPCODES = OpCodeMap{
 
 		de := mb.Cpu.DE()
 		a := uint16(mb.Cpu.Registers.A)
-		mb.SetItem(&de, &a)
+		mb.SetItem(de, a)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -366,7 +366,7 @@ var OPCODES = OpCodeMap{
 
 		hl := mb.Cpu.HL()
 		a := uint16(mb.Cpu.Registers.A)
-		mb.SetItem(&hl, &a)
+		mb.SetItem(hl, a)
 		hl += 1
 		mb.Cpu.SetHL(hl)
 		mb.Cpu.Registers.PC += 1
@@ -378,7 +378,7 @@ var OPCODES = OpCodeMap{
 
 		hl := mb.Cpu.HL()
 		a := uint16(mb.Cpu.Registers.A)
-		mb.SetItem(&hl, &a)
+		mb.SetItem(hl, a)
 		hl -= 1
 		mb.Cpu.SetHL(hl)
 		mb.Cpu.Registers.PC += 1
@@ -414,7 +414,7 @@ var OPCODES = OpCodeMap{
 
 		hl := mb.Cpu.HL()
 		d := uint16(mb.Cpu.Registers.D)
-		mb.SetItem(&hl, &d)
+		mb.SetItem(hl, d)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -478,7 +478,7 @@ var OPCODES = OpCodeMap{
 
 		var addr uint16 = 0xff00 + uint16(mb.Cpu.Registers.C)
 		a := uint16(mb.Cpu.Registers.A)
-		mb.SetItem(&addr, &a)
+		mb.SetItem(addr, a)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -487,7 +487,7 @@ var OPCODES = OpCodeMap{
 	0xf2: func(mb *Motherboard, value uint16) OpCycles {
 
 		var addr uint16 = 0xff00 + uint16(mb.Cpu.Registers.C)
-		a := mb.GetItem(&addr)
+		a := mb.GetItem(addr)
 		mb.Cpu.Registers.A = a
 		mb.Cpu.Registers.PC += 1
 		return 8
@@ -561,7 +561,7 @@ var OPCODES = OpCodeMap{
 
 		hl := mb.Cpu.HL()
 		e := uint16(mb.Cpu.Registers.E)
-		mb.SetItem(&hl, &e)
+		mb.SetItem(hl, e)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -646,11 +646,11 @@ var OPCODES = OpCodeMap{
 	0x34: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		v := mb.GetItem(&hl)
+		v := mb.GetItem(hl)
 		v = mb.Cpu.Inc(v)
 
 		v16 := uint16(v)
-		mb.SetItem(&hl, &v16)
+		mb.SetItem(hl, v16)
 		mb.Cpu.Registers.PC += 1
 		return 12
 	},
@@ -684,7 +684,7 @@ var OPCODES = OpCodeMap{
 
 		hl := mb.Cpu.HL()
 		h := uint16(mb.Cpu.Registers.H)
-		mb.SetItem(&hl, &h)
+		mb.SetItem(hl, h)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -731,8 +731,8 @@ var OPCODES = OpCodeMap{
 
 			pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 			pcl := mb.Cpu.Registers.PC & 0xff
-			mb.SetItem(&sp1, &pch)
-			mb.SetItem(&sp2, &pcl)
+			mb.SetItem(sp1, pch)
+			mb.SetItem(sp2, pcl)
 			mb.Cpu.Registers.SP -= 2
 			mb.Cpu.Registers.PC = value
 			return 24
@@ -751,8 +751,8 @@ var OPCODES = OpCodeMap{
 
 			pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 			pcl := mb.Cpu.Registers.PC & 0xff
-			mb.SetItem(&sp1, &pch)
-			mb.SetItem(&sp2, &pcl)
+			mb.SetItem(sp1, pch)
+			mb.SetItem(sp2, pcl)
 			mb.Cpu.Registers.SP -= 2
 			mb.Cpu.Registers.PC = value
 			return 24
@@ -793,11 +793,11 @@ var OPCODES = OpCodeMap{
 	0x35: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		v := mb.GetItem(&hl)
+		v := mb.GetItem(hl)
 		v = mb.Cpu.Dec(v)
 
 		v16 := uint16(v)
-		mb.SetItem(&hl, &v16)
+		mb.SetItem(hl, v16)
 		mb.Cpu.Registers.PC += 1
 		return 12
 	},
@@ -831,7 +831,7 @@ var OPCODES = OpCodeMap{
 
 		hl := mb.Cpu.HL()
 		l := uint16(mb.Cpu.Registers.L)
-		mb.SetItem(&hl, &l)
+		mb.SetItem(hl, l)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -876,8 +876,8 @@ var OPCODES = OpCodeMap{
 
 		br := uint16(mb.Cpu.Registers.B)
 		cr := uint16(mb.Cpu.Registers.C)
-		mb.SetItem(&sp1, &br)
-		mb.SetItem(&sp2, &cr)
+		mb.SetItem(sp1, br)
+		mb.SetItem(sp2, cr)
 		mb.Cpu.Registers.SP -= 2
 		mb.Cpu.Registers.PC += 1
 		return 16
@@ -891,8 +891,8 @@ var OPCODES = OpCodeMap{
 
 		dr := uint16(mb.Cpu.Registers.D)
 		er := uint16(mb.Cpu.Registers.E)
-		mb.SetItem(&sp1, &dr)
-		mb.SetItem(&sp2, &er)
+		mb.SetItem(sp1, dr)
+		mb.SetItem(sp2, er)
 		mb.Cpu.Registers.SP -= 2
 		mb.Cpu.Registers.PC += 1
 		return 16
@@ -906,8 +906,8 @@ var OPCODES = OpCodeMap{
 
 		hr := uint16(mb.Cpu.Registers.H)
 		lr := uint16(mb.Cpu.Registers.L)
-		mb.SetItem(&sp1, &hr)
-		mb.SetItem(&sp2, &lr)
+		mb.SetItem(sp1, hr)
+		mb.SetItem(sp2, lr)
 		mb.Cpu.Registers.SP -= 2
 		mb.Cpu.Registers.PC += 1
 		return 16
@@ -921,8 +921,8 @@ var OPCODES = OpCodeMap{
 
 		ar := uint16(mb.Cpu.Registers.A)
 		fr := uint16(mb.Cpu.Registers.F)
-		mb.SetItem(&sp1, &ar)
-		mb.SetItem(&sp2, &fr)
+		mb.SetItem(sp1, ar)
+		mb.SetItem(sp2, fr)
 		mb.Cpu.Registers.SP -= 2
 		mb.Cpu.Registers.PC += 1
 		return 16
@@ -958,7 +958,7 @@ var OPCODES = OpCodeMap{
 
 		hl := mb.Cpu.HL()
 		value &= 0xff
-		mb.SetItem(&hl, &value)
+		mb.SetItem(hl, value)
 		mb.Cpu.Registers.PC += 2
 		return 12
 	},
@@ -967,7 +967,7 @@ var OPCODES = OpCodeMap{
 	0x46: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.B = mb.GetItem(&hl)
+		mb.Cpu.Registers.B = mb.GetItem(hl)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -976,7 +976,7 @@ var OPCODES = OpCodeMap{
 	0x56: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.D = mb.GetItem(&hl)
+		mb.Cpu.Registers.D = mb.GetItem(hl)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -985,7 +985,7 @@ var OPCODES = OpCodeMap{
 	0x66: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.H = mb.GetItem(&hl)
+		mb.Cpu.Registers.H = mb.GetItem(hl)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -1001,7 +1001,7 @@ var OPCODES = OpCodeMap{
 	0x86: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.A = mb.Cpu.AddSetFlags8(mb.Cpu.Registers.A, mb.GetItem(&hl))
+		mb.Cpu.Registers.A = mb.Cpu.AddSetFlags8(mb.Cpu.Registers.A, mb.GetItem(hl))
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -1010,7 +1010,7 @@ var OPCODES = OpCodeMap{
 	0x96: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.A = mb.Cpu.SubSetFlags8(mb.Cpu.Registers.A, mb.GetItem(&hl))
+		mb.Cpu.Registers.A = mb.Cpu.SubSetFlags8(mb.Cpu.Registers.A, mb.GetItem(hl))
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -1019,7 +1019,7 @@ var OPCODES = OpCodeMap{
 	0xa6: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.A = mb.Cpu.AndSetFlags(mb.Cpu.Registers.A, mb.GetItem(&hl))
+		mb.Cpu.Registers.A = mb.Cpu.AndSetFlags(mb.Cpu.Registers.A, mb.GetItem(hl))
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -1028,7 +1028,7 @@ var OPCODES = OpCodeMap{
 	0xb6: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.A = mb.Cpu.OrSetFlags(mb.Cpu.Registers.A, mb.GetItem(&hl))
+		mb.Cpu.Registers.A = mb.Cpu.OrSetFlags(mb.Cpu.Registers.A, mb.GetItem(hl))
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -1201,7 +1201,7 @@ var OPCODES = OpCodeMap{
 
 		hl := mb.Cpu.HL()
 		a := uint16(mb.Cpu.Registers.A)
-		mb.SetItem(&hl, &a)
+		mb.SetItem(hl, a)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -1247,8 +1247,8 @@ var OPCODES = OpCodeMap{
 
 		pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 		pcl := mb.Cpu.Registers.PC & 0xff
-		mb.SetItem(&sp1, &pch)
-		mb.SetItem(&sp2, &pcl)
+		mb.SetItem(sp1, pch)
+		mb.SetItem(sp2, pcl)
 		mb.Cpu.Registers.SP -= 2
 		mb.Cpu.Registers.PC = 0x00
 		return 16
@@ -1263,8 +1263,8 @@ var OPCODES = OpCodeMap{
 
 		pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 		pcl := mb.Cpu.Registers.PC & 0xff
-		mb.SetItem(&sp1, &pch)
-		mb.SetItem(&sp2, &pcl)
+		mb.SetItem(sp1, pch)
+		mb.SetItem(sp2, pcl)
 		mb.Cpu.Registers.SP -= 2
 		mb.Cpu.Registers.PC = 0x10
 		return 16
@@ -1279,8 +1279,8 @@ var OPCODES = OpCodeMap{
 
 		pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 		pcl := mb.Cpu.Registers.PC & 0xff
-		mb.SetItem(&sp1, &pch)
-		mb.SetItem(&sp2, &pcl)
+		mb.SetItem(sp1, pch)
+		mb.SetItem(sp2, pcl)
 		mb.Cpu.Registers.SP -= 2
 		mb.Cpu.Registers.PC = 0x20
 		return 16
@@ -1295,8 +1295,8 @@ var OPCODES = OpCodeMap{
 
 		pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 		pcl := mb.Cpu.Registers.PC & 0xff
-		mb.SetItem(&sp1, &pch)
-		mb.SetItem(&sp2, &pcl)
+		mb.SetItem(sp1, pch)
+		mb.SetItem(sp2, pcl)
 		mb.Cpu.Registers.SP -= 2
 		mb.Cpu.Registers.PC = 0x30
 		return 16
@@ -1313,8 +1313,8 @@ var OPCODES = OpCodeMap{
 		addr2 := value + 1
 		value2 := (mb.Cpu.Registers.SP >> 8) & 0xFF
 
-		mb.SetItem(&addr1, &value1)
-		mb.SetItem(&addr2, &value2)
+		mb.SetItem(addr1, value1)
+		mb.SetItem(addr2, value2)
 
 		mb.Cpu.Registers.PC += 3
 		return 20
@@ -1426,8 +1426,8 @@ var OPCODES = OpCodeMap{
 		mb.Cpu.Registers.PC += 1
 		if mb.Cpu.IsFlagZSet() {
 			nsp := mb.Cpu.Registers.SP + 1
-			pcl := mb.GetItem(&mb.Cpu.Registers.SP)
-			pch := mb.GetItem(&nsp)
+			pcl := mb.GetItem(mb.Cpu.Registers.SP)
+			pch := mb.GetItem(nsp)
 			mb.Cpu.Registers.SP += 2
 			mb.Cpu.Registers.PC = uint16(pch)<<8 | uint16(pcl)
 			return 20
@@ -1442,8 +1442,8 @@ var OPCODES = OpCodeMap{
 		mb.Cpu.Registers.PC += 1
 		if mb.Cpu.IsFlagCSet() {
 			nsp := mb.Cpu.Registers.SP + 1
-			pcl := mb.GetItem(&mb.Cpu.Registers.SP)
-			pch := mb.GetItem(&nsp)
+			pcl := mb.GetItem(mb.Cpu.Registers.SP)
+			pch := mb.GetItem(nsp)
 			mb.Cpu.Registers.SP += 2
 			mb.Cpu.Registers.PC = uint16(pch)<<8 | uint16(pcl)
 			return 20
@@ -1471,22 +1471,6 @@ var OPCODES = OpCodeMap{
 			mb.Cpu.SetFlagC()
 		}
 
-		// var i8 int8 = int8((value ^ 0x80) - 0x80)
-		// r := int32(mb.Cpu.Registers.SP) + int32(i8)
-		// sp := int32(mb.Cpu.Registers.SP)
-
-		// mb.Cpu.ClearAllFlags()
-		// if (sp^int32(i8)^r)&0x100 == 0x100 {
-		// 	mb.Cpu.SetFlagC()
-		// }
-
-		// // if (int32(mb.Cpu.Registers.SP)^int32(i8)^r)&0x10 != 0x0 {
-		// // 	mb.Cpu.SetFlagH()
-		// // }
-
-		// if (sp&0xf)+(int32(i8)&0xf)&0x10 == 0x10 {
-		// 	mb.Cpu.SetFlagH()
-		// }
 		mb.Cpu.Registers.SP = uint16(r)
 		mb.Cpu.Registers.PC += 2
 		return 16
@@ -1497,7 +1481,6 @@ var OPCODES = OpCodeMap{
 
 		value &= 0xff
 		var i8 int8 = int8((value ^ 0x80) - 0x80)
-		// var i8 int8 = int8(value)
 		sp := int32(mb.Cpu.Registers.SP)
 		i8_32 := int32(i8)
 		r := sp + i8_32
@@ -1512,14 +1495,6 @@ var OPCODES = OpCodeMap{
 		if (sp^i8_32^r)&0x100 == 0x100 {
 			mb.Cpu.SetFlagC()
 		}
-
-		// if (int32(mb.Cpu.Registers.SP)^int32(i8)^r)&0x10 == 0x10 {
-		// 	mb.Cpu.SetFlagC()
-		// }
-
-		// if (int32(mb.Cpu.Registers.SP)^int32(i8)^r)&0x100 == 0x100 {
-		// 	mb.Cpu.SetFlagH()
-		// }
 
 		mb.Cpu.Registers.PC += 2
 		return 12
@@ -1631,8 +1606,8 @@ var OPCODES = OpCodeMap{
 	0xc9: func(mb *Motherboard, value uint16) OpCycles {
 
 		sp2 := mb.Cpu.Registers.SP + 1
-		pcl := mb.GetItem(&mb.Cpu.Registers.SP)
-		pch := mb.GetItem(&sp2)
+		pcl := mb.GetItem(mb.Cpu.Registers.SP)
+		pch := mb.GetItem(sp2)
 		mb.Cpu.Registers.SP += 2
 		mb.Cpu.Registers.PC = uint16(pch)<<8 | uint16(pcl)
 		return 16
@@ -1644,8 +1619,8 @@ var OPCODES = OpCodeMap{
 		// mb.Cpu.Interrupts.Master_Enable = true
 		mb.Cpu.Interrupts.InterruptsEnabling = true
 		sp2 := mb.Cpu.Registers.SP + 1
-		pcl := mb.GetItem(&mb.Cpu.Registers.SP)
-		pch := mb.GetItem(&sp2)
+		pcl := mb.GetItem(mb.Cpu.Registers.SP)
+		pch := mb.GetItem(sp2)
 		mb.Cpu.Registers.SP += 2
 		mb.Cpu.Registers.PC = uint16(pch)<<8 | uint16(pcl)
 		return 16
@@ -1671,7 +1646,7 @@ var OPCODES = OpCodeMap{
 	0x0A: func(mb *Motherboard, value uint16) OpCycles {
 
 		bc := mb.Cpu.BC()
-		a := mb.GetItem(&bc)
+		a := mb.GetItem(bc)
 		mb.Cpu.Registers.A = uint8(a)
 		mb.Cpu.Registers.PC += 1
 		return 8
@@ -1681,7 +1656,7 @@ var OPCODES = OpCodeMap{
 	0x1A: func(mb *Motherboard, value uint16) OpCycles {
 
 		de := mb.Cpu.DE()
-		a := mb.GetItem(&de)
+		a := mb.GetItem(de)
 		mb.Cpu.Registers.A = uint8(a)
 		mb.Cpu.Registers.PC += 1
 		return 8
@@ -1691,7 +1666,7 @@ var OPCODES = OpCodeMap{
 	0x2A: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		a := mb.GetItem(&hl)
+		a := mb.GetItem(hl)
 		mb.Cpu.Registers.A = uint8(a)
 		hl += 1
 		mb.Cpu.SetHL(hl)
@@ -1703,7 +1678,7 @@ var OPCODES = OpCodeMap{
 	0x3A: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		a := mb.GetItem(&hl)
+		a := mb.GetItem(hl)
 		mb.Cpu.Registers.A = uint8(a)
 		hl -= 1
 		mb.Cpu.SetHL(hl)
@@ -1801,7 +1776,7 @@ var OPCODES = OpCodeMap{
 	0xea: func(mb *Motherboard, value uint16) OpCycles {
 
 		a := uint16(mb.Cpu.Registers.A)
-		mb.SetItem(&value, &a)
+		mb.SetItem(value, a)
 		mb.Cpu.Registers.PC += 3
 		return 16
 	},
@@ -1809,7 +1784,7 @@ var OPCODES = OpCodeMap{
 	// LD A, (a16) - Load A from given address (250)
 	0xfa: func(mb *Motherboard, value uint16) OpCycles {
 
-		a := mb.GetItem(&value)
+		a := mb.GetItem(value)
 		mb.Cpu.Registers.A = uint8(a)
 		mb.Cpu.Registers.PC += 3
 		return 16
@@ -2045,8 +2020,8 @@ var OPCODES = OpCodeMap{
 
 			pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 			pcl := mb.Cpu.Registers.PC & 0xff
-			mb.SetItem(&sp1, &pch)
-			mb.SetItem(&sp2, &pcl)
+			mb.SetItem(sp1, pch)
+			mb.SetItem(sp2, pcl)
 			mb.Cpu.Registers.SP -= 2
 
 			mb.Cpu.Registers.PC = value
@@ -2069,8 +2044,8 @@ var OPCODES = OpCodeMap{
 
 			pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 			pcl := mb.Cpu.Registers.PC & 0xff
-			mb.SetItem(&sp1, &pch)
-			mb.SetItem(&sp2, &pcl)
+			mb.SetItem(sp1, pch)
+			mb.SetItem(sp2, pcl)
 			mb.Cpu.Registers.SP -= 2
 
 			mb.Cpu.Registers.PC = value
@@ -2188,8 +2163,8 @@ var OPCODES = OpCodeMap{
 
 		pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 		pcl := mb.Cpu.Registers.PC & 0xff
-		mb.SetItem(&sp1, &pch)
-		mb.SetItem(&sp2, &pcl)
+		mb.SetItem(sp1, pch)
+		mb.SetItem(sp2, pcl)
 		mb.Cpu.Registers.SP -= 2
 
 		mb.Cpu.Registers.PC = value
@@ -2235,7 +2210,7 @@ var OPCODES = OpCodeMap{
 	0x4E: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.C = mb.GetItem(&hl)
+		mb.Cpu.Registers.C = mb.GetItem(hl)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -2244,7 +2219,7 @@ var OPCODES = OpCodeMap{
 	0x5E: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.E = mb.GetItem(&hl)
+		mb.Cpu.Registers.E = mb.GetItem(hl)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -2253,7 +2228,7 @@ var OPCODES = OpCodeMap{
 	0x6E: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.L = mb.GetItem(&hl)
+		mb.Cpu.Registers.L = mb.GetItem(hl)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -2262,7 +2237,7 @@ var OPCODES = OpCodeMap{
 	0x7E: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.A = mb.GetItem(&hl)
+		mb.Cpu.Registers.A = mb.GetItem(hl)
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -2271,7 +2246,7 @@ var OPCODES = OpCodeMap{
 	0x8E: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.A = mb.Cpu.AdcSetFlags8(mb.Cpu.Registers.A, mb.GetItem(&hl))
+		mb.Cpu.Registers.A = mb.Cpu.AdcSetFlags8(mb.Cpu.Registers.A, mb.GetItem(hl))
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -2280,7 +2255,7 @@ var OPCODES = OpCodeMap{
 	0x9E: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.A = mb.Cpu.SbcSetFlags8(mb.Cpu.Registers.A, mb.GetItem(&hl))
+		mb.Cpu.Registers.A = mb.Cpu.SbcSetFlags8(mb.Cpu.Registers.A, mb.GetItem(hl))
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -2289,7 +2264,7 @@ var OPCODES = OpCodeMap{
 	0xae: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		mb.Cpu.Registers.A = mb.Cpu.XorSetFlags(mb.Cpu.Registers.A, mb.GetItem(&hl))
+		mb.Cpu.Registers.A = mb.Cpu.XorSetFlags(mb.Cpu.Registers.A, mb.GetItem(hl))
 		mb.Cpu.Registers.PC += 1
 		return 8
 	},
@@ -2298,7 +2273,7 @@ var OPCODES = OpCodeMap{
 	0xbe: func(mb *Motherboard, value uint16) OpCycles {
 
 		addr := mb.Cpu.HL()
-		hl := mb.GetItem(&addr)
+		hl := mb.GetItem(addr)
 		mb.Cpu.CpSetFlags(mb.Cpu.Registers.A, hl)
 		mb.Cpu.Registers.PC += 1
 		return 8
@@ -2481,8 +2456,8 @@ var OPCODES = OpCodeMap{
 
 		pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 		pcl := mb.Cpu.Registers.PC & 0xff
-		mb.SetItem(&sp1, &pch)
-		mb.SetItem(&sp2, &pcl)
+		mb.SetItem(sp1, pch)
+		mb.SetItem(sp2, pcl)
 		mb.Cpu.Registers.SP -= 2
 
 		mb.Cpu.Registers.PC = 0x08
@@ -2498,8 +2473,8 @@ var OPCODES = OpCodeMap{
 
 		pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 		pcl := mb.Cpu.Registers.PC & 0xff
-		mb.SetItem(&sp1, &pch)
-		mb.SetItem(&sp2, &pcl)
+		mb.SetItem(sp1, pch)
+		mb.SetItem(sp2, pcl)
 		mb.Cpu.Registers.SP -= 2
 
 		mb.Cpu.Registers.PC = 0x18
@@ -2515,8 +2490,8 @@ var OPCODES = OpCodeMap{
 
 		pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 		pcl := mb.Cpu.Registers.PC & 0xff
-		mb.SetItem(&sp1, &pch)
-		mb.SetItem(&sp2, &pcl)
+		mb.SetItem(sp1, pch)
+		mb.SetItem(sp2, pcl)
 		mb.Cpu.Registers.SP -= 2
 
 		mb.Cpu.Registers.PC = 0x28
@@ -2532,8 +2507,8 @@ var OPCODES = OpCodeMap{
 
 		pch := (mb.Cpu.Registers.PC >> 8) & 0xff
 		pcl := mb.Cpu.Registers.PC & 0xff
-		mb.SetItem(&sp1, &pch)
-		mb.SetItem(&sp2, &pcl)
+		mb.SetItem(sp1, pch)
+		mb.SetItem(sp2, pcl)
 		mb.Cpu.Registers.SP -= 2
 
 		mb.Cpu.Registers.PC = 0x38
@@ -3871,7 +3846,7 @@ var OPCODES = OpCodeMap{
 	0x106: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
@@ -3887,7 +3862,7 @@ var OPCODES = OpCodeMap{
 			mb.Cpu.SetFlagZ()
 		}
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -3896,7 +3871,7 @@ var OPCODES = OpCodeMap{
 	0x116: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
@@ -3918,7 +3893,7 @@ var OPCODES = OpCodeMap{
 			mb.Cpu.SetFlagZ()
 		}
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -3927,7 +3902,7 @@ var OPCODES = OpCodeMap{
 	0x126: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
@@ -3943,7 +3918,7 @@ var OPCODES = OpCodeMap{
 			mb.Cpu.SetFlagZ()
 		}
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -3952,7 +3927,7 @@ var OPCODES = OpCodeMap{
 	0x136: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
@@ -3965,7 +3940,7 @@ var OPCODES = OpCodeMap{
 		}
 
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -3974,7 +3949,7 @@ var OPCODES = OpCodeMap{
 	0x146: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.SetFlagH()
 
@@ -3990,7 +3965,7 @@ var OPCODES = OpCodeMap{
 	0x156: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.SetFlagH()
 
@@ -4006,7 +3981,7 @@ var OPCODES = OpCodeMap{
 	0x166: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.SetFlagH()
 
@@ -4022,7 +3997,7 @@ var OPCODES = OpCodeMap{
 	0x176: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.SetFlagH()
 		mb.Cpu.SetFlagZ()
@@ -4037,10 +4012,10 @@ var OPCODES = OpCodeMap{
 	0x186: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.ResetBit(&b, 0)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -4049,10 +4024,10 @@ var OPCODES = OpCodeMap{
 	0x196: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.ResetBit(&b, 2)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -4061,10 +4036,10 @@ var OPCODES = OpCodeMap{
 	0x1A6: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.ResetBit(&b, 4)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -4073,10 +4048,10 @@ var OPCODES = OpCodeMap{
 	0x1B6: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.ResetBit(&b, 6)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -4085,10 +4060,10 @@ var OPCODES = OpCodeMap{
 	0x1C6: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.SetBit(&b, 0)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -4097,10 +4072,10 @@ var OPCODES = OpCodeMap{
 	0x1D6: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.SetBit(&b, 2)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -4109,10 +4084,10 @@ var OPCODES = OpCodeMap{
 	0x1E6: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.SetBit(&b, 4)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -4121,10 +4096,10 @@ var OPCODES = OpCodeMap{
 	0x1F6: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.SetBit(&b, 6)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -5721,7 +5696,7 @@ var OPCODES = OpCodeMap{
 	0x10e: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
@@ -5739,7 +5714,7 @@ var OPCODES = OpCodeMap{
 		}
 
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -5748,7 +5723,7 @@ var OPCODES = OpCodeMap{
 	0x11e: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
@@ -5772,7 +5747,7 @@ var OPCODES = OpCodeMap{
 		}
 
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -5781,7 +5756,7 @@ var OPCODES = OpCodeMap{
 	0x12e: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetAllFlags()
 
 		if b&0x01 != 0 {
@@ -5800,7 +5775,7 @@ var OPCODES = OpCodeMap{
 		}
 
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -5809,7 +5784,7 @@ var OPCODES = OpCodeMap{
 	0x13e: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagZ()
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.ResetFlagH()
@@ -5828,7 +5803,7 @@ var OPCODES = OpCodeMap{
 		}
 
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -5837,7 +5812,7 @@ var OPCODES = OpCodeMap{
 	0x14e: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.SetFlagH()
 
@@ -5853,7 +5828,7 @@ var OPCODES = OpCodeMap{
 	0x15e: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.SetFlagH()
 
@@ -5869,7 +5844,7 @@ var OPCODES = OpCodeMap{
 	0x16e: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.SetFlagH()
 		mb.Cpu.SetFlagZ()
@@ -5885,7 +5860,7 @@ var OPCODES = OpCodeMap{
 	0x17e: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		mb.Cpu.ResetFlagN()
 		mb.Cpu.SetFlagH()
 		mb.Cpu.SetFlagZ()
@@ -5901,10 +5876,10 @@ var OPCODES = OpCodeMap{
 	0x18e: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.ResetBit(&b, 1)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -5913,10 +5888,10 @@ var OPCODES = OpCodeMap{
 	0x19e: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.ResetBit(&b, 3)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -5925,10 +5900,10 @@ var OPCODES = OpCodeMap{
 	0x1AE: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.ResetBit(&b, 5)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -5937,10 +5912,10 @@ var OPCODES = OpCodeMap{
 	0x1BE: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.ResetBit(&b, 7)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -5949,10 +5924,10 @@ var OPCODES = OpCodeMap{
 	0x1CE: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.SetBit(&b, 1)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -5961,10 +5936,10 @@ var OPCODES = OpCodeMap{
 	0x1DE: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.SetBit(&b, 3)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -5973,10 +5948,10 @@ var OPCODES = OpCodeMap{
 	0x1EE: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.SetBit(&b, 5)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
@@ -5985,10 +5960,10 @@ var OPCODES = OpCodeMap{
 	0x1FE: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
-		b := mb.GetItem(&hl)
+		b := mb.GetItem(hl)
 		internal.SetBit(&b, 7)
 		b16 := uint16(b)
-		mb.SetItem(&hl, &b16)
+		mb.SetItem(hl, b16)
 		mb.Cpu.Registers.PC += 2
 		return 16
 	},
