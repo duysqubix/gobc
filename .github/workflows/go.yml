@@ -35,6 +35,6 @@ jobs:
         set -e
         pwd
         ls -la
-        ./gobc default_rom/blarrg/cpu_instrs/cpu_instrs.gb
+        ./gobc --no-gui default_rom/blarrg/cpu_instrs/cpu_instrs.gb
 
   
