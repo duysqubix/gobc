@@ -33,7 +33,8 @@ jobs:
     - name: Test Blarrgs CPU_INSTR
       run: |
         set -e
-        output=$(./gobc default/blarrg/cpu_instrs/cpu_instrs.gb | sha256sum)
-        echo $output
+        pwd
+        ls -la
+        ./gobc default/blarrg/cpu_instrs/cpu_instrs.gb
 
   
