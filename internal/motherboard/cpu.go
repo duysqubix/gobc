@@ -79,7 +79,10 @@ func (c *CPU) Tick() OpCycles {
 		logger.Warnf("CPU is stuck at PC: %#x SP: %#x", c.Registers.PC, c.Registers.SP)
 		c.IsStuck = true
 		// c.DumpState(os.Stdout)
-		os.Exit(0)
+		if c.Mb.PanicOnStuck {
+			logger.Errorf("Panicking on CPU stuck")
+			os.Exit(1)
+		}
 	}
 
 	return tickCycles

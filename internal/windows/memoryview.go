@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	memScreenWidth  = 750
+	memScreenWidth  = 800
 	memScreenHeight = 1000
 	memScale        = 1
 	memTrueWidth    = float64(memScreenWidth * memScale)

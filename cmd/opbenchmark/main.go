@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
 )
 
@@ -149,7 +148,6 @@ func main() {
 	for i := start_opcode; i <= end_opcode; i++ {
 		i16 := motherboard.OpCode(i)
 		if isInArray(i16, motherboard.ILLEGAL_OPCODES) {
-			internal.Logger.Infof("Skipping illegal opcode: %#x\n", i)
 			continue
 		}
 

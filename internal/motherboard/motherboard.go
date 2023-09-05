@@ -17,24 +17,26 @@ type Breakpoints struct {
 }
 
 type Motherboard struct {
-	Cpu         *CPU                 // CPU
-	Cartridge   *cartridge.Cartridge // Cartridge
-	Memory      *Memory              // Internal RAM
-	BootRom     *BootRom             // Boot ROM
-	Timer       *Timer               // Timer
-	Cgb         bool                 // Color Gameboy
-	CpuFreq     uint32               // CPU frequency
-	Randomize   bool                 // Randomize RAM on startup
-	Decouple    bool                 // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
-	Breakpoints *Breakpoints         // Breakpoints
+	Cpu          *CPU                 // CPU
+	Cartridge    *cartridge.Cartridge // Cartridge
+	Memory       *Memory              // Internal RAM
+	BootRom      *BootRom             // Boot ROM
+	Timer        *Timer               // Timer
+	Cgb          bool                 // Color Gameboy
+	CpuFreq      uint32               // CPU frequency
+	Randomize    bool                 // Randomize RAM on startup
+	Decouple     bool                 // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
+	Breakpoints  *Breakpoints         // Breakpoints
+	PanicOnStuck bool                 // Panic when CPU is stuck
 }
 
 type MotherboardParams struct {
-	Filename    *pathlib.Path
-	Randomize   bool
-	ForceCgb    bool
-	Breakpoints []uint16
-	Decouple    bool
+	Filename     *pathlib.Path
+	Randomize    bool
+	ForceCgb     bool
+	Breakpoints  []uint16
+	Decouple     bool
+	PanicOnStuck bool
 }
 
 func NewMotherboard(params *MotherboardParams) *Motherboard {
@@ -59,11 +61,12 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	}
 
 	mb := &Motherboard{
-		Cartridge:   cart,
-		Randomize:   params.Randomize,
-		Decouple:    params.Decouple,
-		Timer:       NewTimer(),
-		Breakpoints: bp,
+		Cartridge:    cart,
+		Randomize:    params.Randomize,
+		Decouple:     params.Decouple,
+		Timer:        NewTimer(),
+		Breakpoints:  bp,
+		PanicOnStuck: params.PanicOnStuck,
 	}
 
 	mb.Cgb = mb.Cartridge.CgbModeEnabled() || params.ForceCgb
@@ -78,7 +81,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	// mb.BootRom = NewBootRom(mb.Cartridge.CgbModeEnabled())
 
 	if !mb.BootRomEnabled() {
-		logger.Debugf("Boot ROM disabled")
+		logger.Info("Boot ROM disabled")
 		mb.Cpu.Registers.PC = 0x100
 	}
 
@@ -264,7 +267,6 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 	*
 	 */
 	case addr == 0xFFFF:
-		logger.Debugf("Reading from %#x on Interrupt Enable Register\n", addr)
 		return m.Cpu.Interrupts.IE
 
 	default:

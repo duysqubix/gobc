@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	gameScale        = 1
+	gameScale        = 2
 	gameScreenWidth  = internal.GB_SCREEN_WIDTH
 	gameScreenHeight = internal.GB_SCREEN_HEIGHT
 
@@ -69,15 +69,16 @@ type GoBoyColor struct {
 	ForceCgb    bool
 }
 
-func NewGoBoyColor(romfile string, breakpoints []uint16, force_cgb bool) *GoBoyColor {
+func NewGoBoyColor(romfile string, breakpoints []uint16, forceCgb bool, panicOnStuck bool) *GoBoyColor {
 	// read cartridge first
 
 	gobc := &GoBoyColor{
 		Mb: motherboard.NewMotherboard(&motherboard.MotherboardParams{
-			Filename:    pathlib.NewPathAfero(romfile, afero.NewOsFs()),
-			Randomize:   true,
-			Breakpoints: breakpoints,
-			ForceCgb:    force_cgb,
+			Filename:     pathlib.NewPathAfero(romfile, afero.NewOsFs()),
+			Randomize:    true,
+			Breakpoints:  breakpoints,
+			ForceCgb:     forceCgb,
+			PanicOnStuck: panicOnStuck,
 		}),
 		Stopped: false,
 		Paused:  false,
@@ -114,13 +115,13 @@ func (g *GoBoyColor) UpdateInternalGameState() bool {
 
 	internalCycleCounter = 0
 	for internalCycleCounter < CyclesFrameSBG {
-		logger.Debug("----------------Tick-----------------")
+		// logger.Debug("----------------Tick-----------------")
 
 		if g.Stopped {
 			still_good = false
 			break
 		}
-		
+
 		if !g.Paused {
 			internalStatus, internalCycleReturn = g.Mb.Tick()
 			internalCycleCounter += int(internalCycleReturn)

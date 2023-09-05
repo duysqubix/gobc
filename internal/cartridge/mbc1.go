@@ -45,7 +45,6 @@ func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
 }
 
 func (c *Mbc1Cartridge) GetItem(addr uint16) uint8 {
-	logger.Infof("Reading from %#x on MBC1 Cartridge\n", addr)
 	switch {
 	case addr < 0x4000:
 		if c.parent.MemoryModel == 1 {
@@ -58,7 +57,6 @@ func (c *Mbc1Cartridge) GetItem(addr uint16) uint8 {
 	case 0x4000 <= addr && addr < 0x8000:
 		c.parent.RomBankSelected = (c.bankSelectRegister2<<5)%c.parent.RomBanksCount | c.bankSelectRegister1
 		bank := c.parent.RomBankSelected % uint8(len(c.parent.RomBanks))
-		logger.Infof("Bank: %d, RomBankSelected: %d\n", bank, c.parent.RomBankSelected)
 		return c.parent.RomBanks[bank][addr-0x4000]
 
 	case 0xA000 <= addr && addr < 0xC000:

@@ -53,15 +53,19 @@ func gameLoopGUI() {
 	var elasped float64 = 0
 	var frame_cntr int64 = 0
 
-	var windows []windows.Window = []windows.Window{
+	var wins []windows.Window = []windows.Window{
 		windows.NewMainGameWindow(g),
 		// windows.NewMemoryViewWindow(g),
 	}
 
-	mainWin := windows[0].Win()
+	if DEBUG_WINDOWS {
+		wins = append(wins, windows.NewMemoryViewWindow(g))
+	}
+
+	mainWin := wins[0].Win()
 
 	// run layout once
-	for _, w := range windows {
+	for _, w := range wins {
 		w.SetUp()
 	}
 
@@ -70,8 +74,8 @@ func gameLoopGUI() {
 		start := time.Now()
 		mainWin.Clear(colornames.White)
 
-		Update(windows)
-		Draw(windows)
+		Update(wins)
+		Draw(wins)
 
 		if frameTick != nil {
 			<-frameTick.C
@@ -110,6 +114,7 @@ func gameLoop() {
 
 func mainAction(ctx *cli.Context) error {
 	var force_cgb bool = false
+	var panicOnStuck bool = false
 
 	if ctx.Bool("force-cgb") {
 		logger.Panic("Force CGB is not implemented yet")
@@ -125,6 +130,10 @@ func mainAction(ctx *cli.Context) error {
 		logger.Debugf("Verbose enabled")
 	}
 
+	if ctx.Bool("panic-on-stuck") {
+		panicOnStuck = true
+	}
+
 	var breakpoints []uint16
 	if ctx.String("breakpoints") != "" {
 		breakpoints = windows.ParseBreakpoints(ctx.String("breakpoints"))
@@ -133,10 +142,11 @@ func mainAction(ctx *cli.Context) error {
 	}
 
 	romfile := ctx.Args().First()
-	g = windows.NewGoBoyColor(romfile, breakpoints, force_cgb)
+	g = windows.NewGoBoyColor(romfile, breakpoints, force_cgb, panicOnStuck)
 
 	if ctx.Bool("debug") {
 		logger.SetLevel(log.DebugLevel)
+		DEBUG_WINDOWS = true
 	}
 
 	if ctx.Bool("no-gui") {
@@ -186,6 +196,9 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name: "no-gui",
+			},
+			&cli.BoolFlag{
+				Name: "panic-on-stuck",
 			},
 		},
 	}
