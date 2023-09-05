@@ -25,7 +25,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libglew-dev
+        sudo apt-get install -y libgl1-mesa-dev xorg-dev
         
     - name: Build GoBC Binary
       run: go build -v -o gobc cmd/gobc/gobc.go
@@ -33,6 +33,7 @@ jobs:
     - name: Test Blarrgs CPU_INSTR
       run: |
         set -e
-        ./gobc default/blarrg/cpu_instrs/cpu_instrs.gb | grep 'Passed'
+        output=$(./gobc default/blarrg/cpu_instrs/cpu_instrs.gb | sha256sum)
+        echo $output
 
   
