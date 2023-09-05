@@ -71,10 +71,6 @@ func (c *CPU) Tick() OpCycles {
 	old_sp := c.Registers.SP
 	tickCycles = c.ExecuteInstruction()
 
-	if c.Halted {
-		logger.Warnf("HALT DETECTED POST EXECUTE ")
-	}
-
 	if !c.Halted && (old_pc == c.Registers.PC) && (old_sp == c.Registers.SP) && !c.IsStuck {
 		logger.Warnf("CPU is stuck at PC: %#x SP: %#x", c.Registers.PC, c.Registers.SP)
 		c.IsStuck = true

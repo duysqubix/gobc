@@ -81,6 +81,7 @@ type IO [128]uint8
 type HRAM [127]uint8
 type WRAM [8][4096]uint8
 type OAM [160]uint8
+type VRAM [2][8192]uint8
 
 func NewInternalRAM(cgb bool, randomize bool) *Memory {
 	ram := &Memory{
@@ -97,8 +98,6 @@ func NewInternalRAM(cgb bool, randomize bool) *Memory {
 
 // //////// VRAM //////////
 
-type VRAM [2][8192]uint8
-type Tile [16]uint8
 
 func (r *Memory) ActiveVramBank() uint8 {
 	return r.IO[IO_VBK-IO_START_ADDR] & 0x1
