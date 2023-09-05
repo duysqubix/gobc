@@ -33,9 +33,14 @@ jobs:
     - name: Test Blarrgs CPU_INSTR
       run: |
         set -e
-        pwd
-        ls -la
         output=$(./gobc --no-gui default_rom/blarrg/cpu_instrs/cpu_instrs.gb)
+        echo $output | grep 'Passed'
+        echo $output
+
+    - name: Test Blarrgs INSTR_TIMING
+      run: |
+        set -e
+        output=$(./gobc --no-gui default_rom/blarrg/instr_timing/instr_timing.gb)
         echo $output | grep 'Passed'
         echo $output
 
