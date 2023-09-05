@@ -35,6 +35,8 @@ jobs:
         set -e
         pwd
         ls -la
-        ./gobc --no-gui default_rom/blarrg/cpu_instrs/cpu_instrs.gb
+        output=$(./gobc --no-gui default_rom/blarrg/cpu_instrs/cpu_instrs.gb)
+        echo $output | grep 'Passed'
+        echo $output
 
   
