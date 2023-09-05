@@ -12,8 +12,6 @@ import (
 
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/windows"
-	// "github.com/duysqubix/gobc/internal/windows"
-	// "github.com/urfave/cli/v2"
 )
 
 var logger = internal.Logger
@@ -42,8 +40,9 @@ func Draw(wins []windows.Window) {
 }
 
 var DEBUG_WINDOWS bool = false
+var SHOW_GUI bool = true
 
-func GameLoop() {
+func gameLoopGUI() {
 	setFPS(internal.FRAMES_PER_SECOND)
 
 	if g == nil {
@@ -53,12 +52,11 @@ func GameLoop() {
 	var fps float64
 	var elasped float64 = 0
 	var frame_cntr int64 = 0
+
 	var windows []windows.Window = []windows.Window{
 		windows.NewMainGameWindow(g),
 		// windows.NewMemoryViewWindow(g),
 	}
-	
-	
 
 	mainWin := windows[0].Win()
 
@@ -87,6 +85,26 @@ func GameLoop() {
 			frame_cntr = 0
 			elasped = 0
 		}
+	}
+}
+
+func gameLoop() {
+	setFPS(internal.FRAMES_PER_SECOND)
+
+	if g == nil {
+		logger.Fatal("GoBoyColor core is not initialized")
+	}
+
+	for {
+
+		if !g.UpdateInternalGameState() {
+			break
+		}
+
+		if frameTick != nil {
+			<-frameTick.C
+		}
+
 	}
 }
 
@@ -121,7 +139,15 @@ func mainAction(ctx *cli.Context) error {
 		logger.SetLevel(log.DebugLevel)
 	}
 
-	pixelgl.Run(GameLoop)
+	if ctx.Bool("no-gui") {
+		SHOW_GUI = false
+	}
+
+	if SHOW_GUI {
+		pixelgl.Run(gameLoopGUI)
+	} else {
+		gameLoop()
+	}
 
 	return cli.Exit("", 0)
 
@@ -157,6 +183,9 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name: "force-cgb",
+			},
+			&cli.BoolFlag{
+				Name: "no-gui",
 			},
 		},
 	}

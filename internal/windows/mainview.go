@@ -40,7 +40,7 @@ type MainGameWindow struct {
 // every frame must be called 1 / GB_CLOCK_HZ times in order to run the emulator at the correct speed
 func (mw *MainGameWindow) Update() error {
 
-	if !mw.hw.updateInternalGameState() {
+	if !mw.hw.UpdateInternalGameState() {
 		return nil
 	}
 	return nil
@@ -105,7 +105,7 @@ func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
 }
 
 // will want to block on this for CYCLES/60 cycles to process before rendering graphics
-func (g *GoBoyColor) updateInternalGameState() bool {
+func (g *GoBoyColor) UpdateInternalGameState() bool {
 	if g.Stopped {
 		return false
 	}
