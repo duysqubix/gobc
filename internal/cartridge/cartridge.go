@@ -5,6 +5,7 @@ package cartridge
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"reflect"
 
@@ -218,15 +219,25 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 }
 
 type Cartridge struct {
-	filename        string        // filename of the ROM
-	RomBanks        [][]uint8     // slice of ROM banks
-	RamBanks        [][]uint8     // slice of RAM banks
-	RomBanksCount   uint8         // number of ROM banks
-	CartType        CartridgeType // type of cartridge
-	RomBankSelected uint8         // currently selected ROM bank
-	RamBankSelected uint8         // currently selected RAM bank
-	RamBankEnabled  bool          // whether RAM bank is enabled
-	MemoryModel     uint8         // 0 = 16/8, 1 = 4/32
+	filename  string        // filename of the ROM
+	CartType  CartridgeType // type of cartridge
+	Randomize bool          // whether to randomize RAM banks on startup
+
+	// ROM Banks
+	RomBanks        [][]uint8 // slice of ROM banks
+	RomBanksCount   uint8     // number of ROM banks
+	RomBankSelected uint8     // currently selected ROM bank
+
+	// RAM Banks
+	RamBanks           [][]uint8 // slice of RAM banks
+	RamBankSelected    uint8     // currently selected RAM bank
+	RamBankEnabled     bool      // whether RAM bank is supported
+	RamBankInitialized bool      // whether RAM bank has been initialized
+
+	// RTC
+	RtcEnabled bool // whether RTC is enabled
+
+	MemoryModel uint8 // 0 = 16/8, 1 = 4/32
 }
 
 func LoadRomBanks(rom_data []byte, dummy_data bool) [][]uint8 {
@@ -290,6 +301,7 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 		RomBankSelected: 0,
 		RamBankSelected: 0,
 		MemoryModel:     0,
+		Randomize:       false, // TODO: make this configurable
 	}
 
 	cart_type_addr := rom_banks[0][CARTRIDGE_TYPE_ADDR]
@@ -306,15 +318,37 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 	}
 
 	// initialize RAM banks to maximum size of 128KiB
-	for i := 0; i < 16; i++ {
-		bank := make([]uint8, RAM_BANK_SIZE)
-		cart.RamBanks = append(cart.RamBanks, bank)
-	}
+	// for i := 0; i < 16; i++ {
+	// 	bank := make([]uint8, RAM_BANK_SIZE)
+	// 	cart.RamBanks = append(cart.RamBanks, bank)
+	// }
 	logger.Info("Cartridge RAM Initialized")
 	cart.Dump(os.Stdout)
 	logger.Infof("ROM file loaded successfully: %s", filename)
 	logger.Infof("Cartridge Initialized: %s", reflect.TypeOf(cart.CartType))
 	return &cart
+}
+
+func (c *Cartridge) initRambanks() {
+	var maxRamBanks int = 16
+	if c.CartType == nil {
+		return
+	}
+
+	c.RamBankInitialized = true
+
+	for i := 0; i < maxRamBanks; i++ {
+		bank := make([]uint8, RAM_BANK_SIZE)
+		c.RamBanks = append(c.RamBanks, bank)
+	}
+
+	if c.Randomize {
+		for _, ram := range c.RamBanks {
+			for i := range ram {
+				ram[i] = uint8(rand.Intn(256))
+			}
+		}
+	}
 }
 
 func (c *Cartridge) ValidateChecksum() (uint8, bool) {
@@ -464,7 +498,6 @@ func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
 			}
 		}
 	}
-	// fmt.Println(str)
 
 	for _, row := range data {
 		table.Append(row)
