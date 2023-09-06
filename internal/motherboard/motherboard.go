@@ -122,8 +122,8 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 		cycles = m.Cpu.Tick()
 	}
 
-	m.Cpu.Mb.Timer.Tick(cycles, m.Cpu)
 	m.Lcd.Tick(cycles)
+	m.Cpu.Mb.Timer.Tick(cycles, m.Cpu)
 	cycles += m.Cpu.handleInterrupts()
 
 	return true, cycles
@@ -466,8 +466,8 @@ func (m *Motherboard) DoHDMATransfer() {
 func (m *Motherboard) performNewDMATransfer(length uint16) {
 
 	// load the source and destination from RAM
-	src := uint16(m.GetItem(IO_HDMA1)<<8 | m.GetItem(IO_HDMA2))
-	dst := uint16(m.GetItem(IO_HDMA3)<<8 | m.GetItem(IO_HDMA4))
+	src := uint16(m.GetItem(IO_HDMA1))<<8 | uint16(m.GetItem(IO_HDMA2))
+	dst := uint16(m.GetItem(IO_HDMA3))<<8 | uint16(m.GetItem(IO_HDMA4))
 	dst += 0x8000
 
 	// perform the transfer

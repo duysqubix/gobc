@@ -114,8 +114,8 @@ const (
 	STAT_VBLINT uint8 = 4 // Bit 4 - Mode 1 V-Blank Interrupt     (1=Enable) (Read/Write)
 	STAT_HBLINT uint8 = 3 // Bit 3 - Mode 0 H-Blank Interrupt     (1=Enable) (Read/Write)
 	STAT_LYC    uint8 = 2 // Bit 2 - LYC=LY Coincidence Flag  (0:LYC<>LY, 1:LYC=LY) (Read Only)
-	STAT_MODE1   uint8 = 1 // Bit 1-0 - Mode Flag       (Mode 0-3, see below) (Read Only)
-	STAT_MODE0   uint8 = 0 // Bit 1-0 - Mode Flag       (Mode 0-3, see below) (Read Only)
+	STAT_MODE1  uint8 = 1 // Bit 1-0 - Mode Flag       (Mode 0-3, see below) (Read Only)
+	STAT_MODE0  uint8 = 0 // Bit 1-0 - Mode Flag       (Mode 0-3, see below) (Read Only)
 
 	STAT_MODE_HBLANK uint8 = 0x00 // Mode 0: During H-Blank
 	STAT_MODE_VBLANK uint8 = 0x01 // Mode 1: During V-Blank
@@ -133,7 +133,7 @@ const (
 )
 
 type OpCode uint16                                        // 16-bit opcodes
-type OpCycles uint64                                      // Number of cycles an operation takes
+type OpCycles int64                                       // Number of cycles an operation takes
 type OpLogic func(mb *Motherboard, value uint16) OpCycles // Operation logic
 type OpCodeMap map[OpCode]OpLogic                         // Map of opcodes to their logic
 

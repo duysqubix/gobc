@@ -1,6 +1,8 @@
 package motherboard
 
-import "github.com/duysqubix/gobc/internal"
+import (
+	"github.com/duysqubix/gobc/internal"
+)
 
 type Tile [16]uint8
 type ScreenData [internal.GB_SCREEN_WIDTH][internal.GB_SCREEN_HEIGHT][3]uint8
@@ -67,7 +69,7 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 		}
 
 		currentLine := l.Mb.GetItem(IO_LY)
-		l.scanlineCounter += 456 * 1 // change 1 to 2 for double speed
+		l.scanlineCounter += (456 * 1) // change 1 to 2 for double speed
 
 		if currentLine < internal.GB_SCREEN_HEIGHT {
 			l.Mb.Cpu.SetInterruptFlag(INTR_VBLANK)
@@ -84,6 +86,7 @@ func (l *LCD) setLCDStatus() {
 		// clear the screen
 		l.clearScreen()
 		l.scanlineCounter = 456
+
 		l.Mb.SetItem(IO_LY, 0)
 
 		// reset status
