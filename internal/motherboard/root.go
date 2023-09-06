@@ -143,8 +143,10 @@ func MemoryMapName(addr uint16) string {
 		return "ROM Bank 0"
 	case 0x4000 <= addr && addr < 0x8000:
 		return "Switchable ROM Bank"
-	case 0x8000 <= addr && addr < 0xA000:
-		return "Video RAM"
+	case 0x8000 <= addr && addr < 0x9800:
+		return "VRAM Tile Data"
+	case 0x9800 <= addr && addr < 0xA000:
+		return "VRAM Tile Maps"
 	case 0xA000 <= addr && addr < 0xC000:
 		return "Switchable RAM Bank"
 	case 0xC000 <= addr && addr < 0xE000:
@@ -152,7 +154,7 @@ func MemoryMapName(addr uint16) string {
 	case 0xE000 <= addr && addr < 0xFE00:
 		return "Echo RAM"
 	case 0xFE00 <= addr && addr < 0xFEA0:
-		return "Object Attribute Memory (OAM)"
+		return "OAM"
 	case 0xFEA0 <= addr && addr < 0xFF00:
 		return "Not Usable"
 	case 0xFF00 <= addr && addr < 0xFF80:

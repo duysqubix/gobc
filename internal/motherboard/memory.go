@@ -5,6 +5,34 @@ import (
 	"math/rand"
 )
 
+type Tile [16]uint8
+
+func (t *Tile) ParseTile() PaletteTile {
+	var tile PaletteTile
+	for i := 0; i < 15; i++ {
+		for j := 0; j < 8; j++ {
+			tile[i>>1][j] = (((t[i+1] >> j) & 0x1) << 1) | ((t[i] >> j) & 0x1)
+		}
+		i++
+	}
+	return tile
+}
+
+type PaletteTile [8][8]uint8
+
+func (p *PaletteTile) IsBlank() bool {
+	var testValue uint8 = 0xff
+	for i := 0; i < 8; i++ {
+		for j := 0; j < 8; j++ {
+			if testValue != p[i][j] {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
 func initWram(ram *WRAM, random bool) {
 	var fixed uint8 = 0xFF
 	for i := 0; i < 8; i++ {
@@ -75,17 +103,19 @@ type Memory struct {
 	Vram      VRAM // 2 banks of 8KB each -- [0] is always available, [1] is switchable in CGB Mode
 	Oam       OAM  // 160 bytes of OAM
 	Randomize bool // Randomize RAM on startup
+	Cgb       bool // CGB Mode
 }
 
-type IO [128]uint8
-type HRAM [127]uint8
-type WRAM [8][4096]uint8
-type OAM [160]uint8
-type VRAM [2][8192]uint8
+type IO [0x80]uint8
+type HRAM [0x7f]uint8
+type WRAM [0x8][0x1000]uint8
+type OAM [0xa0]uint8
+type VRAM [0x2][0x2000]uint8
 
 func NewInternalRAM(cgb bool, randomize bool) *Memory {
 	ram := &Memory{
 		Randomize: randomize,
+		Cgb:       cgb,
 	}
 	initWram(&ram.Wram, randomize)
 	initIo(&ram.IO, randomize)
@@ -98,9 +128,20 @@ func NewInternalRAM(cgb bool, randomize bool) *Memory {
 
 // //////// VRAM //////////
 
+func (r *Memory) TileData() []uint8 {
+	return r.Vram[r.ActiveVramBank()][:6144]
+}
+
+func (r *Memory) TileMap() []uint8 {
+	return r.Vram[r.ActiveVramBank()][6144:]
+}
 
 func (r *Memory) ActiveVramBank() uint8 {
-	return r.IO[IO_VBK-IO_START_ADDR] & 0x1
+
+	if r.Cgb {
+		return r.IO[IO_VBK-IO_START_ADDR] & 0x1
+	}
+	return 0
 }
 
 ////////// WRAM //////////
