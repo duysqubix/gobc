@@ -69,13 +69,13 @@ type GoBoyColor struct {
 	ForceCgb    bool
 }
 
-func NewGoBoyColor(romfile string, breakpoints []uint16, forceCgb bool, panicOnStuck bool) *GoBoyColor {
+func NewGoBoyColor(romfile string, breakpoints []uint16, forceCgb bool, panicOnStuck bool, randomize bool) *GoBoyColor {
 	// read cartridge first
 
 	gobc := &GoBoyColor{
 		Mb: motherboard.NewMotherboard(&motherboard.MotherboardParams{
 			Filename:     pathlib.NewPathAfero(romfile, afero.NewOsFs()),
-			Randomize:    true,
+			Randomize:    randomize,
 			Breakpoints:  breakpoints,
 			ForceCgb:     forceCgb,
 			PanicOnStuck: panicOnStuck,
