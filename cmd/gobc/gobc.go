@@ -55,11 +55,11 @@ func gameLoopGUI() {
 
 	var wins []windows.Window = []windows.Window{
 		windows.NewMainGameWindow(g),
-		// windows.NewMemoryViewWindow(g),
 	}
 
 	if DEBUG_WINDOWS {
 		wins = append(wins, windows.NewMemoryViewWindow(g))
+		wins = append(wins, windows.NewVramViewWindow(g))
 	}
 
 	mainWin := wins[0].Win()
@@ -115,6 +115,7 @@ func gameLoop() {
 func mainAction(ctx *cli.Context) error {
 	var force_cgb bool = false
 	var panicOnStuck bool = false
+	var randomize bool = false
 
 	if ctx.Bool("force-cgb") {
 		logger.Panic("Force CGB is not implemented yet")
@@ -125,13 +126,12 @@ func mainAction(ctx *cli.Context) error {
 		cli.ShowAppHelpAndExit(ctx, 1)
 	}
 
-	if ctx.Bool("verbose") {
-		logger.SetLevel(log.InfoLevel)
-		logger.Debugf("Verbose enabled")
-	}
-
 	if ctx.Bool("panic-on-stuck") {
 		panicOnStuck = true
+	}
+
+	if ctx.Bool("randomize") {
+		randomize = true
 	}
 
 	var breakpoints []uint16
@@ -142,7 +142,7 @@ func mainAction(ctx *cli.Context) error {
 	}
 
 	romfile := ctx.Args().First()
-	g = windows.NewGoBoyColor(romfile, breakpoints, force_cgb, panicOnStuck)
+	g = windows.NewGoBoyColor(romfile, breakpoints, force_cgb, panicOnStuck, randomize)
 
 	if ctx.Bool("debug") {
 		logger.SetLevel(log.DebugLevel)
@@ -184,21 +184,27 @@ func main() {
 			&cli.BoolFlag{
 				Name:  "debug",
 				Value: false,
-			},
-			&cli.BoolFlag{
-				Name: "verbose",
+				Usage: "Enable debug mode",
 			},
 			&cli.StringFlag{
-				Name: "breakpoints",
+				Name:  "breakpoints",
+				Usage: "Define breakpoints",
 			},
 			&cli.BoolFlag{
-				Name: "force-cgb",
+				Name:  "force-cgb",
+				Usage: "Force CGB mode",
 			},
 			&cli.BoolFlag{
-				Name: "no-gui",
+				Name:  "no-gui",
+				Usage: "Run without GUI",
 			},
 			&cli.BoolFlag{
-				Name: "panic-on-stuck",
+				Name:  "panic-on-stuck",
+				Usage: "Panic when CPU is stuck",
+			},
+			&cli.BoolFlag{
+				Name:  "randomize",
+				Usage: "Randomize RAM on startup",
 			},
 		},
 	}
