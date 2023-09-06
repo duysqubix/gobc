@@ -4,7 +4,7 @@ import "github.com/duysqubix/gobc/internal"
 
 const (
 	// IO Addresses
-	IO_START_ADDR uint16 = 0xFF00                 // Start of IO addresses
+	IO_START_ADDR uint16 = 0xFF00 // Start of IO addresses
 	IO_END_ADDR   uint16 = 0xFF7F // End of IO addresses
 	IO_P1_JOYP    uint16 = 0xFF00 // Joypad
 	IO_SB         uint16 = 0xFF01 // Serial transfer data
@@ -78,8 +78,8 @@ const (
 	IO_SVBK       uint16 = 0xFF70 // CGB Mode Only - WRAM Bank
 	IO_PCM12      uint16 = 0xFF76 // CGB Mode Only - PCM Channel 1&2 Control
 	IO_PCM34      uint16 = 0xFF77 // CGB Mode Only - PCM Channel 3&4 Control
-	
-	IE         uint16 = 0xFFFF // Interrupt Enable
+
+	IE uint16 = 0xFFFF // Interrupt Enable
 
 	FLAGC uint8 = 0x04 // Math operation raised carry
 	FLAGH uint8 = 0x05 // Math operation raised half carry
@@ -100,14 +100,27 @@ const (
 	INTR_SERIAL_ADDR    uint16 = 0x0058 // Serial interrupt Memory address
 	INTR_HIGHTOLOW_ADDR uint16 = 0x0060 // Joypad interrupt Memory address
 
-	LCDC_ENABLE uint8 = 0x80 // Bit 7 - LCD Display Enable             (0=Off, 1=On)
-	LCDC_WINMAP uint8 = 0x40 // Bit 6 - Window Tile Map Display Select (0=9800-9BFF, 1=9C00-9FFF)
-	LCDC_WINEN  uint8 = 0x20 // Bit 5 - Window Display Enable          (0=Off, 1=On)
-	LCDC_BGMAP  uint8 = 0x10 // Bit 4 - BG & Window Tile Data Select   (0=8800-97FF, 1=8000-8FFF)
-	LCDC_BGWIN  uint8 = 0x08 // Bit 3 - BG Tile Map Display Select     (0=9800-9BFF, 1=9C00-9FFF)
-	LCDC_OBJSZ  uint8 = 0x04 // Bit 2 - OBJ (Sprite) Size              (0=8x8, 1=8x16)
-	LCDC_OBJEN  uint8 = 0x02 // Bit 1 - OBJ (Sprite) Display Enable    (0=Off, 1=On)
-	LCDC_BGEN   uint8 = 0x01 // Bit 0 - BG Display (for CGB see below) (0=Off, 1=On)
+	LCDC_ENABLE uint8 = 7 // Bit 7 - LCD Display Enable             (0=Off, 1=On)
+	LCDC_WINMAP uint8 = 6 // Bit 6 - Window Tile Map Display Select (0=9800-9BFF, 1=9C00-9FFF)
+	LCDC_WINEN  uint8 = 5 // Bit 5 - Window Display Enable          (0=Off, 1=On)
+	LCDC_BGMAP  uint8 = 4 // Bit 4 - BG & Window Tile Data Select   (0=8800-97FF, 1=8000-8FFF)
+	LCDC_BGWIN  uint8 = 3 // Bit 3 - BG Tile Map Display Select     (0=9800-9BFF, 1=9C00-9FFF)
+	LCDC_OBJSZ  uint8 = 2 // Bit 2 - OBJ (Sprite) Size              (0=8x8, 1=8x16)
+	LCDC_OBJEN  uint8 = 1 // Bit 1 - OBJ (Sprite) Display Enable    (0=Off, 1=On)
+	LCDC_BGEN   uint8 = 0 // Bit 0 - BG Display (for CGB see below) (0=Off, 1=On)
+
+	STAT_LYCINT uint8 = 6 // Bit 6 - LYC=LY Coincidence Interrupt (1=Enable) (Read/Write)
+	STAT_OAMINT uint8 = 5 // Bit 5 - Mode 2 OAM Interrupt         (1=Enable) (Read/Write)
+	STAT_VBLINT uint8 = 4 // Bit 4 - Mode 1 V-Blank Interrupt     (1=Enable) (Read/Write)
+	STAT_HBLINT uint8 = 3 // Bit 3 - Mode 0 H-Blank Interrupt     (1=Enable) (Read/Write)
+	STAT_LYC    uint8 = 2 // Bit 2 - LYC=LY Coincidence Flag  (0:LYC<>LY, 1:LYC=LY) (Read Only)
+	STAT_MODE1   uint8 = 1 // Bit 1-0 - Mode Flag       (Mode 0-3, see below) (Read Only)
+	STAT_MODE0   uint8 = 0 // Bit 1-0 - Mode Flag       (Mode 0-3, see below) (Read Only)
+
+	STAT_MODE_HBLANK uint8 = 0x00 // Mode 0: During H-Blank
+	STAT_MODE_VBLANK uint8 = 0x01 // Mode 1: During V-Blank
+	STAT_MODE_OAM    uint8 = 0x02 // Mode 2: During Searching OAM-RAM
+	STAT_MODE_TRANS  uint8 = 0x03 // Mode 3: During Transfering Data to LCD Driver
 
 	TAC_ENABLE     uint8    = 0x04 // Timer enable (0b100)
 	TAC_SPEED_1024 OpCycles = 1024 // CPU_CLOCK / 1024 (0b00)

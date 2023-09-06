@@ -77,7 +77,7 @@ func (c *CPU) Tick() OpCycles {
 		// c.DumpState(os.Stdout)
 		if c.Mb.PanicOnStuck {
 			logger.Errorf("Panicking on CPU stuck")
-			os.Exit(1)
+			os.Exit(0)
 		}
 	}
 

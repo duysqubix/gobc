@@ -22,12 +22,15 @@ type Motherboard struct {
 	Memory       *Memory              // Internal RAM
 	BootRom      *BootRom             // Boot ROM
 	Timer        *Timer               // Timer
+	Lcd          *LCD                 // LCD
 	Cgb          bool                 // Color Gameboy
 	CpuFreq      uint32               // CPU frequency
 	Randomize    bool                 // Randomize RAM on startup
 	Decouple     bool                 // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
 	Breakpoints  *Breakpoints         // Breakpoints
 	PanicOnStuck bool                 // Panic when CPU is stuck
+	hdmaActive   bool                 // HDMA active
+	hdmaLength   uint8                // HDMA length
 }
 
 type MotherboardParams struct {
@@ -78,6 +81,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 
 	mb.Cpu = NewCpu(mb)
 	mb.Memory = NewInternalRAM(mb.Cgb, params.Randomize)
+	mb.Lcd = NewLCD(mb)
 	// mb.BootRom = NewBootRom(mb.Cartridge.CgbModeEnabled())
 
 	if !mb.BootRomEnabled() {
@@ -119,7 +123,7 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 	}
 
 	m.Cpu.Mb.Timer.Tick(cycles, m.Cpu)
-
+	m.Lcd.Tick(cycles)
 	cycles += m.Cpu.handleInterrupts()
 
 	return true, cycles
@@ -442,4 +446,40 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 		internal.Logger.Panicf("Memory write error! Can't write `%#x` to `%#x`\n", value, addr)
 	}
 
+}
+
+func (m *Motherboard) DoHDMATransfer() {
+	if !m.hdmaActive {
+		return
+	}
+
+	m.performNewDMATransfer(0x10)
+	if m.hdmaLength > 0 {
+		m.hdmaLength--
+		m.SetItem(IO_HDMA5, uint16(m.hdmaLength))
+	} else {
+		m.hdmaActive = false
+		m.SetItem(IO_HDMA5, 0xFF)
+	}
+}
+
+func (m *Motherboard) performNewDMATransfer(length uint16) {
+
+	// load the source and destination from RAM
+	src := uint16(m.GetItem(IO_HDMA1)<<8 | m.GetItem(IO_HDMA2))
+	dst := uint16(m.GetItem(IO_HDMA3)<<8 | m.GetItem(IO_HDMA4))
+	dst += 0x8000
+
+	// perform the transfer
+	for i := uint16(0); i < length; i++ {
+		m.SetItem(dst, uint16(m.GetItem(src)))
+		src++
+		dst++
+	}
+
+	// update the source and destination
+	m.SetItem(IO_HDMA1, src>>8)
+	m.SetItem(IO_HDMA2, src&0xFF)
+	m.SetItem(IO_HDMA3, dst>>8)
+	m.SetItem(IO_HDMA4, dst&0xFF)
 }

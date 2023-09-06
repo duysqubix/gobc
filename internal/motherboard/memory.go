@@ -40,7 +40,7 @@ func initIo(ram *IO, random bool) {
 	}
 
 	// delete once LCD is implemented
-	ram[IO_LY-IO_START_ADDR] = 0x90
+	// ram[IO_LY-IO_START_ADDR] = 0x90
 }
 
 func initVram(ram *VRAM, random bool) {
