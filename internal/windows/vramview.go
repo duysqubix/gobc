@@ -1,11 +1,6 @@
 package windows
 
 import (
-	"fmt"
-	"image/color"
-	"math"
-
-	"github.com/duysqubix/gobc/internal/motherboard"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
@@ -20,10 +15,14 @@ const (
 	vramTrueWidth    = float64(vramScreenWidth * vramScale)
 	vramTrueHeight   = float64(vramScreenHeight * vramScale)
 	vramfontBuffer   = 4
+
+	vramTileWidth         = 8
+	vramTileHeight        = 8
+	vramTilePictureWidth  = 24 * vramTileWidth
+	vramTilePictureHeight = 16 * vramTileHeight
 )
 
 var (
-	vramParsedTiles [384]motherboard.PaletteTile // 384 tiles in VRAM
 	vramDefaultFont *basicfont.Face
 	vramConsoleTxt  *text.Text
 )
@@ -51,15 +50,14 @@ func NewVramViewWindow(gobc *GoBoyColor) *VramViewWindow {
 	if err != nil {
 		logger.Panicf("Failed to create window: %s", err)
 	}
+
+	picture := pixel.MakePictureData(pixel.R(0, 0, 24*8, 16*8))
+
 	return &VramViewWindow{
 		Window:  win,
 		YOffset: 0,
 		hw:      gobc,
-		picture: &pixel.PictureData{
-			Pix:    make([]color.RGBA, int(vramTrueWidth)*int(vramTrueHeight)),
-			Stride: int(vramTrueWidth),
-			Rect:   pixel.R(0, 0, vramTrueWidth, vramTrueHeight),
-		},
+		picture: picture,
 	}
 }
 
@@ -73,7 +71,6 @@ func (mw *VramViewWindow) SetUp() {
 	vramConsoleTxt = text.New(
 		pixel.V(10, mw.Window.Bounds().Max.Y-20),
 		text.NewAtlas(defaultFont, text.ASCII),
-		// text.NewAtlas(inconsolata.Regular8x16, text.ASCII),
 	)
 
 }
@@ -81,51 +78,49 @@ func (mw *VramViewWindow) SetUp() {
 func (mw *VramViewWindow) Update() error {
 	// parse in VRAM data
 	tileData := mw.hw.Mb.Memory.TileData()
-	tileData = mw.hw.Mb.Memory.Vram[0][0x400:0x520]
+
+	// var pic [vramTilePictureHeight][vramTilePictureWidth]uint8 = [vramTilePictureHeight][vramTilePictureWidth]uint8{}
+	//iterate over tiles
 	for i := 0; i < len(tileData); i += 16 {
-		tile := motherboard.Tile(tileData[i : i+16])
-		palletteTile := tile.ParseTile()
-		vramParsedTiles[i/16] = palletteTile
-
-		for j := 0; j < 8; j++ {
-			for k := 0; k < 8; k++ {
-				// colIndex := palletteTile[j][k]
-				// col := motherboard.Palettes[0][colIndex]
-				// // rgb := color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
-				// height := int(vramTrueHeight) - 1 - k
-				// width := int(vramTrueWidth) + j
-				// fmt.Println(height*width, height, width)
-				fmt.Println(len(mw.picture.Pix), mw.picture.Rect.Center())
-
-				mw.picture.Pix[300*250] = color.RGBA{R: 0xFF, G: 0x00, B: 0x00, A: 0x00}
-			}
-		}
-		break
-
 	}
+
+	for y := 0; y < vramTilePictureHeight; y++ {
+		for x := 0; x < vramTilePictureWidth; x++ {
+
+		}
+	}
+
+	// colCntr := 0
+	// for i := 0; i < len(tileData); i += 16 {
+	// 	tile := motherboard.Tile(tileData[i : i+16])
+	// 	// fmt.Printf("Len: %v\n", tile)
+	// 	// os.Exit(0)
+	// 	palletteTile := tile.ParseTile()
+
+	// 	for j := 0; j < len(palletteTile); j++ {
+	// 		colIndex := palletteTile[j]
+	// 		col := motherboard.Palettes[0][colIndex]
+
+	// 		// idx := (i>>1)*8 + j
+	// 		idx := (colCntr>>4)*mw.picture.Stride + j
+	// 		// fmt.Printf("%d, ", idx)
+	// 		mw.picture.Pix[idx] = color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
+
+	// 	}
+	// 	colCntr++
+	// 	break
+	// }
 
 	return nil
 }
 
 func (mw *VramViewWindow) Draw() {
-	mw.Window.Clear(colornames.Black)
+	mw.Window.Clear(colornames.White)
 	vramConsoleTxt.Color = colornames.Black
-	fmt.Fprintf(vramConsoleTxt, fmt.Sprintf("%+v\n", vramParsedTiles))
-	spr := pixel.NewSprite(pixel.Picture(mw.picture), pixel.R(0, 0, vramTrueWidth, vramTrueHeight))
-	spr.Draw(mw.Window, pixel.IM.Scaled(mw.picture.Rect.Center(), 1))
-	// vramConsoleTxt.Draw(mw.Window, pixel.IM)
 
-	updateCamera(mw.Window)
+	spr := pixel.NewSprite(pixel.Picture(mw.picture), mw.picture.Rect)
+	spr.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), 3))
+
 	vramConsoleTxt.Clear()
 	mw.Window.Update()
-}
-
-func updateCamera(win *pixelgl.Window) {
-	xScale := win.Bounds().W() / vramTrueWidth
-	yScale := win.Bounds().H() / vramTrueHeight
-	scale := math.Min(yScale, xScale)
-
-	shift := win.Bounds().Size().Scaled(0.5).Sub(pixel.ZV)
-	cam := pixel.IM.Scaled(pixel.ZV, scale).Moved(shift)
-	win.SetMatrix(cam)
 }

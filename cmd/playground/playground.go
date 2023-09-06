@@ -1,24 +1,13 @@
 package main
 
-import (
-	"fmt"
-	"math/rand"
-
-	"github.com/duysqubix/gobc/internal/motherboard"
-)
-
 func main() {
-	td := make([]uint8, 16)
-	for i := 0; i < 16; i++ {
-		td[i] = uint8(rand.Intn(256))
+	td := make([]uint8, 32)
+	for i := uint8(0); i < uint8(len(td)); i++ {
+		td[i] = i
 	}
 
-	t := motherboard.Tile(td)
-	pt := t.ParseTile()
-	fmt.Println(pt)
+	var tiles [][]uint8 = make([][]uint8, 2)
+	for i := 0; i < len(td); i++ {
 
-	memory := motherboard.NewInternalRAM(true, true)
-	fmt.Printf("TileDataLength: $%X\n", len(memory.TileData()))
-	fmt.Printf("TileMapLength: $%X\n", len(memory.TileMap()))
-
+	}
 }

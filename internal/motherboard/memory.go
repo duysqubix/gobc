@@ -11,27 +11,17 @@ func (t *Tile) ParseTile() PaletteTile {
 	var tile PaletteTile
 	for i := 0; i < 15; i++ {
 		for j := 0; j < 8; j++ {
-			tile[i>>1][j] = (((t[i+1] >> j) & 0x1) << 1) | ((t[i] >> j) & 0x1)
+			// tile[i>>1][j] = (((t[i+1] >> j) & 0x1) << 1) | ((t[i] >> j) & 0x1)
+			tile[(i>>1)*8+j] = (((t[i+1] >> j) & 0x1) << 1) | ((t[i] >> j) & 0x1)
 		}
 		i++
 	}
 	return tile
 }
 
-type PaletteTile [8][8]uint8
+// type PaletteTile [8][8]uint8
+type PaletteTile [64]uint8
 
-func (p *PaletteTile) IsBlank() bool {
-	var testValue uint8 = 0xff
-	for i := 0; i < 8; i++ {
-		for j := 0; j < 8; j++ {
-			if testValue != p[i][j] {
-				return false
-			}
-		}
-	}
-
-	return true
-}
 
 func initWram(ram *WRAM, random bool) {
 	var fixed uint8 = 0xFF
