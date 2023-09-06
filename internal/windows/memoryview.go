@@ -123,6 +123,8 @@ func (mw *MemoryViewWindow) Draw() {
 }
 
 func (mw *MemoryViewWindow) Update() error {
+	maxYOffset := float64(0xffff-(max_rows-addr_offset-1)*0x10) / float64(0x10)
+
 	if mw.Window.JustPressed(pixelgl.KeyRight) || mw.Window.Repeated(pixelgl.KeyRight) {
 		mw.YOffset += float64(max_rows) - float64(addr_offset) - 1
 	}
@@ -142,13 +144,12 @@ func (mw *MemoryViewWindow) Update() error {
 	dy := mw.Window.MouseScroll().Y
 	mw.YOffset -= dy
 	if mw.YOffset < 0 {
-		mw.YOffset = 0.0
+		mw.YOffset = maxYOffset
 	}
 
-	maxYOffset := float64(0xffff-(max_rows-addr_offset-1)*0x10) / float64(0x10)
 
 	if mw.YOffset > maxYOffset {
-		mw.YOffset = maxYOffset
+		mw.YOffset = 0.0
 	}
 	begin_addr = int(mw.YOffset) * 0x10
 	end_addr = (max_rows-addr_offset-1)*0x10 + begin_addr

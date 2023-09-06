@@ -2,6 +2,8 @@ package windows
 
 import (
 	"fmt"
+	"image/color"
+	"math"
 
 	"github.com/duysqubix/gobc/internal/motherboard"
 	"github.com/faiface/pixel"
@@ -35,13 +37,14 @@ type VramViewWindow struct {
 	hw      *GoBoyColor
 	YOffset float64
 	Window  *pixelgl.Window
+	picture *pixel.PictureData
 }
 
 func NewVramViewWindow(gobc *GoBoyColor) *VramViewWindow {
 	/// create memory window
 	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
 		Title:  "gobc v0.1 | VRAM View",
-		Bounds: pixel.R(0, 0, 670, 1000),
+		Bounds: pixel.R(0, 0, vramTrueWidth, vramTrueHeight),
 		VSync:  true,
 	})
 
@@ -52,6 +55,11 @@ func NewVramViewWindow(gobc *GoBoyColor) *VramViewWindow {
 		Window:  win,
 		YOffset: 0,
 		hw:      gobc,
+		picture: &pixel.PictureData{
+			Pix:    make([]color.RGBA, int(vramTrueWidth)*int(vramTrueHeight)),
+			Stride: int(vramTrueWidth),
+			Rect:   pixel.R(0, 0, vramTrueWidth, vramTrueHeight),
+		},
 	}
 }
 
@@ -73,27 +81,51 @@ func (mw *VramViewWindow) SetUp() {
 func (mw *VramViewWindow) Update() error {
 	// parse in VRAM data
 	tileData := mw.hw.Mb.Memory.TileData()
-
-	tileData = tileData[0x0400:0x040F]
-	fmt.Println(tileData)
-
+	tileData = mw.hw.Mb.Memory.Vram[0][0x400:0x520]
 	for i := 0; i < len(tileData); i += 16 {
 		tile := motherboard.Tile(tileData[i : i+16])
-		vramParsedTiles[i/16] = tile.ParseTile()
+		palletteTile := tile.ParseTile()
+		vramParsedTiles[i/16] = palletteTile
+
+		for j := 0; j < 8; j++ {
+			for k := 0; k < 8; k++ {
+				// colIndex := palletteTile[j][k]
+				// col := motherboard.Palettes[0][colIndex]
+				// // rgb := color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
+				// height := int(vramTrueHeight) - 1 - k
+				// width := int(vramTrueWidth) + j
+				// fmt.Println(height*width, height, width)
+				fmt.Println(len(mw.picture.Pix), mw.picture.Rect.Center())
+
+				mw.picture.Pix[300*250] = color.RGBA{R: 0xFF, G: 0x00, B: 0x00, A: 0x00}
+			}
+		}
+		break
+
 	}
 
 	return nil
 }
 
 func (mw *VramViewWindow) Draw() {
-	// draw VRAM data
-	mw.Window.Clear(colornames.White)
+	mw.Window.Clear(colornames.Black)
 	vramConsoleTxt.Color = colornames.Black
+	fmt.Fprintf(vramConsoleTxt, fmt.Sprintf("%+v\n", vramParsedTiles))
+	spr := pixel.NewSprite(pixel.Picture(mw.picture), pixel.R(0, 0, vramTrueWidth, vramTrueHeight))
+	spr.Draw(mw.Window, pixel.IM.Scaled(mw.picture.Rect.Center(), 1))
+	// vramConsoleTxt.Draw(mw.Window, pixel.IM)
 
-	// spew.Fdump(vramConsoleTxt, vramParsedTiles[64])
-	fmt.Fprintf(vramConsoleTxt, fmt.Sprintf("%+v\n", vramParsedTiles[0]))
-
-	vramConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(vramConsoleTxt.Orig, 1))
+	updateCamera(mw.Window)
 	vramConsoleTxt.Clear()
 	mw.Window.Update()
+}
+
+func updateCamera(win *pixelgl.Window) {
+	xScale := win.Bounds().W() / vramTrueWidth
+	yScale := win.Bounds().H() / vramTrueHeight
+	scale := math.Min(yScale, xScale)
+
+	shift := win.Bounds().Size().Scaled(0.5).Sub(pixel.ZV)
+	cam := pixel.IM.Scaled(pixel.ZV, scale).Moved(shift)
+	win.SetMatrix(cam)
 }
