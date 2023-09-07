@@ -85,7 +85,9 @@ func (mw *VramViewWindow) Update() error {
 			pd.Pix[len(palletteTile)-j-1] = color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
 
 		}
-		vramSprites[i/16] = pixel.NewSprite(pd, pd.Rect)
+		pixelgl.NewGLPicture(pixel.MakePictureData(pixel.R(0, 0, 8, 8)))
+
+		vramSprites[i/16] = pixel.NewSprite(pd, pixel.Picture(pd).Bounds())
 		// sprites = append(sprites, pixel.NewSprite(pixel.Picture(pd), pd.Rect))
 
 	}
