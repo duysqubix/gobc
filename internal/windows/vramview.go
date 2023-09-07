@@ -29,7 +29,9 @@ const (
 var (
 	vramDefaultFont *basicfont.Face
 	vramConsoleTxt  *text.Text
-	sprites         [16]*pixel.Sprite
+	sprites         []*pixel.Sprite
+	matrices        []pixel.Matrix
+	tileBatch       *pixel.Batch
 )
 
 func init() {
@@ -78,6 +80,7 @@ func (mw *VramViewWindow) SetUp() {
 		text.NewAtlas(defaultFont, text.ASCII),
 	)
 
+	tileBatch = pixel.NewBatch(&pixel.TrianglesData{}, pixel.MakePictureData(pixel.R(0, 0, 8*16, 8)))
 }
 
 func (mw *VramViewWindow) Update() error {
@@ -96,27 +99,33 @@ func (mw *VramViewWindow) Update() error {
 			pd.Pix[len(palletteTile)-j-1] = color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
 
 		}
-		sprites[i/16] = pixel.NewSprite(pixel.Picture(pd), pd.Rect)
+		// sprites[i/16] = pixel.NewSprite(pixel.Picture(pd), pd.Rect)
+		// sprites = append(sprites, pixel.NewSprite(pd, pixel.R()))
+
 	}
 
 	return nil
 }
 
 func (mw *VramViewWindow) Draw() {
-	mw.Window.Clear(colornames.White)
 	vramConsoleTxt.Color = colornames.Black
-
+	startPos := mw.Window.Bounds().Center().Sub(
+		pixel.V(25.0, -18.0),
+	)
 	// draw tiles
 	for i := 0; i < len(sprites); i++ {
 		// spew.Dump(t)
-		startPos := mw.Window.Bounds().Center().Sub(
-			pixel.V(25.0, -18.0),
-		)
+		// startPos := mw.Window.Bounds().Center().Sub(
+		// 	pixel.V(25.0, -18.0),
+		// )
 
-		sprites[i].Draw(mw.Window, pixel.IM.
+		// sprites[i].Draw(mw.Window, pixel.IM.
+		// 	Moved(startPos.Add(pixel.V(float64(i)*(9.0), 0.0))).
+		// 	Scaled(mw.Window.Bounds().Center(), vramTileScale),
+		// )
+		sprites[i].Draw(tileBatch, pixel.IM.
 			Moved(startPos.Add(pixel.V(float64(i)*(9.0), 0.0))).
-			Scaled(mw.Window.Bounds().Center(), vramTileScale),
-		)
+			Scaled(mw.Window.Bounds().Center(), vramTileScale))
 	}
 
 	// sprites[0].Draw(mw.Window, pixel.IM.
@@ -128,6 +137,8 @@ func (mw *VramViewWindow) Draw() {
 	// 	Moved(mw.Window.Bounds().Center().Add(pixel.V(9.0, 0.0))).
 	// 	Scaled(mw.Window.Bounds().Center(), 10),
 	// )
+	mw.Window.Clear(colornames.White)
+	tileBatch.Draw(mw.Window)
 	mw.Window.Update()
 
 	vramConsoleTxt.Clear()
