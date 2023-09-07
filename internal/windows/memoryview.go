@@ -15,7 +15,7 @@ import (
 
 const (
 	memScreenWidth  = 800
-	memScreenHeight = 1000
+	memScreenHeight = 450
 	memScale        = 1
 	memTrueWidth    = float64(memScreenWidth * memScale)
 	memTrueHeight   = float64(memScreenHeight * memScale)
@@ -45,7 +45,8 @@ func init() {
 	// set up font
 	defaultFont = basicfont.Face7x13
 
-	max_rows = int(memTrueHeight) / (defaultFont.Height + 2)
+	// max_rows = int(memTrueHeight) / (defaultFont.Height + 2)
+	max_rows = 32
 
 	begin_addr = 0
 	end_addr = (max_rows-addr_offset-1)*0x10 + begin_addr
@@ -94,6 +95,44 @@ func (mw *MemoryViewWindow) SetUp() {
 	memTableWriter.SetHeader([]string{"Addr", "Data", "Section"})
 }
 
+func (mw *MemoryViewWindow) Update() error {
+	maxYOffset := float64(0xffff-(max_rows-addr_offset-1)*0x10) / float64(0x10)
+
+	if mw.Window.JustPressed(pixelgl.KeyRight) || mw.Window.Repeated(pixelgl.KeyRight) {
+		mw.YOffset += float64(max_rows) - float64(addr_offset) - 1
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyUp) || mw.Window.Repeated(pixelgl.KeyUp) {
+		mw.YOffset -= 1
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyLeft) || mw.Window.Repeated(pixelgl.KeyLeft) {
+		mw.YOffset -= float64(max_rows) - float64(addr_offset) - 1
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyDown) || mw.Window.Repeated(pixelgl.KeyDown) {
+		mw.YOffset += 1
+	}
+
+	dy := mw.Window.MouseScroll().Y
+	mw.YOffset -= dy
+	if mw.YOffset < 0 {
+		mw.YOffset = maxYOffset
+	}
+
+	if mw.YOffset > maxYOffset {
+		mw.YOffset = 0.0
+	}
+	begin_addr = int(mw.YOffset) * 0x10
+	end_addr = (max_rows-addr_offset-1)*0x10 + begin_addr
+
+	if end_addr > 0xffff {
+		end_addr = 0xffff
+	}
+
+	return nil
+}
+
 func (mw *MemoryViewWindow) Draw() {
 	mw.Window.Clear(colornames.Black)
 	memTableWriter.ClearRows()
@@ -120,43 +159,4 @@ func (mw *MemoryViewWindow) Draw() {
 	consoleTxt.Draw(mw.Window, pixel.IM.Scaled(consoleTxt.Orig, 1.25))
 	consoleTxt.Clear()
 	mw.Window.Update()
-}
-
-func (mw *MemoryViewWindow) Update() error {
-	maxYOffset := float64(0xffff-(max_rows-addr_offset-1)*0x10) / float64(0x10)
-
-	if mw.Window.JustPressed(pixelgl.KeyRight) || mw.Window.Repeated(pixelgl.KeyRight) {
-		mw.YOffset += float64(max_rows) - float64(addr_offset) - 1
-	}
-
-	if mw.Window.JustPressed(pixelgl.KeyUp) || mw.Window.Repeated(pixelgl.KeyUp) {
-		mw.YOffset -= 1
-	}
-
-	if mw.Window.JustPressed(pixelgl.KeyLeft) || mw.Window.Repeated(pixelgl.KeyLeft) {
-		mw.YOffset -= float64(max_rows) - float64(addr_offset) - 1
-	}
-
-	if mw.Window.JustPressed(pixelgl.KeyDown) || mw.Window.Repeated(pixelgl.KeyDown) {
-		mw.YOffset += 1
-	}
-
-	dy := mw.Window.MouseScroll().Y
-	mw.YOffset -= dy
-	if mw.YOffset < 0 {
-		mw.YOffset = maxYOffset
-	}
-
-
-	if mw.YOffset > maxYOffset {
-		mw.YOffset = 0.0
-	}
-	begin_addr = int(mw.YOffset) * 0x10
-	end_addr = (max_rows-addr_offset-1)*0x10 + begin_addr
-
-	if end_addr > 0xffff {
-		end_addr = 0xffff
-	}
-
-	return nil
 }
