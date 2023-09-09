@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	gameScale        = 2
+	gameScale        = 3
 	gameScreenWidth  = internal.GB_SCREEN_WIDTH
 	gameScreenHeight = internal.GB_SCREEN_HEIGHT
 
