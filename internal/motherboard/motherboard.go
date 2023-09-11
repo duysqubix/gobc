@@ -357,8 +357,12 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	* WRITE: ECHO OF 8K INTERNAL RAM
 	*
 	 */
-	case 0xE000 <= addr && addr < 0xFE00:
+	case 0xE000 <= addr && addr < 0xF000:
 		m.Memory.Wram[0][addr-0x2000-0xC000] = v
+
+	case 0xF000 <= addr && addr < 0xFE00:
+		// fmt.Printf("ECHO OF 8K INTERNAL RAM: %#x, %d\n", addr, addr-0x2000-0xD000)
+		m.Memory.Wram[1][addr-0x2000-0xD000] = v
 
 	/*
 	*

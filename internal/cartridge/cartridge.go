@@ -208,6 +208,28 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 		}
 	},
 
+	// MBC1+RAM
+	0x02: func(c *Cartridge) CartridgeType {
+		return &Mbc1Cartridge{parent: c,
+			sram:                true,
+			battery:             false,
+			rtc:                 false,
+			bankSelectRegister1: 1,
+			bankSelectRegister2: 0,
+		}
+	},
+
+	// MBC1+RAM+BATTERY
+	0x03: func(c *Cartridge) CartridgeType {
+		return &Mbc1Cartridge{parent: c,
+			sram:                true,
+			battery:             true,
+			rtc:                 false,
+			bankSelectRegister1: 1,
+			bankSelectRegister2: 0,
+		}
+	},
+
 	// MBC3+TIMER+RAM+BATTERY
 	0x10: func(c *Cartridge) CartridgeType {
 		return &Mbc3Cartridge{parent: c, sram: true, battery: true, rtc: true}
@@ -308,7 +330,8 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 	cartTypeConstructor := CARTRIDGE_TABLE[rom_banks[0][CARTRIDGE_TYPE_ADDR]]
 
 	if cartTypeConstructor == nil {
-		internal.Logger.Panicf("Cartridge type not supported: %02X", cart_type_addr)
+		logger.Errorf("Cartridge type not supported: %02X", cart_type_addr)
+		os.Exit(0)
 	}
 	cart.CartType = cartTypeConstructor(&cart)
 

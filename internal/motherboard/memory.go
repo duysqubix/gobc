@@ -3,6 +3,8 @@ package motherboard
 import (
 	"io"
 	"math/rand"
+
+	"github.com/duysqubix/gobc/internal"
 )
 
 type Tile [16]uint8
@@ -61,7 +63,7 @@ func initIo(ram *IO, random bool) {
 }
 
 func initVram(ram *VRAM, random bool) {
-	var fixed uint8 = 0xFF
+	var fixed uint8 = 0x00
 	for i := 0; i < 2; i++ {
 		for j := 0; j < 8192; j++ {
 			if random {
@@ -118,11 +120,35 @@ func NewInternalRAM(cgb bool, randomize bool) *Memory {
 // //////// VRAM //////////
 
 func (r *Memory) TileData() []uint8 {
-	return r.Vram[r.ActiveVramBank()][:6144]
+	return r.Vram[r.ActiveVramBank()][:0x17ff]
 }
 
-func (r *Memory) TileMap() []uint8 {
-	return r.Vram[r.ActiveVramBank()][6144:]
+// TileMap returns a 256x256 array of tiles
+func (r *Memory) TileMap() [256 * 256]uint8 {
+	tileMap := r.Vram[r.ActiveVramBank()][0x1800:]
+	var tiles [256 * 256]uint8
+
+	var Mode8000 bool = internal.IsBitSet(r.IO[IO_LCDC-IO_START_ADDR], 4)
+
+	tileCntr := 0
+	for tileIndex := 0; tileIndex < len(tileMap); tileIndex++ {
+		var indexValue uint8 = tileMap[tileIndex]
+		var tileAddrStart int
+		if !Mode8000 {
+			// turn indexValue into a signed int
+			tileAddrStart = 0x1000 + int(int8(indexValue))
+		} else {
+			tileAddrStart = 0x0000 + int(uint8(indexValue))
+		}
+
+		for i := 0; i < 16; i++ {
+			tiles[tileCntr] = r.Vram[r.ActiveVramBank()][tileAddrStart+i]
+			tileCntr++
+		}
+
+	}
+
+	return tiles
 }
 
 func (r *Memory) ActiveVramBank() uint8 {

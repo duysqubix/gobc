@@ -21,22 +21,24 @@ const (
 	vramTilePictureWidth  = 32 * vramTileWidth
 	vramTilePictureHeight = 12 * vramTileHeight
 	vramTileScale         = 1
+
+	vramTileMapPictureWidth  = 32 * vramTileWidth
+	vramTileMapPictureHeight = 32 * vramTileHeight
+	vramTileMapScale         = 1
 )
 
-var (
-	vramSprites   [1]*pixel.Sprite
-	vramTileBatch *pixel.Batch
-)
+var ()
 
 func init() {
 
 }
 
 type VramViewWindow struct {
-	hw         *GoBoyColor
-	YOffset    float64
-	Window     *pixelgl.Window
-	tileCanvas *pixel.PictureData
+	hw            *GoBoyColor
+	YOffset       float64
+	Window        *pixelgl.Window
+	tileCanvas    *pixel.PictureData
+	tileMapCanvas *pixel.PictureData
 }
 
 func NewVramViewWindow(gobc *GoBoyColor) *VramViewWindow {
@@ -52,11 +54,13 @@ func NewVramViewWindow(gobc *GoBoyColor) *VramViewWindow {
 	}
 
 	tileCanvas := pixel.MakePictureData(pixel.R(0, 0, float64(vramTilePictureWidth), float64(vramTilePictureHeight)))
+	tileMapCanvas := pixel.MakePictureData(pixel.R(0, 0, float64(vramTileMapPictureWidth), float64(vramTileMapPictureHeight)))
 	return &VramViewWindow{
-		Window:     win,
-		YOffset:    0,
-		hw:         gobc,
-		tileCanvas: tileCanvas,
+		Window:        win,
+		YOffset:       0,
+		hw:            gobc,
+		tileCanvas:    tileCanvas,
+		tileMapCanvas: tileMapCanvas,
 	}
 }
 
@@ -69,13 +73,10 @@ func (mw *VramViewWindow) SetUp() {
 }
 
 func (mw *VramViewWindow) Update() error {
-	// vramTileBatch.Clear()
-	// parse in VRAM data
+
 	tileData := mw.hw.Mb.Memory.TileData()
-	// tileData = tileData[0x0250 : 0x0250+(16*4)]
 	tileNum := 0
-	// for i := 0; i < len(tileData); i += 16 {
-	// for yCursor := 0; yCursor < vramTilePictureHeight; yCursor += vramTileHeight {
+
 	for yCursor := vramTilePictureHeight - vramTileHeight; yCursor >= 0; yCursor -= vramTileHeight {
 		for xCursor := 0; xCursor < vramTilePictureWidth; xCursor += vramTileWidth {
 
@@ -94,31 +95,38 @@ func (mw *VramViewWindow) Update() error {
 			tileNum += 16
 		}
 	}
-	// }
+
+	tileMap := mw.hw.Mb.Memory.TileMap()
+	tileNum = 0
+	for yCursor := vramTileMapPictureHeight - vramTileHeight; yCursor >= 0; yCursor -= vramTileHeight {
+		for xCursor := 0; xCursor < vramTileMapPictureWidth; xCursor += vramTileWidth {
+			tile := motherboard.Tile(tileMap[tileNum : tileNum+16])
+			palletteTile := tile.ParseTile()
+
+			for yPixel := 0; yPixel < vramTileHeight; yPixel++ {
+				for xPixel := 0; xPixel < vramTileWidth; xPixel++ {
+					colIndex := palletteTile[yPixel*vramTileWidth+xPixel]
+					col := motherboard.Palettes[0][colIndex]
+					rgb := color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
+					idx := (yCursor+yPixel)*vramTileMapPictureWidth + (xCursor + xPixel)
+					mw.tileMapCanvas.Pix[idx] = rgb
+				}
+			}
+		}
+	}
 
 	return nil
 }
 
 func (mw *VramViewWindow) Draw() {
 	mw.Window.Clear(colornames.White)
-	// startPos := mw.Window.Bounds().Center().Sub(
-	// 	pixel.V(250.0, -180.0),
-	// )
-	// for i := 0; i < len(vramSprites); i++ {
-
-	// vramSprites[i].Draw(mw.Window, pixel.IM.
-	// 	Moved(startPos.Add(pixel.V(float64(i)*(9.0), 0.0))).
-	// 	Scaled(mw.Window.Bounds().Center(), vramTileScale),
-	// )
-
-	// vramSprites[i].Draw(vramTileBatch, pixel.IM.Scaled(pixel.ZV, 20).Moved(pixel.V(200.0, 200.0)))
-	// Moved(startPos.Add(pixel.V(float64(i)*(1.0), 0.0))).
-	// fmt.Printf("%d: VRAM Sprite Coords: %v\n", i, vramSprites[i].Frame())
-	// }
-	// vramTileBatch.Draw(mw.Window)
 
 	spr := pixel.NewSprite(mw.tileCanvas, mw.tileCanvas.Bounds())
+	spr2 := pixel.NewSprite(mw.tileMapCanvas, mw.tileMapCanvas.Bounds())
+
 	spr.Draw(mw.Window, pixel.IM.Scaled(pixel.ZV, 3).Moved(mw.Window.Bounds().Center()))
+
+	spr2.Draw(mw.Window, pixel.IM.Scaled(pixel.ZV, 3).Moved(pixel.V(0, 0)))
 	mw.Window.Update()
 
 }
