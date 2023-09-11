@@ -124,16 +124,15 @@ func (r *Memory) TileData() []uint8 {
 }
 
 // TileMap returns a 256x256 array of tiles
-func (r *Memory) TileMap() [256 * 256]uint8 {
+func (r *Memory) TileMap() []uint8 {
 	tileMap := r.Vram[r.ActiveVramBank()][0x1800:]
 	var tiles [256 * 256]uint8
-
+	var tileAddrStart int
 	var Mode8000 bool = internal.IsBitSet(r.IO[IO_LCDC-IO_START_ADDR], 4)
 
 	tileCntr := 0
 	for tileIndex := 0; tileIndex < len(tileMap); tileIndex++ {
 		var tileOffset uint8 = tileMap[tileIndex]
-		var tileAddrStart int
 		if !Mode8000 {
 			// turn indexValue into a signed int
 			tileAddrStart = 0x1000 + int(int8(tileOffset))*16
@@ -148,7 +147,7 @@ func (r *Memory) TileMap() [256 * 256]uint8 {
 
 	}
 
-	return tiles
+	return tiles[:]
 }
 
 func (r *Memory) ActiveVramBank() uint8 {

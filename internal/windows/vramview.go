@@ -1,9 +1,6 @@
 package windows
 
 import (
-	"image/color"
-
-	"github.com/duysqubix/gobc/internal/motherboard"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"golang.org/x/image/colornames"
@@ -75,57 +72,22 @@ func (mw *VramViewWindow) SetUp() {
 func (mw *VramViewWindow) Update() error {
 
 	tileData := mw.hw.Mb.Memory.TileData()
-	tileNum := 0
-
-	for yCursor := vramTilePictureHeight - vramTileHeight; yCursor >= 0; yCursor -= vramTileHeight {
-		for xCursor := 0; xCursor < vramTilePictureWidth; xCursor += vramTileWidth {
-
-			tile := motherboard.Tile(tileData[tileNum : tileNum+16])
-			palletteTile := tile.ParseTile()
-
-			for yPixel := 0; yPixel < vramTileHeight; yPixel++ {
-				for xPixel := 0; xPixel < vramTileWidth; xPixel++ {
-					colIndex := palletteTile[yPixel*vramTileWidth+xPixel]
-					col := motherboard.Palettes[0][colIndex]
-					rgb := color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
-					idx := (yCursor+yPixel)*vramTilePictureWidth + (xCursor + xPixel)
-					mw.tileCanvas.Pix[idx] = rgb
-				}
-			}
-			tileNum += 16
-		}
-	}
-
 	tileMap := mw.hw.Mb.Memory.TileMap()
-	tileNum = 0
-	for yCursor := vramTileMapPictureHeight - vramTileHeight; yCursor >= 0; yCursor -= vramTileHeight {
-		for xCursor := 0; xCursor < vramTileMapPictureWidth; xCursor += vramTileWidth {
-			tile := motherboard.Tile(tileMap[tileNum : tileNum+16])
-			palletteTile := tile.ParseTile()
 
-			for yPixel := 0; yPixel < vramTileHeight; yPixel++ {
-				for xPixel := 0; xPixel < vramTileWidth; xPixel++ {
-					colIndex := palletteTile[yPixel*vramTileWidth+xPixel]
-					col := motherboard.Palettes[0][colIndex]
-					rgb := color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
-					idx := (yCursor+yPixel)*vramTileMapPictureWidth + (xCursor + xPixel)
-					mw.tileMapCanvas.Pix[idx] = rgb
-				}
-			}
-		}
-	}
+	updatePicture(vramTilePictureHeight, vramTilePictureWidth, vramTileHeight, vramTileWidth, &tileData, mw.tileCanvas)
+	updatePicture(vramTileMapPictureHeight, vramTileMapPictureWidth, vramTileHeight, vramTileWidth, &tileMap, mw.tileMapCanvas)
 
 	return nil
 }
 
 func (mw *VramViewWindow) Draw() {
-	mw.Window.Clear(colornames.White)
+	mw.Window.Clear(colornames.Black)
 
-	// spr := pixel.NewSprite(mw.tileCanvas, mw.tileCanvas.Bounds())
-	// spr.Draw(mw.Window, pixel.IM.Scaled(pixel.ZV, 3).Moved(mw.Window.Bounds().Center()))
+	spr := pixel.NewSprite(mw.tileCanvas, mw.tileCanvas.Bounds())
+	spr.Draw(mw.Window, pixel.IM.Scaled(pixel.ZV, 1).Moved(pixel.V(mw.tileCanvas.Rect.W()/2, mw.Window.Bounds().H()-mw.tileCanvas.Rect.H()/2)))
 
 	spr2 := pixel.NewSprite(mw.tileMapCanvas, mw.tileMapCanvas.Bounds())
-	spr2.Draw(mw.Window, pixel.IM.Scaled(pixel.ZV, 3).Moved(pixel.V(0, 0)))
+	spr2.Draw(mw.Window, pixel.IM.Scaled(pixel.ZV, 1).Moved(pixel.V(mw.Window.Bounds().W()/2, mw.Window.Bounds().H()/2)))
 	mw.Window.Update()
 
 }

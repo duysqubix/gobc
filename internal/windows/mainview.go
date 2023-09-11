@@ -16,24 +16,18 @@ const (
 )
 
 var (
-	gameScale        = 3
-	gameScreenWidth  = internal.GB_SCREEN_WIDTH
-	gameScreenHeight = internal.GB_SCREEN_HEIGHT
-
-	gameTrueWidth  = float64(gameScreenWidth * gameScale)
-	gameTrueHeight = float64(gameScreenHeight * gameScale)
-
 	internalCycleCounter int
 	internalCycleReturn  motherboard.OpCycles
 	internalStatus       bool
-
-	// profiling stuff
-	totalProcessedCycles int64
 )
 
 type MainGameWindow struct {
-	hw     *GoBoyColor
-	Window *pixelgl.Window
+	hw             *GoBoyColor
+	Window         *pixelgl.Window
+	gameScale      int
+	gameTrueWidth  float64
+	gameTrueHeight float64
+	gameMapCanvas  *pixel.PictureData
 }
 
 // this will get called every frame
@@ -43,11 +37,19 @@ func (mw *MainGameWindow) Update() error {
 	if !mw.hw.UpdateInternalGameState() {
 		return nil
 	}
+
+	tileMap := mw.hw.Mb.Memory.TileMap()
+
+	updatePicture(256, 256, 8, 8, &tileMap, mw.gameMapCanvas)
+
 	return nil
 }
 
 func (mw *MainGameWindow) Draw() {
-	mw.Window.Clear(colornames.White)
+	mw.Window.Clear(colornames.Black)
+
+	spr2 := pixel.NewSprite(mw.gameMapCanvas, mw.gameMapCanvas.Bounds())
+	spr2.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), 1))
 	mw.Window.Update()
 }
 
@@ -56,7 +58,7 @@ func (mw *MainGameWindow) Win() *pixelgl.Window {
 }
 
 func (mw *MainGameWindow) SetUp() {
-	mw.Window.SetBounds(pixel.R(0, 0, gameTrueWidth, gameTrueHeight))
+	mw.Window.SetBounds(pixel.R(0, 0, mw.gameTrueWidth, mw.gameTrueHeight))
 }
 
 type GoBoyColor struct {
@@ -87,10 +89,21 @@ func NewGoBoyColor(romfile string, breakpoints []uint16, forceCgb bool, panicOnS
 }
 
 func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
+	gameScale := 3
+	gameScreenWidth := internal.GB_SCREEN_WIDTH
+	gameScreenHeight := internal.GB_SCREEN_HEIGHT
+
+	mgw := &MainGameWindow{
+		hw:             gobc,
+		gameScale:      gameScale,
+		gameTrueWidth:  float64(gameScreenWidth * gameScale),
+		gameTrueHeight: float64(gameScreenHeight * gameScale),
+		gameMapCanvas:  pixel.MakePictureData(pixel.R(0, 0, float64(256), float64(256))),
+	}
 
 	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
 		Title:  "gobc v0.1 | Main Game Window",
-		Bounds: pixel.R(0, 0, gameTrueWidth, gameTrueHeight),
+		Bounds: pixel.R(0, 0, mgw.gameTrueWidth, mgw.gameTrueHeight),
 		VSync:  true,
 	})
 
@@ -98,11 +111,9 @@ func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
 		// logger.Panicf("Failed to create window: %s", err)
 		panic(err)
 	}
+	mgw.Window = win
 
-	return &MainGameWindow{
-		Window: win,
-		hw:     gobc,
-	}
+	return mgw
 }
 
 // will want to block on this for CYCLES/60 cycles to process before rendering graphics
@@ -132,7 +143,7 @@ func (g *GoBoyColor) UpdateInternalGameState() bool {
 			}
 		}
 	}
-	totalProcessedCycles += int64(internalCycleCounter)
+	// totalProcessedCycles += int64(internalCycleCounter)
 	// fmt.Println("Total Cycles Processed: ", totalProcessedCycles)
 	if !still_good {
 		g.Stop()

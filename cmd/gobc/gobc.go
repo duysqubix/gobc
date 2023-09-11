@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	// putils "github.com/dusk125/pixelutils"
 	"github.com/faiface/pixel/pixelgl"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -22,7 +23,10 @@ func setFPS(fps int) {
 	if fps <= 0 {
 		frameTick = nil
 	} else {
-		frameTick = time.NewTicker(time.Second / time.Duration(fps))
+		ms := 1.0 / float64(fps) * 1000.0
+		logger.Infof("Setting FPS to %d (%.2f ms)", fps, ms)
+		dur := time.Duration(ms) * time.Millisecond
+		frameTick = time.NewTicker(dur)
 	}
 }
 
@@ -42,6 +46,8 @@ func Draw(wins []windows.Window) {
 var DEBUG_WINDOWS bool = false
 var SHOW_GUI bool = true
 
+// var ticker = putils.NewTicker(internal.FRAMES_PER_SECOND)
+
 func gameLoopGUI() {
 	setFPS(internal.FRAMES_PER_SECOND)
 
@@ -51,7 +57,6 @@ func gameLoopGUI() {
 
 	var fps float64
 	var elasped float64 = 0
-	var frame_cntr int64 = 0
 
 	var wins []windows.Window = []windows.Window{
 		windows.NewMainGameWindow(g),
@@ -71,9 +76,9 @@ func gameLoopGUI() {
 
 	for !mainWin.Closed() {
 		mainWin.SetTitle("gobc v0.1 | FPS: " + fmt.Sprintf("%.2f", fps))
-		start := time.Now()
 		mainWin.Clear(colornames.White)
-
+		elasped = 0
+		start := time.Now()
 		Update(wins)
 		Draw(wins)
 
@@ -82,13 +87,9 @@ func gameLoopGUI() {
 		}
 
 		elasped += float64(time.Since(start).Milliseconds())
-		frame_cntr++
 
-		if frame_cntr == 50 {
-			fps = 1000.0 / (elasped / 50.0)
-			frame_cntr = 0
-			elasped = 0
-		}
+		fps = 1000.0 / elasped
+
 	}
 }
 

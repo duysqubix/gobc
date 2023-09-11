@@ -87,5 +87,9 @@ func run() {
 }
 
 func main() {
-	pixelgl.Run(run)
+	// pixelgl.Run(run)
+
+	for i := uint8(0); i < 0xff; i++ {
+		fmt.Printf("%#x: int8=%d\n", i, int8(i))
+	}
 }
