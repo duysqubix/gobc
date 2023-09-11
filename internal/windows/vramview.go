@@ -121,11 +121,10 @@ func (mw *VramViewWindow) Update() error {
 func (mw *VramViewWindow) Draw() {
 	mw.Window.Clear(colornames.White)
 
-	spr := pixel.NewSprite(mw.tileCanvas, mw.tileCanvas.Bounds())
+	// spr := pixel.NewSprite(mw.tileCanvas, mw.tileCanvas.Bounds())
+	// spr.Draw(mw.Window, pixel.IM.Scaled(pixel.ZV, 3).Moved(mw.Window.Bounds().Center()))
+
 	spr2 := pixel.NewSprite(mw.tileMapCanvas, mw.tileMapCanvas.Bounds())
-
-	spr.Draw(mw.Window, pixel.IM.Scaled(pixel.ZV, 3).Moved(mw.Window.Bounds().Center()))
-
 	spr2.Draw(mw.Window, pixel.IM.Scaled(pixel.ZV, 3).Moved(pixel.V(0, 0)))
 	mw.Window.Update()
 

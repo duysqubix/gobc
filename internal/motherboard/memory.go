@@ -132,15 +132,15 @@ func (r *Memory) TileMap() [256 * 256]uint8 {
 
 	tileCntr := 0
 	for tileIndex := 0; tileIndex < len(tileMap); tileIndex++ {
-		var indexValue uint8 = tileMap[tileIndex]
+		var tileOffset uint8 = tileMap[tileIndex]
 		var tileAddrStart int
 		if !Mode8000 {
 			// turn indexValue into a signed int
-			tileAddrStart = 0x1000 + int(int8(indexValue))
+			tileAddrStart = 0x1000 + int(int8(tileOffset))*16
 		} else {
-			tileAddrStart = 0x0000 + int(uint8(indexValue))
+			tileAddrStart = 0x0000 + (int(uint8(tileOffset)) * 16)
 		}
-
+		// fmt.Printf("tileAddrStart: %#x\n", tileAddrStart+0x8000)
 		for i := 0; i < 16; i++ {
 			tiles[tileCntr] = r.Vram[r.ActiveVramBank()][tileAddrStart+i]
 			tileCntr++
