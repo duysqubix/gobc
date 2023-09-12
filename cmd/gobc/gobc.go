@@ -3,13 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 
 	// putils "github.com/dusk125/pixelutils"
 	"github.com/faiface/pixel/pixelgl"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/image/colornames"
 
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/windows"
@@ -19,6 +19,10 @@ var logger = internal.Logger
 var frameTick *time.Ticker
 var g *windows.GoBoyColor
 
+func init() {
+	runtime.LockOSThread()
+}
+
 func setFPS(fps int) {
 	if fps <= 0 {
 		frameTick = nil
@@ -27,19 +31,6 @@ func setFPS(fps int) {
 		logger.Infof("Setting FPS to %d (%.2f ms)", fps, ms)
 		dur := time.Duration(ms) * time.Millisecond
 		frameTick = time.NewTicker(dur)
-	}
-}
-
-func Update(wins []windows.Window) {
-	// update gameboy state
-	for _, w := range wins {
-		w.Update()
-	}
-}
-
-func Draw(wins []windows.Window) {
-	for _, w := range wins {
-		w.Draw()
 	}
 }
 
@@ -63,8 +54,7 @@ func gameLoopGUI() {
 	}
 
 	if DEBUG_WINDOWS {
-		wins = append(wins, windows.NewMemoryViewWindow(g))
-		wins = append(wins, windows.NewVramViewWindow(g))
+		wins = append(wins, windows.NewVramViewWindow(g), windows.NewMemoryViewWindow(g))
 	}
 
 	mainWin := wins[0].Win()
@@ -76,11 +66,13 @@ func gameLoopGUI() {
 
 	for !mainWin.Closed() {
 		mainWin.SetTitle("gobc v0.1 | FPS: " + fmt.Sprintf("%.2f", fps))
-		mainWin.Clear(colornames.White)
 		elasped = 0
 		start := time.Now()
-		Update(wins)
-		Draw(wins)
+
+		for _, w := range wins {
+			w.Update()
+			w.Draw()
+		}
 
 		if frameTick != nil {
 			<-frameTick.C

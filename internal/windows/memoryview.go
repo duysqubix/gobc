@@ -61,9 +61,11 @@ type MemoryViewWindow struct {
 func NewMemoryViewWindow(gobc *GoBoyColor) *MemoryViewWindow {
 	/// create memory window
 	memWin, err := pixelgl.NewWindow(pixelgl.WindowConfig{
-		Title:  "gobc v0.1 | Memory View",
-		Bounds: pixel.R(0, 0, 670, 1000),
-		VSync:  true,
+		Title:       "gobc v0.1 | Memory View",
+		Bounds:      pixel.R(0, 0, 670, 1000),
+		VSync:       true,
+		AlwaysOnTop: true,
+		Resizable:   true,
 	})
 
 	if err != nil {
@@ -134,6 +136,7 @@ func (mw *MemoryViewWindow) Update() error {
 }
 
 func (mw *MemoryViewWindow) Draw() {
+	consoleTxt.Clear()
 	mw.Window.Clear(colornames.Black)
 	memTableWriter.ClearRows()
 
@@ -153,10 +156,12 @@ func (mw *MemoryViewWindow) Draw() {
 	}
 
 	for _, d := range data {
+		// fmt.Println(d)
 		memTableWriter.Append(d)
 	}
 	memTableWriter.Render()
+	// fmt.Fprintf(consoleTxt, "YOffset: %f\n", mw.YOffset)
 	consoleTxt.Draw(mw.Window, pixel.IM.Scaled(consoleTxt.Orig, 1.25))
-	consoleTxt.Clear()
+
 	mw.Window.Update()
 }

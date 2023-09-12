@@ -102,9 +102,10 @@ func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
 	}
 
 	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
-		Title:  "gobc v0.1 | Main Game Window",
-		Bounds: pixel.R(0, 0, mgw.gameTrueWidth, mgw.gameTrueHeight),
-		VSync:  true,
+		Title:       "gobc v0.1 | Main Game Window",
+		Bounds:      pixel.R(0, 0, mgw.gameTrueWidth, mgw.gameTrueHeight),
+		VSync:       true,
+		AlwaysOnTop: true,
 	})
 
 	if err != nil {
