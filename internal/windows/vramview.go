@@ -110,9 +110,6 @@ func (mw *VramViewWindow) drawBorder() *imdraw.IMDraw {
 func (mw *VramViewWindow) Draw() {
 	mw.Window.Clear(colornames.Black)
 
-	// spr := pixel.NewSprite(mw.tileCanvas, mw.tileCanvas.Bounds())
-	// sprOrigin := pixel.V(mw.tileCanvas.Rect.W()/2, mw.Window.Bounds().H()-mw.tileCanvas.Rect.H()/2)
-	// spr.Draw(mw.Window, pixel.IM.Scaled(pixel.ZV, 1).Moved(sprOrigin))
 
 	drawSprite(mw.Window, mw.tileMapCanvas, vramTileMapScale, 0, 0)
 	drawSprite(mw.Window, mw.tileCanvas, vramTileScale, (mw.tileCanvas.Rect.H()*vramTileMapScale)+100, 0)

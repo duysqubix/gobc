@@ -1,5 +1,7 @@
 package cartridge
 
+import "fmt"
+
 type Mbc1Cartridge struct {
 	parent              *Cartridge
 	sram                bool
@@ -7,6 +9,9 @@ type Mbc1Cartridge struct {
 	rtc                 bool
 	bankSelectRegister1 uint8
 	bankSelectRegister2 uint8
+	romBankSelect       uint8
+	ramBankSelect       uint8
+	mode                bool
 }
 
 func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
@@ -24,14 +29,23 @@ func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
 		if value == 0 {
 			value = 1
 		}
+		fmt.Printf("Setting rom bank to %d\n", value)
+		c.romBankSelect = value
 		c.bankSelectRegister1 = value
 
 	case 0x4000 <= addr && addr < 0x6000:
 		c.bankSelectRegister2 = value & 0x3
+		c.ramBankSelect = value & 0x3
 
 	case 0x6000 <= addr && addr < 0x8000:
 		c.parent.MemoryModel = value & 0x1
+		c.mode = value&0x1 == 0x1
+
 	case 0xA000 <= addr && addr < 0xC000:
+		if !c.parent.RamBankEnabled {
+			return
+		}
+
 		if c.parent.MemoryModel == 1 {
 			c.parent.RamBankSelected = c.bankSelectRegister2
 		} else {

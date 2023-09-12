@@ -246,9 +246,9 @@ type Cartridge struct {
 	Randomize bool          // whether to randomize RAM banks on startup
 
 	// ROM Banks
-	RomBanks        [][]uint8 // slice of ROM banks
-	RomBanksCount   uint8     // number of ROM banks
-	RomBankSelected uint8     // currently selected ROM bank
+	RomBanks        [128][MEMORY_BANK_SIZE]uint8 // slice of ROM banks
+	RomBanksCount   uint8                        // number of ROM banks
+	RomBankSelected uint8                        // currently selected ROM bank
 
 	// RAM Banks
 	RamBanks           [][]uint8 // slice of RAM banks
@@ -262,35 +262,31 @@ type Cartridge struct {
 	MemoryModel uint8 // 0 = 16/8, 1 = 4/32
 }
 
-func LoadRomBanks(rom_data []byte, dummy_data bool) [][]uint8 {
+func LoadRomBanks(rom_data []byte, dummy_data bool) [128][MEMORY_BANK_SIZE]uint8 {
 	logger.Infof("Processing ROM file of size %d bytes", len(rom_data))
-	var rom_banks [][]uint8
 
+	var romBanksFlat [int(MEMORY_BANK_SIZE) * 128]uint8
 	if dummy_data {
-		bank := make([]byte, MEMORY_BANK_SIZE)
-		for j := range bank {
-			bank[j] = 0xff // fill with 0xff
+		for j := range romBanksFlat {
+			romBanksFlat[j] = 0xff // fill with 0xff
 		}
-		bank[CARTRIDGE_TYPE_ADDR] = 0x0
-		rom_banks = append(rom_banks, bank)
-		return rom_banks
+		romBanksFlat[CARTRIDGE_TYPE_ADDR] = 0x0
+	} else {
+
+		copy(romBanksFlat[:], rom_data)
+
+		// fill rest of romBanksFlat with 0xff
+		for i := len(rom_data); i < int(MEMORY_BANK_SIZE)*128; i++ {
+			romBanksFlat[i] = 0xff
+		}
 	}
 
-	rom_len := len(rom_data)
-
-	for i := 0; i < rom_len; i += int(MEMORY_BANK_SIZE) {
-		end := i + int(MEMORY_BANK_SIZE)
-
-		// prevent exceeding slice bounds
-		if end > rom_len {
-			end = rom_len
+	// convert romBanksFlat into 128 banks of 16KiB each
+	var rom_banks [128][MEMORY_BANK_SIZE]uint8
+	for i := 0; i < 128; i++ {
+		for j := 0; j < int(MEMORY_BANK_SIZE); j++ {
+			rom_banks[i][j] = romBanksFlat[i*int(MEMORY_BANK_SIZE)+j]
 		}
-
-		bank := make([]uint8, MEMORY_BANK_SIZE)
-		for j := range bank {
-			bank[j] = 0xff
-		}
-		rom_banks = append(rom_banks, rom_data[i:end])
 	}
 
 	return rom_banks
@@ -299,7 +295,7 @@ func LoadRomBanks(rom_data []byte, dummy_data bool) [][]uint8 {
 func NewCartridge(filename *pathlib.Path) *Cartridge {
 	var rom_data []byte
 	var err error
-	var rom_banks [][]uint8
+	var rom_banks [128][MEMORY_BANK_SIZE]uint8
 	var fname string
 
 	if filename != nil {
