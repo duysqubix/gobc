@@ -59,15 +59,10 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 	0x01: func(c *Cartridge) CartridgeType {
 		return &Mbc1Cartridge{
 			parent:        c,
-			romBankSelect: 0,
+			romBankSelect: 1,
 			ramBankSelect: 0,
 			mode:          false,
 			hasBattery:    false,
-			// sram:                false,
-			// battery:             false,
-			// rtc:                 false,
-			// bankSelectRegister1: 1,
-			// bankSelectRegister2: 0,
 		}
 	},
 
@@ -75,15 +70,11 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 	0x02: func(c *Cartridge) CartridgeType {
 		return &Mbc1Cartridge{
 			parent:        c,
-			romBankSelect: 0,
+			romBankSelect: 1,
 			ramBankSelect: 0,
 			mode:          false,
 			hasBattery:    false,
-			// sram:                true,
-			// battery:             false,
-			// rtc:                 false,
-			// bankSelectRegister1: 1,
-			// bankSelectRegister2: 0,
+
 		}
 	},
 
@@ -91,15 +82,10 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 	0x03: func(c *Cartridge) CartridgeType {
 		return &Mbc1Cartridge{
 			parent:        c,
-			romBankSelect: 0,
+			romBankSelect: 1,
 			ramBankSelect: 0,
 			mode:          false,
 			hasBattery:    true,
-			// sram:                true,
-			// battery:             true,
-			// rtc:                 false,
-			// bankSelectRegister1: 1,
-			// bankSelectRegister2: 0,
 		}
 	},
 
