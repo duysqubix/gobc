@@ -1,0 +1,61 @@
+; this file was created with wlalink by ville helin <ville.helin@iki.fi>.
+; wla symbolic information for "/home/runner/work/mooneye-test-suite/mooneye-test-suite/build/acceptance/timer/div_write.gb".
+
+[information]
+version 2
+
+[labels]
+01:48d4 clear_vram
+01:489f disable_ppu_safe
+01:48a5 disable_ppu_safe@wait_ly_0
+01:48fa is_ppu_broken
+01:48de is_serial_broken
+01:48e8 memcpy
+01:48f1 memset
+01:4900 print_inline_string
+01:48bd print_load_font
+01:48c9 print_newline
+01:488f print_string
+01:4897 print_string@char
+01:489a print_string@newline
+01:47f0 quit
+01:4806 quit@callback
+01:480a quit@cb_return
+01:4814 quit@wait_ly_1
+01:481a quit@wait_ly_2
+01:4820 quit@wait_ly_3
+01:4826 quit@wait_ly_4
+01:482c quit@report_result
+01:4830 quit@success
+01:483e quit@failure
+01:4846 quit@serial_dump
+01:484c quit@normal
+01:4866 quit@fast
+01:4878 quit@halt
+01:4879 quit@halt_execution_0
+01:487b reset_screen
+01:48ae serial_send_byte
+01:4000 font
+00:0150 main
+00:0150 test
+00:0175 test@quit_inline_1
+00:0186 quit_failure
+00:018d quit_failure@quit_inline_2
+
+[definitions]
+0000000a _sizeof_clear_vram
+0000000f _sizeof_disable_ppu_safe
+00000006 _sizeof_is_ppu_broken
+0000000a _sizeof_is_serial_broken
+00000009 _sizeof_memcpy
+00000009 _sizeof_memset
+00000006 _sizeof_print_inline_string
+0000000c _sizeof_print_load_font
+0000000b _sizeof_print_newline
+00000010 _sizeof_print_string
+0000008b _sizeof_quit
+00000014 _sizeof_reset_screen
+0000000f _sizeof_serial_send_byte
+000007f0 _sizeof_font
+00000000 _sizeof_test
+00000036 _sizeof_main

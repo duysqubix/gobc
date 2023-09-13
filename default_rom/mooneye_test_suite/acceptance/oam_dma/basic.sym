@@ -1,0 +1,82 @@
+; this file was created with wlalink by ville helin <ville.helin@iki.fi>.
+; wla symbolic information for "/home/runner/work/mooneye-test-suite/mooneye-test-suite/build/acceptance/oam_dma/basic.gb".
+
+[information]
+version 2
+
+[labels]
+01:48ee clear_oam
+01:48f8 clear_vram
+01:489f disable_ppu_safe
+01:48a5 disable_ppu_safe@wait_ly_0
+01:4928 is_ppu_broken
+01:4902 is_serial_broken
+01:48bd memcmp
+01:4916 memcpy
+01:491f memset
+01:48cb print_hex4
+01:490c print_hex8
+01:492e print_inline_string
+01:48d7 print_load_font
+01:48e3 print_newline
+01:488f print_string
+01:4897 print_string@char
+01:489a print_string@newline
+01:47f0 quit
+01:4806 quit@callback
+01:480a quit@cb_return
+01:4814 quit@wait_ly_1
+01:481a quit@wait_ly_2
+01:4820 quit@wait_ly_3
+01:4826 quit@wait_ly_4
+01:482c quit@report_result
+01:4830 quit@success
+01:483e quit@failure
+01:4846 quit@serial_dump
+01:484c quit@normal
+01:4866 quit@fast
+01:4878 quit@halt
+01:4879 quit@halt_execution_0
+01:487b reset_screen
+01:48ae serial_send_byte
+01:4000 font
+00:0150 main
+00:0179 fail
+00:0183 fail@quit_inline_1
+00:0198 finish
+00:019f finish@quit_inline_2
+00:01b0 dma_proc
+00:01b8 _end_dma_proc
+00:1200 random_data
+00:ff80 hram.dma_proc
+00:ff90 fail_offset
+00:ff80 RAM_USAGE_SLOT_4_BANK_0_START
+00:ff90 RAM_USAGE_SLOT_4_BANK_0_END
+
+[definitions]
+0000000a _sizeof_clear_oam
+0000000a _sizeof_clear_vram
+0000000f _sizeof_disable_ppu_safe
+00000006 _sizeof_is_ppu_broken
+0000000a _sizeof_is_serial_broken
+0000000e _sizeof_memcmp
+00000009 _sizeof_memcpy
+00000009 _sizeof_memset
+0000000c _sizeof_print_hex4
+0000000a _sizeof_print_hex8
+00000006 _sizeof_print_inline_string
+0000000c _sizeof_print_load_font
+0000000b _sizeof_print_newline
+00000010 _sizeof_print_string
+0000008b _sizeof_quit
+00000014 _sizeof_reset_screen
+0000000f _sizeof_serial_send_byte
+000007f0 _sizeof_font
+00000010 _sizeof_hram.dma_proc
+00000001 _sizeof_fail_offset
+00000010 _sizeof_RAM_USAGE_SLOT_4_BANK_0_START
+00000029 _sizeof_main
+0000001f _sizeof_fail
+00000018 _sizeof_finish
+00000008 _sizeof_dma_proc
+00001048 _sizeof__end_dma_proc

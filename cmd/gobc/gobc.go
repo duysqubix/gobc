@@ -54,7 +54,11 @@ func gameLoopGUI() {
 	}
 
 	if DEBUG_WINDOWS {
-		wins = append(wins, windows.NewVramViewWindow(g), windows.NewMemoryViewWindow(g))
+		wins = append(wins,
+			// windows.NewVramViewWindow(g),
+			// windows.NewMemoryViewWindow(g),
+			windows.NewCartViewWindow(g),
+		)
 	}
 
 	mainWin := wins[0].Win()

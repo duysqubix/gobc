@@ -1,7 +1,5 @@
 package cartridge
 
-import "fmt"
-
 type RomOnlyCartridge struct {
 	parent  *Cartridge
 	sram    bool
@@ -23,7 +21,7 @@ func (c *RomOnlyCartridge) SetItem(addr uint16, value uint8) {
 		}
 
 		rombank := c.parent.RomBankSelected % c.parent.RomBanksCount
-		fmt.Println("Is this where its failing?")
+		// fmt.Println("Is this where its failing?")
 		c.parent.RomBanks[rombank][addr-0xA000] = value
 	}
 }

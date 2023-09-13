@@ -48,8 +48,9 @@ func (mw *MainGameWindow) Update() error {
 func (mw *MainGameWindow) Draw() {
 	mw.Window.Clear(colornames.Black)
 
-	spr2 := pixel.NewSprite(mw.gameMapCanvas, mw.gameMapCanvas.Bounds())
-	spr2.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), 1))
+	drawSprite(mw.Window, mw.gameMapCanvas, 1.5, 0, 0)
+	// spr2 := pixel.NewSprite(mw.gameMapCanvas, mw.gameMapCanvas.Bounds())
+	// spr2.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), 1))
 	mw.Window.Update()
 }
 

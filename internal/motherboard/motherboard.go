@@ -306,7 +306,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	*
 	 */
 	case 0x4000 <= addr && addr < 0x8000:
-		m.Cartridge.CartType.SetItem(addr-0x4000, v)
+		m.Cartridge.CartType.SetItem(addr, v)
 
 	/*
 	*
@@ -326,7 +326,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	*
 	 */
 	case 0xA000 <= addr && addr < 0xC000:
-		m.Cartridge.CartType.SetItem(addr-0xA000, v)
+		m.Cartridge.CartType.SetItem(addr, v)
 
 	/*
 	*
