@@ -83,7 +83,6 @@ func (mw *MemoryViewWindow) Win() *pixelgl.Window {
 }
 
 func (mw *MemoryViewWindow) SetUp() {
-	mw.Window.SetTitle("gobc v0.1 | Memory View")
 	mw.Window.SetBounds(pixel.R(0, 0, memTrueWidth, memTrueHeight))
 	consoleTxt = text.New(
 		pixel.V(10, mw.Window.Bounds().Max.Y-20),

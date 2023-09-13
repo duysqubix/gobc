@@ -281,7 +281,6 @@ func (c *Cartridge) initRambanks() {
 	for i := uint8(0); i < banks; i++ {
 		bank := initialCartRam.get(ctype, i)
 		copy(c.RamBanks[i][:], bank[:])
-		// fmt.Printf("%#v\n", c.RamBanks[i][:16])
 	}
 
 }

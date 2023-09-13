@@ -75,7 +75,6 @@ func (mw *CartViewWindow) Win() *pixelgl.Window {
 }
 
 func (mw *CartViewWindow) SetUp() {
-	mw.Window.SetTitle("gobc v0.1 | Memory View")
 	mw.Window.SetBounds(pixel.R(0, 0, cartTrueWidth, cartTrueHeight))
 	cartConsoleTxt = text.New(
 		pixel.V(10, mw.Window.Bounds().Max.Y-20),
@@ -125,11 +124,11 @@ func (mw *CartViewWindow) Update() error {
 	dy := mw.Window.MouseScroll().Y
 	mw.YOffset -= dy
 	if mw.YOffset < 0 {
-		mw.YOffset = maxYOffset
+		mw.YOffset = 0.0
 	}
 
 	if mw.YOffset > maxYOffset {
-		mw.YOffset = 0.0
+		mw.YOffset = maxYOffset
 	}
 	cartBeginAddr = int(mw.YOffset) * 0x10
 	cartEndAddr = (cartMaxRows-cartAddrOffset-1)*0x10 + cartBeginAddr
