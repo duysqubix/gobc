@@ -1,0 +1,26 @@
+ROM0 bank #0:
+	SECTION: $0000-$001b ($001c bytes) ["Tilemap"]
+	         $0000 = Tilemap
+	EMPTY: $001c-$00ff ($00e4 bytes)
+	SECTION: $0100-$0103 ($0004 bytes) ["Header"]
+	         $0100 = EntryPoint
+	EMPTY: $0104-$0133 ($0030 bytes)
+	SECTION: $0134-$0139 ($0006 bytes) ["Title"]
+	EMPTY: $013a-$014f ($0016 bytes)
+	SECTION: $0150-$01cb ($007c bytes) ["Main"]
+	         $0150 = Main
+	         $0155 = Main.waitVBlank
+	         $015c = Main.setup
+	         $0174 = Main.readTileset
+	         $0187 = Main.readTilemap
+	         $01a0 = Main.clearOAM
+	         $01ab = Main.loop
+	         $01ba = Main.sync
+	         $01c1 = Main.move
+	SECTION: $01cc-$02eb ($0120 bytes) ["Tileset"]
+	         $01cc = Tileset
+	EMPTY: $02ec-$3fff ($3d14 bytes)
+	TOTAL EMPTY: $3e3e bytes
+
+SUMMARY:
+	ROM0: 450 bytes used / 15934 free
