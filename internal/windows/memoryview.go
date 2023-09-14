@@ -150,6 +150,9 @@ func (mw *MemoryViewWindow) Draw() {
 		for j := 0; j < 16; j++ {
 			addr := uint16(j + row_addr_start)
 			row_str += fmt.Sprintf("%02x ", mw.hw.Mb.GetItem(addr))
+			if j == 7 {
+				row_str += "| "
+			}
 		}
 		data = append(data, []string{row_addr, row_str, motherboard.MemoryMapName(uint16(row_addr_start))})
 	}
@@ -159,7 +162,6 @@ func (mw *MemoryViewWindow) Draw() {
 		memTableWriter.Append(d)
 	}
 	memTableWriter.Render()
-	// fmt.Fprintf(consoleTxt, "YOffset: %f\n", mw.YOffset)
 	consoleTxt.Draw(mw.Window, pixel.IM.Scaled(consoleTxt.Orig, 1.25))
 
 	mw.Window.Update()

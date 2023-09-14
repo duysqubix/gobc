@@ -1,17 +1,21 @@
 package windows
 
 import (
+	"fmt"
+
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
+	"github.com/faiface/pixel/text"
 	"github.com/spf13/afero"
 	"golang.org/x/image/colornames"
+	"golang.org/x/image/font/basicfont"
 )
 
 const (
-	CyclesFrameSBG = internal.DMG_CLOCK_SPEED / internal.FRAMES_PER_SECOND
+	CyclesFrameDMG = internal.DMG_CLOCK_SPEED / internal.FRAMES_PER_SECOND
 	CyclesFrameCBG = internal.CGB_CLOCK_SPEED / internal.FRAMES_PER_SECOND
 )
 
@@ -19,6 +23,8 @@ var (
 	internalCycleCounter int
 	internalCycleReturn  motherboard.OpCycles
 	internalStatus       bool
+	internalGamePaused   bool = false
+	internalConsoleTxt   *text.Text
 )
 
 type MainGameWindow struct {
@@ -28,19 +34,39 @@ type MainGameWindow struct {
 	gameTrueWidth  float64
 	gameTrueHeight float64
 	gameMapCanvas  *pixel.PictureData
+	cyclesFrame    int
+}
+
+func (mw *MainGameWindow) SetUp() {
+	mw.Window.SetBounds(pixel.R(0, 0, mw.gameTrueWidth, mw.gameTrueHeight))
+	internalConsoleTxt = text.New(pixel.V(mw.Window.Bounds().Center().X/2, mw.Window.Bounds().Max.Y-20), text.NewAtlas(basicfont.Face7x13, text.ASCII))
+	internalConsoleTxt.Color = colornames.Red
 }
 
 // this will get called every frame
 // every frame must be called 1 / GB_CLOCK_HZ times in order to run the emulator at the correct speed
 func (mw *MainGameWindow) Update() error {
 
-	if !mw.hw.UpdateInternalGameState() {
-		return nil
+	if mw.Window.JustPressed(pixelgl.KeyR) || mw.Window.Repeated(pixelgl.KeyR) {
+		mw.hw.Reset()
 	}
 
-	tileMap := mw.hw.Mb.Memory.TileMap()
+	if mw.Window.JustPressed(pixelgl.KeySpace) || mw.Window.Repeated(pixelgl.KeySpace) {
+		internalGamePaused = !internalGamePaused
+	}
 
-	updatePicture(256, 256, 8, 8, &tileMap, mw.gameMapCanvas)
+	if (mw.Window.JustPressed(pixelgl.KeyN) || mw.Window.Repeated(pixelgl.KeyN)) && internalGamePaused {
+		mw.hw.UpdateInternalGameState(1) // update every tick
+	}
+
+	if !internalGamePaused {
+		if !mw.hw.UpdateInternalGameState(mw.cyclesFrame) {
+			return nil
+		}
+
+		tileMap := mw.hw.Mb.Memory.TileMap()
+		updatePicture(256, 256, 8, 8, &tileMap, mw.gameMapCanvas)
+	}
 
 	return nil
 }
@@ -48,18 +74,18 @@ func (mw *MainGameWindow) Update() error {
 func (mw *MainGameWindow) Draw() {
 	mw.Window.Clear(colornames.Black)
 
+	if internalGamePaused {
+		internalConsoleTxt.Clear()
+		fmt.Fprint(internalConsoleTxt, "Game Paused")
+		internalConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(internalConsoleTxt.Orig, 2))
+	}
+
 	drawSprite(mw.Window, mw.gameMapCanvas, 1.5, 0, 0)
-	// spr2 := pixel.NewSprite(mw.gameMapCanvas, mw.gameMapCanvas.Bounds())
-	// spr2.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), 1))
 	mw.Window.Update()
 }
 
 func (mw *MainGameWindow) Win() *pixelgl.Window {
 	return mw.Window
-}
-
-func (mw *MainGameWindow) SetUp() {
-	mw.Window.SetBounds(pixel.R(0, 0, mw.gameTrueWidth, mw.gameTrueHeight))
 }
 
 type GoBoyColor struct {
@@ -89,10 +115,22 @@ func NewGoBoyColor(romfile string, breakpoints []uint16, forceCgb bool, panicOnS
 	return gobc
 }
 
+func (g *GoBoyColor) Reset() {
+	g.Mb.Reset()
+	g.Stopped = false
+	g.Paused = false
+}
+
 func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
 	gameScale := 3
 	gameScreenWidth := internal.GB_SCREEN_WIDTH
 	gameScreenHeight := internal.GB_SCREEN_HEIGHT
+	cyclesFrame := CyclesFrameDMG
+
+	if gobc.Mb.Cgb {
+		logger.Infof("Game is CGB, setting cycles per frame to %d", CyclesFrameCBG)
+		cyclesFrame = CyclesFrameCBG
+	}
 
 	mgw := &MainGameWindow{
 		hw:             gobc,
@@ -100,6 +138,7 @@ func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
 		gameTrueWidth:  float64(gameScreenWidth * gameScale),
 		gameTrueHeight: float64(gameScreenHeight * gameScale),
 		gameMapCanvas:  pixel.MakePictureData(pixel.R(0, 0, float64(256), float64(256))),
+		cyclesFrame:    cyclesFrame,
 	}
 
 	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
@@ -119,7 +158,7 @@ func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
 }
 
 // will want to block on this for CYCLES/60 cycles to process before rendering graphics
-func (g *GoBoyColor) UpdateInternalGameState() bool {
+func (g *GoBoyColor) UpdateInternalGameState(every int) bool {
 	if g.Stopped {
 		return false
 	}
@@ -127,9 +166,11 @@ func (g *GoBoyColor) UpdateInternalGameState() bool {
 	var still_good bool = true
 
 	internalCycleCounter = 0
-	for internalCycleCounter < CyclesFrameSBG {
+	for internalCycleCounter < every {
 		// logger.Debug("----------------Tick-----------------")
-
+		// if !g.Mb.BootRomEnabled() {
+		// 	internalGamePaused = true
+		// }
 		if g.Stopped {
 			still_good = false
 			break
