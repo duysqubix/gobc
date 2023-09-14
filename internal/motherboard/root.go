@@ -130,6 +130,8 @@ const (
 
 	TIMER_DIV_HZ uint32 = 16384 // 16384 Hz
 
+	BOOTROM_START_ADDR uint16 = 0x0000 // Start of CPU addresses
+	ROM_START_ADDR     uint16 = 0x0100 // Start of ROM addresses
 )
 
 type OpCode uint16                                        // 16-bit opcodes

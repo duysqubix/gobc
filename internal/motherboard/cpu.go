@@ -53,7 +53,6 @@ func NewCpu(mb *Motherboard) *CPU {
 		},
 		Halted: false,
 		Interrupts: &Interrupts{
-			// Master_Enable: false,
 			InterruptsEnabling: false,
 			InterruptsOn:       false,
 			IE:                 0,
@@ -62,6 +61,26 @@ func NewCpu(mb *Motherboard) *CPU {
 		Mb: mb,
 	}
 
+}
+
+func (c *CPU) Reset() {
+	c.Registers.A = 0x1
+	c.Registers.B = 0x00
+	c.Registers.C = 0x13
+	c.Registers.D = 0x00
+	c.Registers.E = 0xD8
+	c.Registers.F = 0xB0
+	c.Registers.H = 0x1
+	c.Registers.L = 0x4D
+	c.Registers.SP = 0xFFFE
+	c.Registers.PC = 0
+	c.Halted = false
+	c.Interrupts.InterruptsEnabling = false
+	c.Interrupts.InterruptsOn = false
+	c.Interrupts.IE = 0
+	c.Interrupts.IF = 0
+	c.IsStuck = false
+	c.Stopped = false
 }
 
 func (c *CPU) Tick() OpCycles {
@@ -76,7 +95,7 @@ func (c *CPU) Tick() OpCycles {
 		c.IsStuck = true
 		// c.DumpState(os.Stdout)
 		if c.Mb.PanicOnStuck {
-			logger.Errorf("Panicking on CPU stuck")
+			logger.Fatal("Panicking on CPU stuck")
 			os.Exit(0)
 		}
 	}
@@ -141,7 +160,11 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 		}
 	}
 
-	return OPCODES[opcode](c.Mb, value)
+	// if !c.Mb.BootRomEnabled() {
+	// 	logger.Debugf("BOOTROM DISABLED: PC: %#x SP: %#x, OpCode: %#x", c.Registers.PC, c.Registers.SP, opcode)
+	// }
+	// return OPCODES[opcode](c.Mb, value)
+	return executeOpcode(opcode, c.Mb, value)
 }
 
 func (c *CPU) handleInterrupts() OpCycles {

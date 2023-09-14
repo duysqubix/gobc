@@ -1,6 +1,8 @@
 package motherboard
 
 import (
+	"os"
+
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -13,6 +15,24 @@ func (o *OpCode) Shift() OpCode {
 }
 
 var ILLEGAL_OPCODES = []OpCode{0xd3, 0xdb, 0xdd, 0xe3, 0xe4, 0xeb, 0xec, 0xed, 0xf4, 0xfc, 0xfd}
+
+func (o *OpCode) IsIllegal() bool {
+	for _, opcode := range ILLEGAL_OPCODES {
+		if *o == opcode {
+			return true
+		}
+	}
+	return false
+}
+
+func executeOpcode(opcode OpCode, mb *Motherboard, value uint16) OpCycles {
+	if opcode.IsIllegal() {
+		mb.Cpu.DumpState(os.Stdout)
+		logger.Fatalf("Illegal opcode %#x", opcode)
+	}
+	// execute opcode
+	return OPCODES[opcode](mb, value)
+}
 
 // OPCODES is a map of opcodes to their logic
 var OPCODES = OpCodeMap{

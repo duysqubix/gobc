@@ -90,17 +90,39 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	mb.Memory = NewInternalRAM(mb.Cgb, params.Randomize)
 	mb.Lcd = NewLCD(mb)
 	mb.BootRom = NewBootRom(mb.Cgb)
+	mb.BootRom.Enable()
+	// mb.BootRom.Disable()
 
 	if !mb.BootRomEnabled() {
 		logger.Info("Boot ROM not enabled. Jumping to 0x100")
-		mb.Cpu.Registers.PC = 0x100
+		mb.Cpu.Registers.PC = ROM_START_ADDR
+	} else {
+		logger.Info("Boot ROM enabled. Jumping to 0x0")
+		mb.Cpu.Registers.PC = BOOTROM_START_ADDR
 	}
 
 	return mb
 }
 
+func (m *Motherboard) Reset() {
+	m.Cpu.Reset()
+	m.Memory.Reset()
+	m.Lcd.Reset()
+	m.BootRom.Enable()
+	// m.BootRom.Disable()
+	m.Timer.Reset()
+
+	if !m.BootRomEnabled() {
+		logger.Info("Boot ROM not enabled. Jumping to 0x100")
+		m.Cpu.Registers.PC = ROM_START_ADDR
+	} else {
+		logger.Info("Boot ROM enabled. Jumping to 0x0")
+		m.Cpu.Registers.PC = BOOTROM_START_ADDR
+	}
+}
+
 func (m *Motherboard) BootRomEnabled() bool {
-	return m.BootRom != nil
+	return m.BootRom.IsEnabled
 }
 
 func (m *Motherboard) Tick() (bool, OpCycles) {
@@ -289,7 +311,7 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 
 func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	if value >= 0x100 {
-		internal.Logger.Panicf("Memory write error! Can't write %#x to %#x\n", value, addr)
+		logger.Fatalf("Memory write error! Can't write %#x to %#x\n", value, addr)
 	}
 
 	if m.Decouple {
@@ -396,13 +418,6 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	 */
 	case 0xFF00 <= addr && addr < 0xFF80:
 
-		if m.BootRomEnabled() &&
-			addr == 0xFF50 &&
-			(v == 0x1 || v == 0x11) {
-			logger.Debugf("Disabling boot rom")
-			m.BootRom = nil
-		}
-
 		switch addr {
 
 		case 0xFF04: /* DIV */
@@ -433,10 +448,18 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 			return
 
 		case 0xFF50: /* Disable Boot ROM */
+			if !m.BootRomEnabled() {
+				logger.Warnf("Writing to 0xFF50 when boot ROM is disabled")
+			}
+
 			if m.BootRomEnabled() {
-				logger.Debugf("Disabling boot rom")
-				m.BootRom = nil
-				m.Cpu.Registers.PC = 0x100
+				logger.Debugf("CGB: %t, Value: %#x", m.Cgb, v)
+				if m.Cgb && v == 0x11 || !m.Cgb && v == 0x1 {
+
+					logger.Warnf("Disabling boot rom")
+					m.BootRom.Disable()
+					m.Cpu.Registers.PC = ROM_START_ADDR - 2 // PC will be incremented by 2
+				}
 			}
 			return
 

@@ -117,6 +117,14 @@ func NewInternalRAM(cgb bool, randomize bool) *Memory {
 	return ram
 }
 
+func (r *Memory) Reset() {
+	initWram(&r.Wram, r.Randomize)
+	initIo(&r.IO, r.Randomize)
+	initHram(&r.Hram, r.Randomize)
+	initVram(&r.Vram, r.Randomize)
+	initOam(&r.Oam, r.Randomize)
+}
+
 // //////// VRAM //////////
 
 func (r *Memory) TileData() []uint8 {

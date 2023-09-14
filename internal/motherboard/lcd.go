@@ -79,6 +79,14 @@ func NewLCD(mb *Motherboard) *LCD {
 	}
 }
 
+func (l *LCD) Reset() {
+	l.screenData = ScreenData{}
+	l.bgPriority = ScreenPriority{}
+	l.PreparedData = ScreenData{}
+	l.scanlineCounter = 0
+	l.screenCleared = false
+}
+
 func (l *LCD) Tick(cycles OpCycles) {
 	l.updateGraphics(cycles)
 }
