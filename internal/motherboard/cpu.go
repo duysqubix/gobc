@@ -2,6 +2,7 @@ package motherboard
 
 import (
 	"bufio"
+	"container/list"
 	"fmt"
 	"io"
 	"math/rand"
@@ -10,6 +11,10 @@ import (
 	"github.com/duysqubix/gobc/internal"
 	"github.com/olekukonko/tablewriter"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	PC_HISTORY_COUNT_MAX = 6
 )
 
 var tickCycles OpCycles
@@ -35,6 +40,7 @@ type CPU struct {
 	Mb         *Motherboard // Motherboard
 	IsStuck    bool         // CPU is stuck
 	Stopped    bool         // CPU is stopped
+	PcHist     *list.List   // records last 16 PC values
 }
 
 func NewCpu(mb *Motherboard) *CPU {
@@ -58,7 +64,8 @@ func NewCpu(mb *Motherboard) *CPU {
 			IE:                 0,
 			IF:                 0,
 		},
-		Mb: mb,
+		Mb:     mb,
+		PcHist: list.New(),
 	}
 
 }
@@ -81,6 +88,7 @@ func (c *CPU) Reset() {
 	c.Interrupts.IF = 0
 	c.IsStuck = false
 	c.Stopped = false
+	c.PcHist = list.New()
 }
 
 func (c *CPU) Tick() OpCycles {
@@ -103,6 +111,20 @@ func (c *CPU) Tick() OpCycles {
 	return tickCycles
 }
 
+type Tuple struct {
+	Addr     uint16
+	OpCode   OpCode
+	IsOpCode bool
+}
+
+func (c *CPU) addToPCHistory(addr uint16, opCode OpCode, isOpCode bool) {
+	// add to history
+	if c.PcHist.Len() == PC_HISTORY_COUNT_MAX {
+		c.PcHist.Remove(c.PcHist.Back())
+	}
+	c.PcHist.PushFront(Tuple{addr, opCode, isOpCode})
+}
+
 func (c *CPU) ExecuteInstruction() OpCycles {
 	if os.Getenv("PC_DUMP") == "true" {
 		pc0 := c.Mb.GetItem(c.Registers.PC)
@@ -120,12 +142,16 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 	var value uint16
 
 	opcode := OpCode(c.Mb.GetItem(c.Registers.PC))
+
 	// fmt.Printf("Pre-Execution :Opcode: %s [%#x] | PC: %#x | SP: %#x\n", internal.OPCODE_NAMES[opcode], opcode, c.Registers.PC, c.Registers.SP)
 	if opcode.CBPrefix() {
-		opcode = OpCode(c.Mb.GetItem(c.Registers.PC + 1))
+		pc := c.Registers.PC + 1
+		opcode = OpCode(c.Mb.GetItem(pc))
 		opcode = opcode.Shift()
 
 	}
+	c.addToPCHistory(c.Registers.PC, opcode, true)
+
 	pc := c.Registers.PC
 	opcode_len := internal.OPCODE_LENGTHS[opcode]
 	switch opcode_len {
@@ -134,13 +160,18 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 	case 2:
 		pc++
 		value = uint16(c.Mb.GetItem(pc))
+		c.addToPCHistory(pc, opcode, false)
 
 	// 16 bit immediate
 	case 3:
 		pc++
 		b := uint16(c.Mb.GetItem(pc))
+		c.addToPCHistory(pc, opcode, false)
+
 		pc++
 		a := uint16(c.Mb.GetItem(pc))
+		c.addToPCHistory(pc, opcode, false)
+
 		value = (a << 8) | b
 
 	default:

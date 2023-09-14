@@ -17,20 +17,23 @@ type Breakpoints struct {
 }
 
 type Motherboard struct {
-	Cpu          *CPU                 // CPU
-	Cartridge    *cartridge.Cartridge // Cartridge
-	Memory       *Memory              // Internal RAM
-	BootRom      *BootRom             // Boot ROM
-	Timer        *Timer               // Timer
-	Lcd          *LCD                 // LCD
-	Cgb          bool                 // Color Gameboy
-	CpuFreq      uint32               // CPU frequency
-	Randomize    bool                 // Randomize RAM on startup
-	Decouple     bool                 // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
-	Breakpoints  *Breakpoints         // Breakpoints
-	PanicOnStuck bool                 // Panic when CPU is stuck
-	hdmaActive   bool                 // HDMA active
-	hdmaLength   uint8                // HDMA length
+	Cpu         *CPU                 // CPU
+	Cartridge   *cartridge.Cartridge // Cartridge
+	Memory      *Memory              // Internal RAM
+	BootRom     *BootRom             // Boot ROM
+	Timer       *Timer               // Timer
+	Lcd         *LCD                 // LCD
+	Cgb         bool                 // Color Gameboy
+	CpuFreq     uint32               // CPU frequency
+	Randomize   bool                 // Randomize RAM on startup
+	hdmaActive  bool                 // HDMA active
+	hdmaLength  uint8                // HDMA length
+	doubleSpeed bool                 // Double speed mode
+
+	// debugging
+	Decouple     bool         // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
+	Breakpoints  *Breakpoints // Breakpoints
+	PanicOnStuck bool         // Panic when CPU is stuck
 }
 
 type MotherboardParams struct {

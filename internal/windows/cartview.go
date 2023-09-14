@@ -81,11 +81,14 @@ func (mw *CartViewWindow) SetUp() {
 		text.NewAtlas(cartDefaultFont, text.ASCII),
 		// text.NewAtlas(inconsolata.Regular8x16, text.ASCII),
 	)
+
+	cartConsoleTxt.Color = colornames.Yellowgreen
+
 	cartTableWriter = tablewriter.NewWriter(cartConsoleTxt)
 	cartTableWriter.SetAutoWrapText(false)
 	cartTableWriter.SetAlignment(tablewriter.ALIGN_LEFT)
 	cartTableWriter.SetBorder(true)
-	cartTableWriter.SetHeader([]string{"Bank", "Addr", "Data"})
+	cartTableWriter.SetHeader([]string{"RAM Bank", "Addr", "Cart Data"})
 }
 
 func (mw *CartViewWindow) Update() error {
@@ -145,8 +148,6 @@ func (mw *CartViewWindow) Draw() {
 	cartConsoleTxt.Clear()
 	mw.Window.Clear(colornames.Black)
 	cartTableWriter.ClearRows()
-
-	cartConsoleTxt.Color = colornames.White
 
 	var data [][]string
 	// print rows from memory

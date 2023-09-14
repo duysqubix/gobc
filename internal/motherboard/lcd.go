@@ -140,8 +140,7 @@ func (l *LCD) setLCDStatus() {
 			(0 << STAT_MODE0)
 
 		// write status to memory
-		// l.Mb.Memory.IO[IO_STAT-IO_START_ADDR] = status
-		l.Mb.SetItem(IO_STAT, uint16(status))
+		l.Mb.Memory.IO[IO_STAT-IO_START_ADDR] = status
 	}
 
 	l.screenCleared = false

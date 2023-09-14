@@ -89,11 +89,13 @@ func (mw *MemoryViewWindow) SetUp() {
 		text.NewAtlas(defaultFont, text.ASCII),
 		// text.NewAtlas(inconsolata.Regular8x16, text.ASCII),
 	)
+	consoleTxt.Color = colornames.Green
+
 	memTableWriter = tablewriter.NewWriter(consoleTxt)
 	memTableWriter.SetAutoWrapText(false)
 	memTableWriter.SetAlignment(tablewriter.ALIGN_LEFT)
 	memTableWriter.SetBorder(true)
-	memTableWriter.SetHeader([]string{"Addr", "Data", "Section"})
+	memTableWriter.SetHeader([]string{"Addr", "Memory Data", "Section"})
 }
 
 func (mw *MemoryViewWindow) Update() error {
@@ -138,8 +140,6 @@ func (mw *MemoryViewWindow) Draw() {
 	consoleTxt.Clear()
 	mw.Window.Clear(colornames.Black)
 	memTableWriter.ClearRows()
-
-	consoleTxt.Color = colornames.White
 
 	var data [][]string
 	// print rows from memory

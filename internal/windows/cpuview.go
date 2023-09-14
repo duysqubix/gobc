@@ -3,6 +3,8 @@ package windows
 import (
 	"fmt"
 
+	"github.com/duysqubix/gobc/internal"
+	"github.com/duysqubix/gobc/internal/motherboard"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
@@ -12,8 +14,8 @@ import (
 )
 
 const (
-	cpuScreenWidth  = 800
-	cpuScreenHeight = 450
+	cpuScreenWidth  = 400
+	cpuScreenHeight = 500
 	cpuScale        = 1
 	cpuTrueWidth    = float64(cpuScreenWidth * cpuScale)
 	cpuTrueHeight   = float64(cpuScreenHeight * cpuScale)
@@ -76,10 +78,12 @@ func (mw *CpuViewWindow) Win() *pixelgl.Window {
 func (mw *CpuViewWindow) SetUp() {
 	mw.Window.SetBounds(pixel.R(0, 0, cpuTrueWidth, cpuTrueHeight))
 	cpuConsoleTxt = text.New(
-		pixel.V(10, mw.Window.Bounds().Max.Y-20),
+		pixel.V(10, mw.Window.Bounds().Max.Y-40),
 		text.NewAtlas(cpuDefaultFont, text.ASCII),
 		// text.NewAtlas(inconsolata.Regular8x16, text.ASCII),
 	)
+	cpuConsoleTxt.Color = colornames.Red
+
 	cpuTableWriter = tablewriter.NewWriter(cpuConsoleTxt)
 	cpuTableWriter.SetAutoWrapText(false)
 	cpuTableWriter.SetAlignment(tablewriter.ALIGN_LEFT)
@@ -96,8 +100,6 @@ func (mw *CpuViewWindow) Draw() {
 	cpuConsoleTxt.Clear()
 	mw.Window.Clear(colornames.Black)
 	cpuTableWriter.ClearRows()
-
-	cpuConsoleTxt.Color = colornames.White
 
 	var data [][]string
 	// print rows from memory
@@ -123,8 +125,26 @@ func (mw *CpuViewWindow) Draw() {
 		cpuTableWriter.Append(d)
 	}
 	cpuTableWriter.Render()
-	// fmt.Fprintf(cpuConsoleTxt, "YOffset: %f\n", mw.YOffset)
-	cpuConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(cpuConsoleTxt.Orig, 1.25))
+
+	cntr := mw.hw.Mb.Cpu.PcHist.Len() - 1
+	for i := mw.hw.Mb.Cpu.PcHist.Back(); i != nil; i = i.Prev() {
+		tup := i.Value.(motherboard.Tuple)
+		var opCodeName string = ""
+		if tup.IsOpCode {
+			opCodeName = internal.OPCODE_NAMES[tup.OpCode]
+		}
+
+		fmt.Fprintf(cpuConsoleTxt, "PC-%d: %04x (%02x) [%s]\n", cntr+1, tup.Addr, mw.hw.Mb.GetItem(tup.Addr), opCodeName)
+		cntr--
+	}
+
+	// look into the future by 5 steps
+	for i := uint16(0); i < 3; i++ {
+		fpc := mw.hw.Mb.Cpu.Registers.PC + i
+		fmt.Fprintf(cpuConsoleTxt, "PC+%d: %04x (%02x)\n", i, fpc, mw.hw.Mb.GetItem(fpc))
+	}
+
+	cpuConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(cpuConsoleTxt.Orig, 1.5))
 
 	mw.Window.Update()
 }
