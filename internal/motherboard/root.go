@@ -50,34 +50,35 @@ const (
 	IO_WAVE_RAMD  uint16 = 0xFF3C // Waveform storage for arbitrary sound data
 	IO_WAVE_RAME  uint16 = 0xFF3D // Waveform storage for arbitrary sound data
 	IO_WAVE_RAMF  uint16 = 0xFF3E // Waveform storage for arbitrary sound data
-	IO_LCDC       uint16 = 0xFF40 // LCD Control
-	IO_STAT       uint16 = 0xFF41 // LCD Status
-	IO_SCY        uint16 = 0xFF42 // Scroll Y
-	IO_SCX        uint16 = 0xFF43 // Scroll X
-	IO_LY         uint16 = 0xFF44 // LCDC Y-Coordinate
-	IO_LYC        uint16 = 0xFF45 // LY Compare
-	IO_DMA        uint16 = 0xFF46 // DMA Transfer and Start Address
-	IO_BGP        uint16 = 0xFF47 // BG Palette Data
-	IO_OBP0       uint16 = 0xFF48 // Object Palette 0 Data
-	IO_OBP1       uint16 = 0xFF49 // Object Palette 1 Data
-	IO_WY         uint16 = 0xFF4A // Window Y Position
-	IO_WX         uint16 = 0xFF4B // Window X Position
-	IO_KEY1       uint16 = 0xFF4D // CGB Mode Only - Prepare Speed Switch
-	IO_VBK        uint16 = 0xFF4F // CGB Mode Only - VRAM Bank
-	IO_HDMA1      uint16 = 0xFF51 // CGB Mode Only - New DMA Source, High
-	IO_HDMA2      uint16 = 0xFF52 // CGB Mode Only - New DMA Source, Low
-	IO_HDMA3      uint16 = 0xFF53 // CGB Mode Only - New DMA Destination, High
-	IO_HDMA4      uint16 = 0xFF54 // CGB Mode Only - New DMA Destination, Low
-	IO_HDMA5      uint16 = 0xFF55 // CGB Mode Only - New DMA Length/Mode/Start
-	IO_RP         uint16 = 0xFF56 // CGB Mode Only - Infrared Communications Port
-	IO_BCPS       uint16 = 0xFF68 // CGB Mode Only - Background Color Palette Specification
-	IO_BCPD       uint16 = 0xFF69 // CGB Mode Only - Background Color Palette Data
-	IO_OCPS       uint16 = 0xFF6A // CGB Mode Only - Object Color Palette Specification
-	IO_OCPD       uint16 = 0xFF6B // CGB Mode Only - Object Color Palette Data
-	IO_OPRI       uint16 = 0xFF6C // CGB Mode Only - Object Priority
-	IO_SVBK       uint16 = 0xFF70 // CGB Mode Only - WRAM Bank
-	IO_PCM12      uint16 = 0xFF76 // CGB Mode Only - PCM Channel 1&2 Control
-	IO_PCM34      uint16 = 0xFF77 // CGB Mode Only - PCM Channel 3&4 Control
+
+	IO_LCDC  uint16 = 0xFF40 // LCD Control
+	IO_STAT  uint16 = 0xFF41 // LCD Status
+	IO_SCY   uint16 = 0xFF42 // Scroll Y
+	IO_SCX   uint16 = 0xFF43 // Scroll X
+	IO_LY    uint16 = 0xFF44 // LCDC Y-Coordinate
+	IO_LYC   uint16 = 0xFF45 // LY Compare
+	IO_DMA   uint16 = 0xFF46 // DMA Transfer and Start Address
+	IO_BGP   uint16 = 0xFF47 // BG Palette Data
+	IO_OBP0  uint16 = 0xFF48 // Object Palette 0 Data
+	IO_OBP1  uint16 = 0xFF49 // Object Palette 1 Data
+	IO_WY    uint16 = 0xFF4A // Window Y Position
+	IO_WX    uint16 = 0xFF4B // Window X Position
+	IO_KEY1  uint16 = 0xFF4D // CGB Mode Only - Prepare Speed Switch
+	IO_VBK   uint16 = 0xFF4F // CGB Mode Only - VRAM Bank
+	IO_HDMA1 uint16 = 0xFF51 // CGB Mode Only - New DMA Source, High
+	IO_HDMA2 uint16 = 0xFF52 // CGB Mode Only - New DMA Source, Low
+	IO_HDMA3 uint16 = 0xFF53 // CGB Mode Only - New DMA Destination, High
+	IO_HDMA4 uint16 = 0xFF54 // CGB Mode Only - New DMA Destination, Low
+	IO_HDMA5 uint16 = 0xFF55 // CGB Mode Only - New DMA Length/Mode/Start
+	IO_RP    uint16 = 0xFF56 // CGB Mode Only - Infrared Communications Port
+	IO_BCPS  uint16 = 0xFF68 // CGB Mode Only - Background Color Palette Specification
+	IO_BCPD  uint16 = 0xFF69 // CGB Mode Only - Background Color Palette Data
+	IO_OCPS  uint16 = 0xFF6A // CGB Mode Only - Object Color Palette Specification
+	IO_OCPD  uint16 = 0xFF6B // CGB Mode Only - Object Color Palette Data
+	IO_OPRI  uint16 = 0xFF6C // CGB Mode Only - Object Priority
+	IO_SVBK  uint16 = 0xFF70 // CGB Mode Only - WRAM Bank
+	IO_PCM12 uint16 = 0xFF76 // CGB Mode Only - PCM Channel 1&2 Control
+	IO_PCM34 uint16 = 0xFF77 // CGB Mode Only - PCM Channel 3&4 Control
 
 	IE uint16 = 0xFFFF // Interrupt Enable
 
@@ -107,7 +108,7 @@ const (
 	LCDC_BGWIN  uint8 = 3 // Bit 3 - BG Tile Map Display Select     (0=9800-9BFF, 1=9C00-9FFF)
 	LCDC_OBJSZ  uint8 = 2 // Bit 2 - OBJ (Sprite) Size              (0=8x8, 1=8x16)
 	LCDC_OBJEN  uint8 = 1 // Bit 1 - OBJ (Sprite) Display Enable    (0=Off, 1=On)
-	LCDC_BGEN   uint8 = 0 // Bit 0 - BG Display (for CGB see below) (0=Off, 1=On)
+	LCDC_BGEN   uint8 = 0 // Bit 0 - BG Display (for CGB see below) (0=Off, 1=On); CGB Object Priority Bit (0=OBJ Above BG, 1=OBJ Behind BG color 1-3)
 
 	STAT_LYCINT uint8 = 6 // Bit 6 - LYC=LY Coincidence Interrupt (1=Enable) (Read/Write)
 	STAT_OAMINT uint8 = 5 // Bit 5 - Mode 2 OAM Interrupt         (1=Enable) (Read/Write)

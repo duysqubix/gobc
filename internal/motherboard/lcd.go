@@ -1,6 +1,8 @@
 package motherboard
 
 import (
+	"fmt"
+
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -169,7 +171,7 @@ func (l *LCD) setLCDStatus() {
 			// draw scanline when we start mode 3. In the real gameboy
 			// this would be done through mode 3 by readong OAM and VRAM
 			// to generate the picture
-			l.drawScanline()
+			l.drawScanline(currentLine)
 		}
 	default:
 		mode = STAT_MODE_HBLANK
@@ -202,7 +204,125 @@ func (l *LCD) isLCDEnabled() bool {
 	return internal.IsBitSet(l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_ENABLE)
 }
 
-func (l *LCD) drawScanline() {
+func (l *LCD) drawScanline(scanline uint8) {
+	control := l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR]
+
+	// LCDC bit 0 clears tiles on DMG but controls priority on CBG
+	if l.Mb.Cgb || internal.IsBitSet(control, LCDC_BGEN) {
+		l.renderTiles(control, scanline)
+	}
+
+	if internal.IsBitSet(control, LCDC_OBJEN) {
+		l.renderSprites()
+	}
+}
+
+type tileSettings struct {
+	UsingWindow bool   // true if window is enabled
+	Unsigned    bool   // true if using unsigned tile numbers
+	TileData    uint16 // address of tile data
+	BgMemory    uint16 // address of background tile map
+}
+
+func (l *LCD) getTileSettings(lcdControl uint8, windowY uint8) tileSettings {
+	tileData := uint16(0x8800)
+	var usingWindow bool
+	var bgMemory uint16
+	var unsigned bool
+
+	if internal.IsBitSet(lcdControl, LCDC_WINEN) {
+		// is current scanline we are draing within the window?
+		if windowY <= l.Mb.Memory.IO[IO_LY-IO_START_ADDR] {
+			usingWindow = true
+		}
+	}
+
+	// test if we are using unsigned bytes
+	if internal.IsBitSet(lcdControl, LCDC_BGMAP) {
+		tileData = 0x8000
+		unsigned = true
+	}
+
+	// work out where to look in the background memory
+	var testBit uint8 = 3
+	if usingWindow {
+		testBit = 6
+	}
+	bgMemory = uint16(0x9800)
+
+	if internal.IsBitSet(lcdControl, testBit) {
+		bgMemory = 0x9C00
+	}
+
+	return tileSettings{
+		TileData:    tileData,
+		BgMemory:    bgMemory,
+		UsingWindow: usingWindow,
+		Unsigned:    unsigned,
+	}
+}
+
+func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
+	scrollY := l.Mb.Memory.IO[IO_SCY-IO_START_ADDR]
+	scrollX := l.Mb.Memory.IO[IO_SCX-IO_START_ADDR]
+	windowY := l.Mb.Memory.IO[IO_WY-IO_START_ADDR]
+	windowX := l.Mb.Memory.IO[IO_WX-IO_START_ADDR] - 7
+
+	ts := l.getTileSettings(lcdControl, windowY)
+
+	var yPos uint8
+	if !ts.UsingWindow {
+		yPos = scrollY + scanline
+	} else {
+		yPos = scanline - windowY
+	}
+
+	tileRow := uint16(yPos/8) * 32
+	// palette := l.Mb.Memory.IO[IO_BGP-IO_START_ADDR]
+	l.tileScanline = [internal.GB_SCREEN_WIDTH]uint8{}
+
+	for pixel := uint8(0); pixel < internal.GB_SCREEN_WIDTH; pixel++ {
+		xPos := pixel + scrollX
+
+		// translate current x pos to window space if necessary
+		if ts.UsingWindow && pixel >= windowX {
+			xPos = pixel - windowX
+		}
+		// which of the 32 horizontal tiles does this xPos fall within?
+		tileCol := uint16(xPos / 8)
+
+		tileAddress := ts.BgMemory + tileRow + tileCol
+
+		//deduce tile id in memory
+		tileLocation := ts.TileData
+
+		if ts.Unsigned {
+			tileNum := int16(l.Mb.Memory.Vram[l.Mb.Memory.ActiveVramBank()][tileAddress-0x8000])
+			tileLocation += uint16(tileNum * 16)
+		} else {
+			tileNum := int16(int8(l.Mb.Memory.Vram[l.Mb.Memory.ActiveVramBank()][tileAddress-0x8000]))
+			tileLocation = uint16(int32(tileLocation) + int32((tileNum+128)*16))
+		}
+		// bankOffset := uint16(0x8000)
+
+		// Attributes used in CGB mode TODO: check in CGB mode
+		//
+		//    Bit 0-2  Background Palette number  (BGP0-7)
+		//    Bit 3    Tile VRAM Bank number      (0=Bank 0, 1=Bank 1)
+		//    Bit 5    Horizontal Flip            (0=Normal, 1=Mirror horizontally)
+		//    Bit 6    Vertical Flip              (0=Normal, 1=Mirror vertically)
+		//    Bit 7    BG-to-OAM Priority         (0=Use OAM priority bit, 1=BG Priority)
+		//
+		logger.Infof("tileLocation: %#x, tileAddress: %#x, TileNum: %#x", tileLocation, tileAddress, l.Mb.Memory.Vram[l.Mb.Memory.ActiveVramBank()][tileAddress-0x8000])
+
+		tileAttr := l.Mb.Memory.Vram[l.Mb.Memory.ActiveVramBank()][tileAddress-0x8000]
+		fmt.Println(tileAttr)
+
+	}
+}
+
+func (l *LCD) renderSprites() {
+
 }
 
 func (l *LCD) clearScreen() {
