@@ -74,7 +74,6 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 			ramBankSelect: 0,
 			mode:          false,
 			hasBattery:    false,
-
 		}
 	},
 
@@ -208,13 +207,32 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 		fname = ""
 	}
 
+	var ramBankCount uint8
+
+	switch rom_banks[0][SRAM_SIZE_ADDR] {
+	case 0x00:
+		ramBankCount = 0
+	case 0x01:
+		logger.Panicf("RAM size is unused")
+	case 0x02:
+		ramBankCount = 1
+	case 0x03:
+		ramBankCount = 4
+	case 0x04:
+		ramBankCount = 16
+	case 0x05:
+		ramBankCount = 8
+	default:
+		logger.Panicf("Invalid RAM size: %02X", rom_banks[0][SRAM_SIZE_ADDR])
+	}
+
 	cart := Cartridge{
 		RomBanks:        rom_banks,
 		filename:        fname,
 		RomBanksCount:   uint8(len(rom_banks)),
 		RomBankSelected: 0,
 		RamBankSelected: 0,
-		RamBankCount:    rom_banks[0][0x0149],
+		RamBankCount:    ramBankCount,
 		MemoryModel:     0,
 		Randomize:       false, // TODO: make this configurable
 	}
@@ -234,7 +252,7 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 	}
 
 	// initialize RAM banks to maximum size of 128KiB
-	cart.initRambanks()
+	// cart.initRambanks()
 
 	logger.Info("Cartridge RAM Initialized")
 	cart.Dump(os.Stdout)

@@ -73,6 +73,13 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	}
 
 	mb.Cgb = mb.Cartridge.CgbModeEnabled() || params.ForceCgb
+
+	// if mb.Cgb {
+	// 	logger.Errorf("CGB mode is not implemented yet")
+	// 	// os.Exit(0)
+	// 	mb.Cgb = false
+	// }
+
 	mb.CpuFreq = internal.DMG_CLOCK_SPEED
 
 	if mb.Cgb {
@@ -82,10 +89,10 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	mb.Cpu = NewCpu(mb)
 	mb.Memory = NewInternalRAM(mb.Cgb, params.Randomize)
 	mb.Lcd = NewLCD(mb)
-	// mb.BootRom = NewBootRom(mb.Cartridge.CgbModeEnabled())
+	mb.BootRom = NewBootRom(mb.Cgb)
 
 	if !mb.BootRomEnabled() {
-		logger.Info("Boot ROM disabled")
+		logger.Info("Boot ROM not enabled. Jumping to 0x100")
 		mb.Cpu.Registers.PC = 0x100
 	}
 
@@ -298,6 +305,10 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	*
 	 */
 	case addr < 0x4000:
+		if m.BootRomEnabled() && (addr < 0x100 || (m.Cgb && 0x200 <= addr && addr < 0x900)) {
+			logger.Errorf("Can't write to ROM bank 0 when boot ROM is enabled")
+			return
+		}
 		m.Cartridge.CartType.SetItem(addr, v)
 
 	/*
@@ -419,6 +430,14 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 
 		case 0xFF0F: /* IF */
 			m.Cpu.Interrupts.IF = v
+			return
+
+		case 0xFF50: /* Disable Boot ROM */
+			if m.BootRomEnabled() {
+				logger.Debugf("Disabling boot rom")
+				m.BootRom = nil
+				m.Cpu.Registers.PC = 0x100
+			}
 			return
 
 		default:

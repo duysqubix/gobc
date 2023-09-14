@@ -142,7 +142,7 @@ func mainAction(ctx *cli.Context) error {
 	g = windows.NewGoBoyColor(romfile, breakpoints, force_cgb, panicOnStuck, randomize)
 
 	if ctx.Bool("debug") {
-		logger.SetLevel(log.DebugLevel)
+		// logger.SetLevel(log.DebugLevel)
 		DEBUG_WINDOWS = true
 	}
 

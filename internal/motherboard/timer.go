@@ -71,12 +71,12 @@ func (t *Timer) Tick(cycles OpCycles, c *CPU) {
 		freq := t.getClockFreqCount()
 		for t.TimaCounter >= freq {
 			t.TimaCounter -= freq
-			tima := t.TIMA
-			if tima == 0xFF {
+			// tima := t.TIMA
+			if t.TIMA == 0xFF {
 				t.TIMA = t.TMA
 				c.SetInterruptFlag(INTR_TIMER)
 			} else {
-				t.TIMA = tima + 1
+				t.TIMA++
 			}
 		}
 	}

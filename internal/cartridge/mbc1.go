@@ -44,7 +44,7 @@ func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
 		} else {
 			c.parent.RamBankSelected = 0
 		}
-		logger.Debugf("Writing %#x to %#x on RAM bank %d\n", value, addr, c.parent.RamBankSelected)
+		logger.Debugf("Writing %#x to %#x on RAM bank %d/%d (%d)\n", value, addr, c.parent.RamBankSelected, c.parent.RamBankCount, c.parent.RamBankSelected%c.parent.RamBankCount)
 		c.parent.RamBanks[c.parent.RamBankSelected%c.parent.RamBankCount][addr-0xA000] = value
 	default:
 		logger.Panicf("Memory write error! Can't write %#x to %#x\n", value, addr)

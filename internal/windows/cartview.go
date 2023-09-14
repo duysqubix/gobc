@@ -119,6 +119,7 @@ func (mw *CartViewWindow) Update() error {
 		if cartRambank < 0 {
 			cartRambank = 15
 		}
+
 	}
 
 	dy := mw.Window.MouseScroll().Y
