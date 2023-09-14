@@ -248,7 +248,7 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 
 	calc_checksum, valid := cart.ValidateChecksum()
 	if !valid {
-		internal.Logger.Panicf("Checksum invalid. Expected %02X, got %02X", cart.RomBanks[0][HEADER_CHECKSUM_ADDR], calc_checksum)
+		logger.Fatalf("Checksum invalid. Expected %02X, got %02X", cart.RomBanks[0][HEADER_CHECKSUM_ADDR], calc_checksum)
 	}
 
 	// initialize RAM banks to maximum size of 128KiB

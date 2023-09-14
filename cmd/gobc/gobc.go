@@ -58,6 +58,7 @@ func gameLoopGUI() {
 			windows.NewVramViewWindow(g),
 			windows.NewMemoryViewWindow(g),
 			windows.NewCartViewWindow(g),
+			windows.NewCpuViewWindow(g),
 		)
 	}
 
@@ -96,9 +97,16 @@ func gameLoop() {
 		logger.Fatal("GoBoyColor core is not initialized")
 	}
 
+	cyclesFrame := windows.CyclesFrameDMG
+
+	if g.Mb.Cgb {
+		logger.Infof("Game is CGB, setting cycles per frame to %d", windows.CyclesFrameCBG)
+		cyclesFrame = windows.CyclesFrameCBG
+	}
+
 	for {
 
-		if !g.UpdateInternalGameState() {
+		if !g.UpdateInternalGameState(cyclesFrame) {
 			break
 		}
 
@@ -115,7 +123,6 @@ func mainAction(ctx *cli.Context) error {
 	var randomize bool = false
 
 	if ctx.Bool("force-cgb") {
-		logger.Panic("Force CGB is not implemented yet")
 		force_cgb = true
 	}
 
@@ -134,7 +141,6 @@ func mainAction(ctx *cli.Context) error {
 	var breakpoints []uint16
 	if ctx.String("breakpoints") != "" {
 		breakpoints = windows.ParseBreakpoints(ctx.String("breakpoints"))
-		// logger.Errorf("Breakpoints: %02x", breakpoints)
 
 	}
 
