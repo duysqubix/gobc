@@ -1,6 +1,8 @@
 package motherboard
 
 import (
+	"fmt"
+
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -265,6 +267,9 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		//
 
 		bank := 0
+		// if tileAddress >= 0x8000 {
+		// 	fmt.Printf("tileAddress: %#x, VRAM Bank Flag: %08b\n", tileAddress, l.Mb.Memory.IO[IO_VBK-IO_START_ADDR])
+		// }
 		tileAttr := l.Mb.Memory.Vram[1][tileAddress-0x8000]
 		if l.Mb.Cgb && internal.IsBitSet(tileAttr, 3) {
 			bank = 1
@@ -282,6 +287,10 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		data1 := l.Mb.Memory.Vram[bank][tileLocation+uint16(line)-0x8000]
 		data2 := l.Mb.Memory.Vram[bank][tileLocation+uint16(line)+1-0x8000]
 
+		if data1 != 0x00 || data2 != 0x00 {
+			fmt.Printf("data1: %#x, data2: %#x, tileLocation: %#x, line: %#x, tileAddress: %#x, tileAttr: %#x, Unsigned: %t, tileNum: %#x\n", data1, data2, tileLocation, line, tileAddress, tileAttr, ts.Unsigned, l.Mb.Memory.Vram[0][tileAddress-0x8000])
+		}
+
 		if l.Mb.Cgb && internal.IsBitSet(tileAttr, 5) {
 			// horizontal flip
 			xPos -= 7
@@ -298,6 +307,9 @@ func (l *LCD) setTilePixel(x, y, tileAttr, colorNum, palette uint8, priority boo
 	if l.Mb.Cgb {
 		cgbPalette := tileAttr & 0x7
 		r, g, b := l.Mb.BGPalette.get(cgbPalette, colorNum)
+		if r != 0xff || g != 0xff || b != 0xff {
+			fmt.Printf("x: %d, y: %d, r: %d, g: %d, b: %d\n", x, y, r, g, b)
+		}
 		l.setPixel(x, y, r, g, b, true)
 		l.bgPriority[x][y] = priority
 	} else {
@@ -315,6 +327,10 @@ func (l *LCD) renderSprites() {
 
 func (l *LCD) setPixel(x, y, r, g, b uint8, priority bool) {
 	if (priority && !l.bgPriority[x][y]) || l.tileScanline[x] == 0 {
+		if r != 0xff || g != 0xff || b != 0xff {
+			fmt.Printf("x: %d, y: %d, r: %d, g: %d, b: %d\n", x, y, r, g, b)
+		}
+
 		l.screenData[x][y][0] = r
 		l.screenData[x][y][1] = g
 		l.screenData[x][y][2] = b

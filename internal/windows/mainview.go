@@ -54,6 +54,10 @@ func (mw *MainGameWindow) Update() error {
 
 	if mw.Window.JustPressed(pixelgl.KeySpace) || mw.Window.Repeated(pixelgl.KeySpace) {
 		internalGamePaused = !internalGamePaused
+
+		if internalGamePaused {
+			fmt.Printf("%#v", mw.hw.Mb.Lcd.PreparedData)
+		}
 	}
 
 	if (mw.Window.JustPressed(pixelgl.KeyN) || mw.Window.Repeated(pixelgl.KeyN)) && internalGamePaused {
@@ -83,12 +87,6 @@ func (mw *MainGameWindow) Update() error {
 func (mw *MainGameWindow) Draw() {
 	mw.Window.Clear(colornames.Black)
 
-	if internalGamePaused {
-		internalConsoleTxt.Clear()
-		fmt.Fprint(internalConsoleTxt, "Game Paused")
-		internalConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(internalConsoleTxt.Orig, 2))
-	}
-
 	// drawSprite(mw.Window, mw.gameMapCanvas, 1.5, 0, 0)
 	r, g, b := motherboard.GetPaletteColour(3)
 	bg := color.RGBA{R: r, G: g, B: b, A: 0xFF}
@@ -96,6 +94,13 @@ func (mw *MainGameWindow) Draw() {
 
 	spr := pixel.NewSprite(pixel.Picture(mw.gameMapCanvas), pixel.R(0, 0, internal.GB_SCREEN_WIDTH, internal.GB_SCREEN_HEIGHT))
 	spr.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), float64(mw.gameScale)))
+
+	if internalGamePaused {
+		internalConsoleTxt.Clear()
+		fmt.Fprint(internalConsoleTxt, "Game Paused")
+		internalConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(internalConsoleTxt.Orig, 2))
+	}
+
 	mw.Window.Update()
 }
 
@@ -137,7 +142,7 @@ func (g *GoBoyColor) Reset() {
 }
 
 func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
-	gameScale := 3
+	gameScale := 1
 	gameScreenWidth := internal.GB_SCREEN_WIDTH
 	gameScreenHeight := internal.GB_SCREEN_HEIGHT
 	cyclesFrame := CyclesFrameDMG
@@ -152,7 +157,7 @@ func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
 		gameScale:      gameScale,
 		gameTrueWidth:  float64(gameScreenWidth * gameScale),
 		gameTrueHeight: float64(gameScreenHeight * gameScale),
-		gameMapCanvas:  pixel.MakePictureData(pixel.R(0, 0, float64(256), float64(256))),
+		gameMapCanvas:  pixel.MakePictureData(pixel.R(0, 0, float64(gameScreenWidth), float64(gameScreenHeight))),
 		cyclesFrame:    cyclesFrame,
 	}
 
