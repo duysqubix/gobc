@@ -2,6 +2,7 @@ package windows
 
 import (
 	"fmt"
+	"image/color"
 
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
@@ -64,8 +65,16 @@ func (mw *MainGameWindow) Update() error {
 			return nil
 		}
 
-		tileMap := mw.hw.Mb.Memory.TileMap()
-		updatePicture(256, 256, 8, 8, &tileMap, mw.gameMapCanvas)
+		// tileMap := mw.hw.Mb.Memory.TileMap()
+		// updatePicture(256, 256, 8, 8, &tileMap, mw.gameMapCanvas)
+	}
+
+	for y := 0; y < internal.GB_SCREEN_HEIGHT; y++ {
+		for x := 0; x < internal.GB_SCREEN_WIDTH; x++ {
+			col := mw.hw.Mb.Lcd.PreparedData[x][y]
+			rgb := color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
+			mw.gameMapCanvas.Pix[(internal.GB_SCREEN_HEIGHT-1-y)*internal.GB_SCREEN_WIDTH+x] = rgb
+		}
 	}
 
 	return nil
@@ -80,7 +89,13 @@ func (mw *MainGameWindow) Draw() {
 		internalConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(internalConsoleTxt.Orig, 2))
 	}
 
-	drawSprite(mw.Window, mw.gameMapCanvas, 1.5, 0, 0)
+	// drawSprite(mw.Window, mw.gameMapCanvas, 1.5, 0, 0)
+	r, g, b := motherboard.GetPaletteColour(3)
+	bg := color.RGBA{R: r, G: g, B: b, A: 0xFF}
+	mw.Window.Clear(bg)
+
+	spr := pixel.NewSprite(pixel.Picture(mw.gameMapCanvas), pixel.R(0, 0, internal.GB_SCREEN_WIDTH, internal.GB_SCREEN_HEIGHT))
+	spr.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), float64(mw.gameScale)))
 	mw.Window.Update()
 }
 

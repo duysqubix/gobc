@@ -1,8 +1,6 @@
 package motherboard
 
 import (
-	"fmt"
-
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -13,52 +11,6 @@ const (
 	lcdMode2Bounds = 456 - 80
 	lcdMode3Bounds = lcdMode2Bounds - 172
 )
-
-const (
-	// PaletteGreyscale is the default greyscale gameboy colour palette.
-	PaletteGreyscale = byte(iota)
-	// PaletteOriginal is more authentic looking green tinted gameboy
-	// colour palette  as it would have been on the GameBoy
-	PaletteOriginal
-	// PaletteBGB used by default in the BGB emulator.
-	PaletteBGB
-)
-
-// CurrentPalette is the global current DMG palette.
-var CurrentPalette = PaletteBGB
-
-// Palettes is an mapping from colour palettes to their colour values
-// to be used by the emulator.
-var Palettes = [][][]byte{
-	// PaletteGreyscale
-	{
-		{0xFF, 0xFF, 0xFF},
-		{0xCC, 0xCC, 0xCC},
-		{0x77, 0x77, 0x77},
-		{0x00, 0x00, 0x00},
-	},
-	// PaletteOriginal
-	{
-		{0x9B, 0xBC, 0x0F},
-		{0x8B, 0xAC, 0x0F},
-		{0x30, 0x62, 0x30},
-		{0x0F, 0x38, 0x0F},
-	},
-	// PaletteBGB
-	{
-		{0xE0, 0xF8, 0xD0},
-		{0x88, 0xC0, 0x70},
-		{0x34, 0x68, 0x56},
-		{0x08, 0x18, 0x20},
-	},
-}
-
-// GetPaletteColour returns the colour based on the colour index and the currently
-// selected palette.
-func GetPaletteColour(index byte) (uint8, uint8, uint8) {
-	col := Palettes[CurrentPalette][index]
-	return col[0], col[1], col[2]
-}
 
 type LCD struct {
 
@@ -101,20 +53,18 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 	}
 
 	l.scanlineCounter -= cycles
-
 	if l.scanlineCounter <= 0 {
 		l.Mb.Memory.IO[IO_LY-IO_START_ADDR]++ // directly change for optimized performance
-		if l.Mb.GetItem(IO_LY) > 153 {
+		if l.Mb.Memory.IO[IO_LY-IO_START_ADDR] > 153 {
 			l.PreparedData = l.screenData
 			l.screenData = ScreenData{}
 			l.bgPriority = ScreenPriority{}
-			l.Mb.SetItem(IO_LY, 0)
+			l.Mb.Memory.IO[IO_LY-IO_START_ADDR] = 0
 		}
 
-		currentLine := l.Mb.GetItem(IO_LY)
 		l.scanlineCounter += (456 * 1) // change 1 to 2 for double speed
 
-		if currentLine < internal.GB_SCREEN_HEIGHT {
+		if l.Mb.Memory.IO[IO_LY-IO_START_ADDR] == internal.GB_SCREEN_HEIGHT {
 			l.Mb.Cpu.SetInterruptFlag(INTR_VBLANK)
 		}
 	}
@@ -130,16 +80,12 @@ func (l *LCD) setLCDStatus() {
 		l.clearScreen()
 		l.scanlineCounter = 456
 
-		l.Mb.SetItem(IO_LY, 0)
+		l.Mb.Memory.IO[IO_LY-IO_START_ADDR] = 0
 
 		// reset status
-		status &= (1 << STAT_LYCINT) |
-			(1 << STAT_OAMINT) |
-			(1 << STAT_VBLINT) |
-			(1 << STAT_HBLINT) |
-			(1 << STAT_LYC) |
-			(0 << STAT_MODE1) |
-			(0 << STAT_MODE0)
+		status &= 252
+		internal.ResetBit(&status, 0)
+		internal.ResetBit(&status, 1)
 
 		// write status to memory
 		l.Mb.Memory.IO[IO_STAT-IO_START_ADDR] = status
@@ -147,7 +93,7 @@ func (l *LCD) setLCDStatus() {
 
 	l.screenCleared = false
 
-	currentLine := l.Mb.GetItem(IO_LY)
+	currentLine := l.Mb.Memory.IO[IO_LY-IO_START_ADDR]
 	currentMode := status & 0x3
 
 	var mode uint8
@@ -156,17 +102,20 @@ func (l *LCD) setLCDStatus() {
 	switch {
 	case currentLine >= 144:
 		mode = STAT_MODE_VBLANK
-		status |= (0 << STAT_MODE1) | (1 << STAT_MODE0)
+		internal.SetBit(&status, STAT_MODE0)
+		internal.ResetBit(&status, STAT_MODE1)
 		rqstInterrupt = internal.IsBitSet(status, STAT_VBLINT)
 
 	case l.scanlineCounter >= lcdMode2Bounds:
 		mode = STAT_MODE_OAM
-		status |= (1 << STAT_MODE1) | (0 << STAT_MODE0)
+		internal.SetBit(&status, STAT_MODE1)
+		internal.ResetBit(&status, STAT_MODE0)
 		rqstInterrupt = internal.IsBitSet(status, STAT_OAMINT)
 
 	case l.scanlineCounter >= lcdMode3Bounds:
 		mode = STAT_MODE_TRANS
-		status |= (1 << STAT_MODE1) | (1 << STAT_MODE0)
+		internal.SetBit(&status, STAT_MODE1)
+		internal.SetBit(&status, STAT_MODE0)
 		if mode != currentMode {
 			// draw scanline when we start mode 3. In the real gameboy
 			// this would be done through mode 3 by readong OAM and VRAM
@@ -175,7 +124,8 @@ func (l *LCD) setLCDStatus() {
 		}
 	default:
 		mode = STAT_MODE_HBLANK
-		status |= (0 << STAT_MODE1) | (0 << STAT_MODE0)
+		internal.ResetBit(&status, STAT_MODE1)
+		internal.ResetBit(&status, STAT_MODE0)
 		rqstInterrupt = internal.IsBitSet(status, STAT_HBLINT)
 		if mode != currentMode {
 			l.Mb.DoHDMATransfer() // do HDMATransfer when we start mode 0
@@ -187,7 +137,7 @@ func (l *LCD) setLCDStatus() {
 	}
 
 	// check if LYC == LY (coincedence flag)
-	if currentLine == l.Mb.GetItem(IO_LYC) {
+	if currentLine == l.Mb.Memory.IO[IO_LYC-IO_START_ADDR] {
 		internal.SetBit(&status, STAT_LYC)
 		if internal.IsBitSet(status, STAT_LYCINT) {
 			l.Mb.Cpu.SetInterruptFlag(INTR_LCDSTAT)
@@ -197,7 +147,8 @@ func (l *LCD) setLCDStatus() {
 	}
 
 	// write status to memory
-	l.Mb.SetItem(IO_STAT, uint16(status))
+	// l.Mb.SetItem(IO_STAT, uint16(status))
+	l.Mb.Memory.IO[IO_STAT-IO_START_ADDR] = status
 }
 
 func (l *LCD) isLCDEnabled() bool {
@@ -278,7 +229,7 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 	}
 
 	tileRow := uint16(yPos/8) * 32
-	// palette := l.Mb.Memory.IO[IO_BGP-IO_START_ADDR]
+	palette := l.Mb.Memory.IO[IO_BGP-IO_START_ADDR]
 	l.tileScanline = [internal.GB_SCREEN_WIDTH]uint8{}
 
 	for pixel := uint8(0); pixel < internal.GB_SCREEN_WIDTH; pixel++ {
@@ -297,13 +248,12 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		tileLocation := ts.TileData
 
 		if ts.Unsigned {
-			tileNum := int16(l.Mb.Memory.Vram[l.Mb.Memory.ActiveVramBank()][tileAddress-0x8000])
+			tileNum := int16(l.Mb.Memory.Vram[0][tileAddress-0x8000])
 			tileLocation += uint16(tileNum * 16)
 		} else {
-			tileNum := int16(int8(l.Mb.Memory.Vram[l.Mb.Memory.ActiveVramBank()][tileAddress-0x8000]))
+			tileNum := int16(int8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
 			tileLocation = uint16(int32(tileLocation) + int32((tileNum+128)*16))
 		}
-		// bankOffset := uint16(0x8000)
 
 		// Attributes used in CGB mode TODO: check in CGB mode
 		//
@@ -313,16 +263,62 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		//    Bit 6    Vertical Flip              (0=Normal, 1=Mirror vertically)
 		//    Bit 7    BG-to-OAM Priority         (0=Use OAM priority bit, 1=BG Priority)
 		//
-		logger.Infof("tileLocation: %#x, tileAddress: %#x, TileNum: %#x", tileLocation, tileAddress, l.Mb.Memory.Vram[l.Mb.Memory.ActiveVramBank()][tileAddress-0x8000])
 
-		tileAttr := l.Mb.Memory.Vram[l.Mb.Memory.ActiveVramBank()][tileAddress-0x8000]
-		fmt.Println(tileAttr)
+		bank := 0
+		tileAttr := l.Mb.Memory.Vram[1][tileAddress-0x8000]
+		if l.Mb.Cgb && internal.IsBitSet(tileAttr, 3) {
+			bank = 1
+		}
+
+		priority := internal.IsBitSet(tileAttr, 7)
+
+		var line uint8
+		if internal.IsBitSet(tileAttr, 6) {
+			line = (7 - (yPos % 8)) * 2
+		} else {
+			line = (yPos % 8) * 2
+		}
+
+		data1 := l.Mb.Memory.Vram[bank][tileLocation+uint16(line)-0x8000]
+		data2 := l.Mb.Memory.Vram[bank][tileLocation+uint16(line)+1-0x8000]
+
+		if l.Mb.Cgb && internal.IsBitSet(tileAttr, 5) {
+			// horizontal flip
+			xPos -= 7
+		}
+
+		colorBit := uint8(int8((xPos%8)-7) * -1)
+		colorNum := (internal.BitValue(data2, colorBit) << 1) | internal.BitValue(data1, colorBit)
+		l.setTilePixel(pixel, scanline, tileAttr, colorNum, palette, priority)
 
 	}
 }
 
+func (l *LCD) setTilePixel(x, y, tileAttr, colorNum, palette uint8, priority bool) {
+	if l.Mb.Cgb {
+		cgbPalette := tileAttr & 0x7
+		r, g, b := l.Mb.BGPalette.get(cgbPalette, colorNum)
+		l.setPixel(x, y, r, g, b, true)
+		l.bgPriority[x][y] = priority
+	} else {
+		r, g, b := l.Mb.BGPalette.get(palette, colorNum)
+		l.setPixel(x, y, r, g, b, true)
+	}
+
+	l.tileScanline[x] = colorNum
+
+}
+
 func (l *LCD) renderSprites() {
 
+}
+
+func (l *LCD) setPixel(x, y, r, g, b uint8, priority bool) {
+	if (priority && !l.bgPriority[x][y]) || l.tileScanline[x] == 0 {
+		l.screenData[x][y][0] = r
+		l.screenData[x][y][1] = g
+		l.screenData[x][y][2] = b
+	}
 }
 
 func (l *LCD) clearScreen() {

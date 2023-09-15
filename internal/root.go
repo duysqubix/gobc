@@ -72,6 +72,10 @@ func ToggleBit(value *uint8, bit uint8) {
 	*value ^= (1 << bit)
 }
 
+func BitValue(value uint8, bit uint8) uint8 {
+	return (value >> bit) & 1
+}
+
 func IsInStrArray(value string, array []string) bool {
 	for _, v := range array {
 		if v == value {

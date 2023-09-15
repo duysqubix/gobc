@@ -17,18 +17,20 @@ type Breakpoints struct {
 }
 
 type Motherboard struct {
-	Cpu         *CPU                 // CPU
-	Cartridge   *cartridge.Cartridge // Cartridge
-	Memory      *Memory              // Internal RAM
-	BootRom     *BootRom             // Boot ROM
-	Timer       *Timer               // Timer
-	Lcd         *LCD                 // LCD
-	Cgb         bool                 // Color Gameboy
-	CpuFreq     uint32               // CPU frequency
-	Randomize   bool                 // Randomize RAM on startup
-	hdmaActive  bool                 // HDMA active
-	hdmaLength  uint8                // HDMA length
-	doubleSpeed bool                 // Double speed mode
+	Cpu       *CPU                 // CPU
+	Cartridge *cartridge.Cartridge // Cartridge
+	Memory    *Memory              // Internal RAM
+	BootRom   *BootRom             // Boot ROM
+	Timer     *Timer               // Timer
+	Lcd       *LCD                 // LCD
+	Cgb       bool                 // Color Gameboy
+	CpuFreq   uint32               // CPU frequency
+	Randomize bool                 // Randomize RAM on startup
+	BGPalette *cgbPalette          // Background palette
+
+	hdmaActive  bool  // HDMA active
+	hdmaLength  uint8 // HDMA length
+	doubleSpeed bool  // Double speed mode
 
 	// debugging
 	Decouple     bool         // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
@@ -73,15 +75,10 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 		Timer:        NewTimer(),
 		Breakpoints:  bp,
 		PanicOnStuck: params.PanicOnStuck,
+		BGPalette:    NewPalette(),
 	}
 
 	mb.Cgb = mb.Cartridge.CgbModeEnabled() || params.ForceCgb
-
-	// if mb.Cgb {
-	// 	logger.Errorf("CGB mode is not implemented yet")
-	// 	// os.Exit(0)
-	// 	mb.Cgb = false
-	// }
 
 	mb.CpuFreq = internal.DMG_CLOCK_SPEED
 
@@ -471,9 +468,9 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 		}
 
 		/// prints serial output to terminal ///
-		if v == 0x81 && addr == IO_SC {
-			fmt.Printf("%c", m.Memory.IO[IO_SB-IO_START_ADDR])
-		}
+		// if v == 0x81 && addr == IO_SC {
+		// 	fmt.Printf("%c", m.Memory.IO[IO_SB-IO_START_ADDR])
+		// }
 		////////////////////////////////////
 
 	/*
