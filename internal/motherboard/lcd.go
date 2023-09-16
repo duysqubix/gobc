@@ -1,8 +1,6 @@
 package motherboard
 
 import (
-	"fmt"
-
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -10,8 +8,9 @@ type ScreenData [internal.GB_SCREEN_WIDTH][internal.GB_SCREEN_HEIGHT][3]uint8
 type ScreenPriority [internal.GB_SCREEN_WIDTH][internal.GB_SCREEN_HEIGHT]bool
 
 const (
-	lcdMode2Bounds = 456 - 80
-	lcdMode3Bounds = lcdMode2Bounds - 172
+	lcdMode2Bounds       = 456 - 80
+	lcdMode3Bounds       = lcdMode2Bounds - 172
+	spritePriorityOffset = 100
 )
 
 type LCD struct {
@@ -166,7 +165,7 @@ func (l *LCD) drawScanline(scanline uint8) {
 	}
 
 	if internal.IsBitSet(control, LCDC_OBJEN) {
-		l.renderSprites()
+		l.renderSprites(control, int32(scanline))
 	}
 }
 
@@ -248,12 +247,12 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 		//deduce tile id in memory
 		tileLocation := ts.TileData
-
+		var tileNum int16
 		if ts.Unsigned {
-			tileNum := int16(l.Mb.Memory.Vram[0][tileAddress-0x8000])
+			tileNum = int16(l.Mb.Memory.Vram[0][tileAddress-0x8000])
 			tileLocation += uint16(tileNum * 16)
 		} else {
-			tileNum := int16(int8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
+			tileNum = int16(int8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
 			tileLocation = uint16(int32(tileLocation) + int32((tileNum+128)*16))
 		}
 
@@ -287,10 +286,6 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		data1 := l.Mb.Memory.Vram[bank][tileLocation+uint16(line)-0x8000]
 		data2 := l.Mb.Memory.Vram[bank][tileLocation+uint16(line)+1-0x8000]
 
-		if data1 != 0x00 || data2 != 0x00 {
-			fmt.Printf("data1: %#x, data2: %#x, tileLocation: %#x, line: %#x, tileAddress: %#x, tileAttr: %#x, Unsigned: %t, tileNum: %#x\n", data1, data2, tileLocation, line, tileAddress, tileAttr, ts.Unsigned, l.Mb.Memory.Vram[0][tileAddress-0x8000])
-		}
-
 		if l.Mb.Cgb && internal.IsBitSet(tileAttr, 5) {
 			// horizontal flip
 			xPos -= 7
@@ -298,6 +293,18 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 		colorBit := uint8(int8((xPos%8)-7) * -1)
 		colorNum := (internal.BitValue(data2, colorBit) << 1) | internal.BitValue(data1, colorBit)
+
+		// if data1 != 0x00 || data2 != 0x00 {
+		// fmt.Printf("-----------------\n"+
+		// 	"data1: %#x, data2: %#x, tileLocation: %#x, line: %#x, tileAddress: %#x, tileAttr: %#x\n"+
+		// 	"Unsigned: %t, tileNum: %#x, tileData: %#x, yPos: %#x, xPos: %#x, tileCol: %#x\n"+
+		// 	"tileRow: %#x, scrollX: %#x, scrollY: %#x, windowX: %#x, windowY: %#x, pixel: %#x, colorBit: %#x, colorNum: %#x\n",
+		// 	data1, data2, tileLocation, line, tileAddress, tileAttr, ts.Unsigned, tileNum, ts.TileData, yPos, xPos, tileCol,
+		// 	tileRow, scrollX, scrollY, windowX, windowY, pixel, colorBit, colorNum,
+		// )
+		// 	l.setTilePixel(pixel, scanline, tileAttr, colorNum, palette, priority)
+
+		// }
 		l.setTilePixel(pixel, scanline, tileAttr, colorNum, palette, priority)
 
 	}
@@ -307,13 +314,12 @@ func (l *LCD) setTilePixel(x, y, tileAttr, colorNum, palette uint8, priority boo
 	if l.Mb.Cgb {
 		cgbPalette := tileAttr & 0x7
 		r, g, b := l.Mb.BGPalette.get(cgbPalette, colorNum)
-		if r != 0xff || g != 0xff || b != 0xff {
-			fmt.Printf("x: %d, y: %d, r: %d, g: %d, b: %d\n", x, y, r, g, b)
-		}
+		// fmt.Printf("cgbPalette: %#x, colorNum: %#x, r: %#x, g: %#x, b: %#x\n", cgbPalette, colorNum, r, g, b)
 		l.setPixel(x, y, r, g, b, true)
 		l.bgPriority[x][y] = priority
 	} else {
-		r, g, b := l.Mb.BGPalette.get(palette, colorNum)
+		// r, g, b := l.Mb.BGPalette.get(palette, colorNum)
+		r, g, b := l.getColour(palette, colorNum)
 		l.setPixel(x, y, r, g, b, true)
 	}
 
@@ -321,16 +327,127 @@ func (l *LCD) setTilePixel(x, y, tileAttr, colorNum, palette uint8, priority boo
 
 }
 
-func (l *LCD) renderSprites() {
+// Get the RGB colour value for a colour num at an address using the current palette.
+func (l *LCD) getColour(colourNum byte, palette byte) (uint8, uint8, uint8) {
+	hi := colourNum<<1 | 1
+	lo := colourNum << 1
+	index := (internal.BitValue(palette, hi) << 1) | internal.BitValue(palette, lo)
+	col := Palettes[0][index]
+	return col[0], col[1], col[2]
+	// return GetPaletteColour(index)
+}
+
+func (l *LCD) renderSprites(lcdControl uint8, scanline int32) {
+	var ySize int32 = 8
+
+	if internal.IsBitSet(lcdControl, LCDC_OBJSZ) {
+		ySize = 16
+
+	}
+
+	// Load the two palettes which sprites can be drawn in
+
+	var palette1 = l.Mb.Memory.IO[IO_OBP0-IO_START_ADDR]
+	var palette2 = l.Mb.Memory.IO[IO_OBP1-IO_START_ADDR]
+
+	var minx [internal.GB_SCREEN_WIDTH]int32
+	var lineSprites = 0
+	for sprite := uint16(0); sprite < 40; sprite++ {
+		// Load sprite data from memory.
+		index := sprite * 4
+
+		// If this is true the scanline is out of the area we care about
+		yPos := int32(l.Mb.GetItem(uint16(0xFE00+index))) - 16
+		if scanline < yPos || scanline >= (yPos+ySize) {
+			continue
+		}
+
+		// Only 10 sprites are allowed to be displayed on each line
+		if lineSprites >= 10 {
+			break
+		}
+		lineSprites++
+
+		xPos := int32(l.Mb.GetItem(uint16(0xFE00+index+1))) - 8
+		tileLocation := l.Mb.GetItem(uint16(0xFE00 + index + 2))
+		attributes := l.Mb.GetItem(uint16(0xFE00 + index + 3))
+
+		yFlip := internal.IsBitSet(attributes, 6)
+		xFlip := internal.IsBitSet(attributes, 5)
+		priority := !internal.IsBitSet(attributes, 7)
+
+		// Bank the sprite data in is (CGB only)
+		var bank uint16 = 0
+		if l.Mb.Cgb && internal.IsBitSet(attributes, 3) {
+			bank = 1
+		}
+
+		// Set the line to draw based on if the sprite is flipped on the y
+		line := scanline - yPos
+		if yFlip {
+			line = ySize - line - 1
+		}
+
+		// Load the data containing the sprite data for this line
+		dataAddress := (uint16(tileLocation) * 16) + uint16(line*2) + (bank * 0x2000)
+		// data1 := gb.Memory.VRAM[dataAddress]
+		// data2 := gb.Memory.VRAM[dataAddress+1]
+		data1 := l.Mb.Memory.Vram[bank][dataAddress-0x8000]
+		data2 := l.Mb.Memory.Vram[bank][dataAddress+1-0x8000]
+
+		// Draw the line of the sprite
+		for tilePixel := byte(0); tilePixel < 8; tilePixel++ {
+			pixel := int16(xPos) + int16(7-tilePixel)
+			if pixel < 0 || pixel >= internal.GB_SCREEN_WIDTH {
+				continue
+			}
+
+			// Check if the pixel has priority.
+			//  - In DMG this is determined by the sprite with the smallest X coordinate,
+			//    then the first sprite in the OAM.
+			//  - In CGB this is determined by the first sprite appearing in the OAM.
+			// We add a fixed 100 to the xPos so we can use the 0 value as the absence of a sprite.
+			if minx[pixel] != 0 && (l.Mb.Cgb || minx[pixel] <= xPos+spritePriorityOffset) {
+				continue
+			}
+
+			colourBit := tilePixel
+			if xFlip {
+				colourBit = byte(int8(colourBit-7) * -1)
+			}
+
+			// Find the colour value by combining the data bits
+			// colourNum := (bits.Val(data2, colourBit) << 1) | bits.Val(data1, colourBit)
+			colourNum := (internal.BitValue(data2, colourBit) << 1) | internal.BitValue(data1, colourBit)
+
+			// Colour 0 is transparent for sprites
+			if colourNum == 0 {
+				continue
+			}
+
+			if l.Mb.Cgb {
+				cgbPalette := attributes & 0x7
+				red, green, blue := l.Mb.SpritePalette.get(cgbPalette, colourNum)
+				l.setPixel(byte(pixel), byte(scanline), red, green, blue, priority)
+			} else {
+				// Determine the colour palette to use
+				var palette = palette1
+				if internal.IsBitSet(attributes, 4) {
+					palette = palette2
+				}
+				red, green, blue := l.getColour(colourNum, palette)
+				l.setPixel(byte(pixel), byte(scanline), red, green, blue, priority)
+			}
+
+			// Store the xpos of the sprite for this pixel for priority resolution
+			minx[pixel] = xPos + spritePriorityOffset
+		}
+	}
 
 }
 
 func (l *LCD) setPixel(x, y, r, g, b uint8, priority bool) {
 	if (priority && !l.bgPriority[x][y]) || l.tileScanline[x] == 0 {
-		if r != 0xff || g != 0xff || b != 0xff {
-			fmt.Printf("x: %d, y: %d, r: %d, g: %d, b: %d\n", x, y, r, g, b)
-		}
-
 		l.screenData[x][y][0] = r
 		l.screenData[x][y][1] = g
 		l.screenData[x][y][2] = b

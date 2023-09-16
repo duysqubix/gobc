@@ -22,6 +22,7 @@ const (
 
 var (
 	internalCycleCounter int
+	globalCycles         int
 	internalCycleReturn  motherboard.OpCycles
 	internalStatus       bool
 	internalGamePaused   bool = false
@@ -77,6 +78,9 @@ func (mw *MainGameWindow) Update() error {
 		for x := 0; x < internal.GB_SCREEN_WIDTH; x++ {
 			col := mw.hw.Mb.Lcd.PreparedData[x][y]
 			rgb := color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
+			if y == 0 || x == 0 || y == internal.GB_SCREEN_HEIGHT-1 || x == internal.GB_SCREEN_WIDTH-1 {
+				rgb = colornames.Red
+			}
 			mw.gameMapCanvas.Pix[(internal.GB_SCREEN_HEIGHT-1-y)*internal.GB_SCREEN_WIDTH+x] = rgb
 		}
 	}
@@ -86,20 +90,22 @@ func (mw *MainGameWindow) Update() error {
 
 func (mw *MainGameWindow) Draw() {
 	mw.Window.Clear(colornames.Black)
+	internalConsoleTxt.Clear()
 
 	// drawSprite(mw.Window, mw.gameMapCanvas, 1.5, 0, 0)
 	r, g, b := motherboard.GetPaletteColour(3)
 	bg := color.RGBA{R: r, G: g, B: b, A: 0xFF}
 	mw.Window.Clear(bg)
 
-	spr := pixel.NewSprite(pixel.Picture(mw.gameMapCanvas), pixel.R(0, 0, internal.GB_SCREEN_WIDTH, internal.GB_SCREEN_HEIGHT))
+	spr := pixel.NewSprite(mw.gameMapCanvas, pixel.R(0, 0, internal.GB_SCREEN_WIDTH, internal.GB_SCREEN_HEIGHT))
 	spr.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), float64(mw.gameScale)))
 
 	if internalGamePaused {
-		internalConsoleTxt.Clear()
 		fmt.Fprint(internalConsoleTxt, "Game Paused")
 		internalConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(internalConsoleTxt.Orig, 2))
 	}
+	fmt.Fprintf(internalConsoleTxt, "Cycles: %d", globalCycles)
+	internalConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(internalConsoleTxt.Orig, 2))
 
 	mw.Window.Update()
 }
@@ -142,7 +148,7 @@ func (g *GoBoyColor) Reset() {
 }
 
 func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
-	gameScale := 1
+	gameScale := 3
 	gameScreenWidth := internal.GB_SCREEN_WIDTH
 	gameScreenHeight := internal.GB_SCREEN_HEIGHT
 	cyclesFrame := CyclesFrameDMG
@@ -199,7 +205,7 @@ func (g *GoBoyColor) UpdateInternalGameState(every int) bool {
 		if !g.Paused {
 			internalStatus, internalCycleReturn = g.Mb.Tick()
 			internalCycleCounter += int(internalCycleReturn)
-
+			globalCycles += int(internalCycleReturn)
 			if !internalStatus {
 				g.Stopped = true
 				break

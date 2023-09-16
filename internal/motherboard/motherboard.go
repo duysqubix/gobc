@@ -17,16 +17,17 @@ type Breakpoints struct {
 }
 
 type Motherboard struct {
-	Cpu       *CPU                 // CPU
-	Cartridge *cartridge.Cartridge // Cartridge
-	Memory    *Memory              // Internal RAM
-	BootRom   *BootRom             // Boot ROM
-	Timer     *Timer               // Timer
-	Lcd       *LCD                 // LCD
-	Cgb       bool                 // Color Gameboy
-	CpuFreq   uint32               // CPU frequency
-	Randomize bool                 // Randomize RAM on startup
-	BGPalette *cgbPalette          // Background palette
+	Cpu           *CPU                 // CPU
+	Cartridge     *cartridge.Cartridge // Cartridge
+	Memory        *Memory              // Internal RAM
+	BootRom       *BootRom             // Boot ROM
+	Timer         *Timer               // Timer
+	Lcd           *LCD                 // LCD
+	Cgb           bool                 // Color Gameboy
+	CpuFreq       uint32               // CPU frequency
+	Randomize     bool                 // Randomize RAM on startup
+	BGPalette     *cgbPalette          // Background palette
+	SpritePalette *cgbPalette          // Sprite palette
 
 	hdmaActive  bool  // HDMA active
 	hdmaLength  uint8 // HDMA length
@@ -69,13 +70,14 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	}
 
 	mb := &Motherboard{
-		Cartridge:    cart,
-		Randomize:    params.Randomize,
-		Decouple:     params.Decouple,
-		Timer:        NewTimer(),
-		Breakpoints:  bp,
-		PanicOnStuck: params.PanicOnStuck,
-		BGPalette:    NewPalette(),
+		Cartridge:     cart,
+		Randomize:     params.Randomize,
+		Decouple:      params.Decouple,
+		Timer:         NewTimer(),
+		Breakpoints:   bp,
+		PanicOnStuck:  params.PanicOnStuck,
+		BGPalette:     NewPalette(),
+		SpritePalette: NewPalette(),
 	}
 
 	mb.Cgb = mb.Cartridge.CgbModeEnabled() || params.ForceCgb
@@ -109,7 +111,6 @@ func (m *Motherboard) Reset() {
 	m.Memory.Reset()
 	m.Lcd.Reset()
 	m.BootRom.Enable()
-	// m.BootRom.Disable()
 	m.Timer.Reset()
 
 	if !m.BootRomEnabled() {
@@ -282,8 +283,35 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 
 		case 0xFF0F: /* IF */
 			return m.Cpu.Interrupts.IF | 0xE0
+
+		case 0xFF50: /* Disable Boot ROM */
+			return 0xFF
+		case 0xFF68: /* BG Palette Index */
+			if m.Cgb {
+				return m.BGPalette.readIndex()
+			}
+			return 0x00
+
+		case 0xFF69: /* BG Palette Data */
+			if m.Cgb {
+				return m.BGPalette.read()
+			}
+			return 0x00
+
+		case 0xFF6A: /* Sprite Palette Index */
+			if m.Cgb {
+				return m.SpritePalette.readIndex()
+			}
+			return 0x00
+
+		case 0xFF6B: /* Sprite Palette Data */
+			if m.Cgb {
+				return m.SpritePalette.read()
+			}
+			return 0x00
+
 		default:
-			return m.Memory.IO[addr-0xFF00]
+			return m.Memory.IO[addr-IO_START_ADDR]
 		}
 
 	/*
@@ -463,8 +491,33 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 			}
 			return
 
+		case 0xFF68: /* BG Palette Index */
+			if m.Cgb {
+				m.BGPalette.updateIndex(v)
+			}
+			return
+
+		case 0xFF69: /* BG Palette Data */
+			if m.Cgb {
+				m.BGPalette.write(v)
+			}
+
+			return
+
+		case 0xFF6A: /* Sprite Palette Index */
+			if m.Cgb {
+				m.SpritePalette.updateIndex(v)
+			}
+			return
+
+		case 0xFF6B: /* Sprite Palette Data */
+			if m.Cgb {
+				m.SpritePalette.write(v)
+			}
+			return
+
 		default:
-			m.Memory.IO[addr-0xFF00] = v
+			m.Memory.IO[addr-IO_START_ADDR] = v
 		}
 
 		/// prints serial output to terminal ///
