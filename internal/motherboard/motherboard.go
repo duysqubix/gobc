@@ -93,7 +93,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	mb.Lcd = NewLCD(mb)
 	mb.BootRom = NewBootRom(mb.Cgb)
 	mb.BootRom.Enable()
-	// mb.BootRom.Disable()
+	mb.BootRom.Disable()
 
 	if !mb.BootRomEnabled() {
 		logger.Info("Boot ROM not enabled. Jumping to 0x100")
@@ -111,6 +111,7 @@ func (m *Motherboard) Reset() {
 	m.Memory.Reset()
 	m.Lcd.Reset()
 	m.BootRom.Enable()
+	m.BootRom.Disable()
 	m.Timer.Reset()
 
 	if !m.BootRomEnabled() {
@@ -283,6 +284,10 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 
 		case 0xFF0F: /* IF */
 			return m.Cpu.Interrupts.IF | 0xE0
+
+		case 0xFF4D: /* KEY1 */
+			// TODO: implement double speed mode
+			return 0xFF
 
 		case 0xFF50: /* Disable Boot ROM */
 			return 0xFF
@@ -475,6 +480,23 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 			m.Cpu.Interrupts.IF = v
 			return
 
+		case 0xFF41: /* STAT */
+			m.Memory.IO[IO_STAT-IO_START_ADDR] = v | 0x80
+
+		case 0xFF44: /* LY */
+			m.Memory.IO[IO_LY-IO_START_ADDR] = 0
+
+		case 0xFF46: /* DMA */
+			m.doDMATransfer(v)
+
+		case 0xFF4D: /* KEY1 */
+			//TODO: implement double speed mode
+
+		case 0xFF4F: /* VBK */
+			if m.Cgb && !m.hdmaActive {
+				m.Memory.IO[IO_VBK-IO_START_ADDR] = v & 0x01
+			}
+
 		case 0xFF50: /* Disable Boot ROM */
 			if !m.BootRomEnabled() {
 				logger.Warnf("Writing to 0xFF50 when boot ROM is disabled")
@@ -490,6 +512,11 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 				}
 			}
 			return
+
+		case 0xFF55: /* HDMA5 */
+			if m.Cgb {
+				m.doNewDMATransfer(v)
+			}
 
 		case 0xFF68: /* BG Palette Index */
 			if m.Cgb {
@@ -515,6 +542,11 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 				m.SpritePalette.write(v)
 			}
 			return
+
+		case 0xFF70: /* WRAM Bank */
+			if m.Cgb {
+				m.Memory.IO[IO_SVBK-IO_START_ADDR] = v & 0x07
+			}
 
 		default:
 			m.Memory.IO[addr-IO_START_ADDR] = v
@@ -555,30 +587,66 @@ func (m *Motherboard) DoHDMATransfer() {
 	m.performNewDMATransfer(0x10)
 	if m.hdmaLength > 0 {
 		m.hdmaLength--
-		m.SetItem(IO_HDMA5, uint16(m.hdmaLength))
+		m.Memory.IO[IO_HDMA5-IO_START_ADDR] = m.hdmaLength
 	} else {
 		m.hdmaActive = false
-		m.SetItem(IO_HDMA5, 0xFF)
+		m.Memory.IO[IO_HDMA5-IO_START_ADDR] = 0xFF
 	}
 }
 
 func (m *Motherboard) performNewDMATransfer(length uint16) {
 
 	// load the source and destination from RAM
-	src := uint16(m.GetItem(IO_HDMA1))<<8 | uint16(m.GetItem(IO_HDMA2))
-	dst := uint16(m.GetItem(IO_HDMA3))<<8 | uint16(m.GetItem(IO_HDMA4))
-	dst += 0x8000
+	source := (uint16(m.Memory.IO[IO_HDMA1-IO_START_ADDR])<<8 | uint16(m.Memory.IO[IO_HDMA2-IO_START_ADDR])) & 0xFFF0
+	destination := (uint16(m.Memory.IO[IO_HDMA3-IO_START_ADDR])<<8 | uint16(m.Memory.IO[IO_HDMA4-IO_START_ADDR])) & 0x1FF0
+	destination += 0x8000
 
-	// perform the transfer
+	// copy the data
 	for i := uint16(0); i < length; i++ {
-		m.SetItem(dst, uint16(m.GetItem(src)))
-		src++
-		dst++
+		m.SetItem(destination, uint16(m.GetItem(source)))
+		source++
+		destination++
 	}
 
-	// update the source and destination
-	m.SetItem(IO_HDMA1, src>>8)
-	m.SetItem(IO_HDMA2, src&0xFF)
-	m.SetItem(IO_HDMA3, dst>>8)
-	m.SetItem(IO_HDMA4, dst&0xFF)
+	// update the source and destination in RAM
+	m.Memory.IO[IO_HDMA1-IO_START_ADDR] = uint8(source >> 8)
+	m.Memory.IO[IO_HDMA2-IO_START_ADDR] = uint8(source & 0xFF)
+	m.Memory.IO[IO_HDMA3-IO_START_ADDR] = uint8(destination >> 8)
+	m.Memory.IO[IO_HDMA4-IO_START_ADDR] = uint8(destination & 0xF0)
+}
+
+// Perform a DMA transfer.
+func (m *Motherboard) doDMATransfer(value byte) {
+	// TODO: This may need to be done instead of CPU ticks
+	address := uint16(value) << 8 // (data * 100)
+
+	var i uint16
+	for i = 0; i < 0xA0; i++ {
+		// TODO: Check this doesn't prevent
+		m.SetItem(0xFE00+i, uint16(m.GetItem(address+i)))
+	}
+}
+
+// Start a CGB DMA transfer.
+func (m *Motherboard) doNewDMATransfer(value byte) {
+	// if m.hdmaActive && bits.Val(value, 7) == 0 {
+	if m.hdmaActive && !internal.IsBitSet(value, 7) {
+		// Abort a HDMA transfer
+		m.hdmaActive = false
+		m.Memory.Hram[0x55] |= 0x80 // Set bit 7
+		return
+	}
+
+	length := ((uint16(value) & 0x7F) + 1) * 0x10
+
+	// The 7th bit is DMA mode
+	if value>>7 == 0 {
+		// Mode 0, general purpose DMA
+		m.performNewDMATransfer(length)
+		m.Memory.Hram[0x55] = 0xFF
+	} else {
+		// Mode 1, H-Blank DMA
+		m.hdmaLength = byte(value)
+		m.hdmaActive = true
+	}
 }

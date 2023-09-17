@@ -28,7 +28,9 @@ func (o *OpCode) IsIllegal() bool {
 func executeOpcode(opcode OpCode, mb *Motherboard, value uint16) OpCycles {
 	if opcode.IsIllegal() {
 		mb.Cpu.DumpState(os.Stdout)
-		logger.Fatalf("Illegal opcode %#x", opcode)
+		logger.Errorf("Illegal opcode %#x", opcode)
+		mb.Cpu.IsStuck = true
+		return 0
 	}
 	// execute opcode
 	return OPCODES[opcode](mb, value)

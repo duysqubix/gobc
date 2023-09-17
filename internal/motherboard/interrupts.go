@@ -53,76 +53,8 @@ func (c *CPU) ServiceInterrupt(interrupt uint8) {
 	sp := c.Registers.SP
 	pc := c.Registers.PC
 
-	c.Mb.SetItem(sp-1, (pc & 0xff00) >> 8)
-	c.Mb.SetItem(sp-2,  pc & 0xFF)
+	c.Mb.SetItem(sp-1, (pc&0xff00)>>8)
+	c.Mb.SetItem(sp-2, pc&0xFF)
 	c.Registers.SP -= 2
 	c.Registers.PC = interruptAddresses[interrupt]
 }
-
-// func (c *CPU) handleInterrupt(f uint8, addr uint16) bool {
-// 	flag := uint8(1 << f)
-
-// 	if (c.Interrupts.IE&flag) != 0 && (c.Interrupts.IF&flag) != 0 {
-// 		// clear flag
-// 		if c.Halted {
-// 			c.Registers.PC += 1 // Escape HALT on retrun from interrupt
-// 		}
-
-// 		// handle interrupt
-// 		// logger.Warnf("Interrupts Active: %s\n", InterruptFlagDump(c.Interrupts.IF))
-
-// 		if c.Interrupts.Master_Enable {
-// 			// logger.Warnf("Setting Address to %#x\n", addr)
-// 			// logger.Warnf("PRE: IE: %08b, IF: %08b, flag: %08b, addr: %#x\n", c.Interrupts.IE, c.Interrupts.IF, flag, addr)
-// 			logger.Warnf("Interrupts Active: %s\n", InterruptFlagDump(c.Interrupts.IF))
-// 			c.Interrupts.IF &^= flag
-
-// 			sp1 := c.Registers.SP - 1
-// 			pc1 := c.Registers.PC >> 8
-
-// 			sp2 := c.Registers.SP - 2
-// 			pc2 := c.Registers.PC & 0xFF
-// 			c.Mb.SetItem(&sp1, &pc1)
-// 			c.Mb.SetItem(&sp2, &pc2)
-// 			// logger.Warnf("sp1: %#x, pc1: %#x, sp2: %#x, pc2: %#x\n", sp1, pc1, sp2, pc2)
-// 			c.Registers.SP -= 2
-// 			c.Registers.PC = addr
-// 			c.Interrupts.Master_Enable = false
-// 			// logger.Warnf("POST: IE: %08b, IF: %08b, flag: %08b, addr: %#x\n", c.Interrupts.IE, c.Interrupts.IF, flag, addr)
-
-// 		}
-// 		return true
-// 	}
-// 	return false
-// }
-
-// func (c *CPU) CheckForInterrupts() bool {
-// 	intr := c.Interrupts
-
-// 	if intr.Queued {
-// 		return false
-// 	}
-
-// 	if (intr.IF&0b11111)&(intr.IE&0b11111) != 0 {
-// 		switch {
-// 		case c.handleInterrupt(INTR_VBLANK, INTR_VBLANK_ADDR):
-// 			intr.Queued = true
-// 		case c.handleInterrupt(INTR_LCDSTAT, INTR_LCDSTAT_ADDR):
-// 			intr.Queued = true
-// 		case c.handleInterrupt(INTR_TIMER, INTR_TIMER_ADDR):
-// 			intr.Queued = true
-// 		case c.handleInterrupt(INTR_SERIAL, INTR_SERIAL_ADDR):
-// 			intr.Queued = true
-// 		case c.handleInterrupt(INTR_HIGHTOLOW, INTR_HIGHTOLOW_ADDR):
-// 			intr.Queued = true
-// 		default:
-// 			internal.Logger.Error("No interrupt triggered, but it should!")
-// 			intr.Queued = false
-// 		}
-// 		return true
-// 	} else {
-// 		intr.Queued = false
-// 		return false
-// 	}
-
-// }

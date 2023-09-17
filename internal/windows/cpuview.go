@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	cpuScreenWidth  = 400
+	cpuScreenWidth  = 420
 	cpuScreenHeight = 500
 	cpuScale        = 1
 	cpuTrueWidth    = float64(cpuScreenWidth * cpuScale)
@@ -24,13 +24,8 @@ const (
 
 var (
 	cpuDefaultFont *basicfont.Face
-	cpuMaxRows     int
-	cpuBeginAddr   int
-	cpuEndAddr     int
-	cpuAddrOffset  int = 10
 	cpuConsoleTxt  *text.Text
 	cpuTableWriter *tablewriter.Table
-	cpuRambank     int = 0
 )
 
 func init() {
@@ -38,11 +33,6 @@ func init() {
 	// set up font
 	cpuDefaultFont = basicfont.Face7x13
 
-	// cpuMaxRows = int(cpuTrueHeight) / (cpuDefaultFont.Height + 2)
-	cpuMaxRows = 32
-
-	cpuBeginAddr = 0
-	cpuEndAddr = (cpuMaxRows-cpuAddrOffset-1)*0x10 + cpuBeginAddr
 }
 
 type CpuViewWindow struct {
@@ -103,7 +93,7 @@ func (mw *CpuViewWindow) Draw() {
 
 	var data [][]string
 	// print rows from memory
-	for i := 0; i < 6; i++ {
+	for i := 0; i < 7; i++ {
 		switch i {
 		case 0: // AF flags
 			data = append(data, []string{"A", fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.A), fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.F), "F"})
@@ -117,6 +107,8 @@ func (mw *CpuViewWindow) Draw() {
 			data = append(data, []string{"SPH", fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.SP>>8), fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.SP&0xff), "SPL"})
 		case 5: // PC
 			data = append(data, []string{"PCH", fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.PC>>8), fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.PC&0xff), "PCL"})
+		case 6: // IE & IF
+			data = append(data, []string{"IE", fmt.Sprintf("0b%08b", mw.hw.Mb.Cpu.Interrupts.IE), fmt.Sprintf("0b%08b", mw.hw.Mb.Cpu.Interrupts.IF), "IF"})
 		}
 	}
 

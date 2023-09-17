@@ -63,9 +63,10 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 			l.Mb.Memory.IO[IO_LY-IO_START_ADDR] = 0
 		}
 
+		currentLine := l.Mb.Memory.IO[IO_LY-IO_START_ADDR]
 		l.scanlineCounter += (456 * 1) // change 1 to 2 for double speed
 
-		if l.Mb.Memory.IO[IO_LY-IO_START_ADDR] == internal.GB_SCREEN_HEIGHT {
+		if currentLine == internal.GB_SCREEN_HEIGHT {
 			l.Mb.Cpu.SetInterruptFlag(INTR_VBLANK)
 		}
 	}
@@ -74,7 +75,7 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 
 func (l *LCD) setLCDStatus() {
 
-	status := l.Mb.GetItem(IO_STAT)
+	status := l.Mb.Memory.IO[IO_STAT-IO_START_ADDR]
 
 	if !l.isLCDEnabled() {
 		// clear the screen
@@ -90,6 +91,7 @@ func (l *LCD) setLCDStatus() {
 
 		// write status to memory
 		l.Mb.Memory.IO[IO_STAT-IO_START_ADDR] = status
+		return
 	}
 
 	l.screenCleared = false
@@ -109,14 +111,14 @@ func (l *LCD) setLCDStatus() {
 
 	case l.scanlineCounter >= lcdMode2Bounds:
 		mode = STAT_MODE_OAM
-		internal.SetBit(&status, STAT_MODE1)
 		internal.ResetBit(&status, STAT_MODE0)
+		internal.SetBit(&status, STAT_MODE1)
 		rqstInterrupt = internal.IsBitSet(status, STAT_OAMINT)
 
 	case l.scanlineCounter >= lcdMode3Bounds:
 		mode = STAT_MODE_TRANS
-		internal.SetBit(&status, STAT_MODE1)
 		internal.SetBit(&status, STAT_MODE0)
+		internal.SetBit(&status, STAT_MODE1)
 		if mode != currentMode {
 			// draw scanline when we start mode 3. In the real gameboy
 			// this would be done through mode 3 by readong OAM and VRAM
@@ -250,7 +252,7 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		var tileNum int16
 		if ts.Unsigned {
 			tileNum = int16(l.Mb.Memory.Vram[0][tileAddress-0x8000])
-			tileLocation += uint16(tileNum * 16)
+			tileLocation = tileLocation + uint16(tileNum*16)
 		} else {
 			tileNum = int16(int8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
 			tileLocation = uint16(int32(tileLocation) + int32((tileNum+128)*16))
@@ -278,7 +280,7 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 		var line uint8
 		if internal.IsBitSet(tileAttr, 6) {
-			line = (7 - (yPos % 8)) * 2
+			line = ((7 - yPos) % 8) * 2
 		} else {
 			line = (yPos % 8) * 2
 		}
@@ -332,9 +334,9 @@ func (l *LCD) getColour(colourNum byte, palette byte) (uint8, uint8, uint8) {
 	hi := colourNum<<1 | 1
 	lo := colourNum << 1
 	index := (internal.BitValue(palette, hi) << 1) | internal.BitValue(palette, lo)
-	col := Palettes[0][index]
-	return col[0], col[1], col[2]
-	// return GetPaletteColour(index)
+	// col := Palettes[0][index]
+	// return col[0], col[1], col[2]
+	return GetPaletteColour(index)
 }
 
 func (l *LCD) renderSprites(lcdControl uint8, scanline int32) {
