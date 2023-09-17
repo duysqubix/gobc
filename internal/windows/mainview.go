@@ -3,6 +3,7 @@ package windows
 import (
 	"fmt"
 	"image/color"
+	"math"
 
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
@@ -98,7 +99,15 @@ func (mw *MainGameWindow) Draw() {
 	mw.Window.Clear(bg)
 
 	spr := pixel.NewSprite(mw.gameMapCanvas, pixel.R(0, 0, internal.GB_SCREEN_WIDTH, internal.GB_SCREEN_HEIGHT))
-	spr.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), float64(mw.gameScale)))
+	// spr.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), float64(mw.gameScale)))
+	spr.Draw(mw.Window, pixel.IM)
+	xScale := mw.Window.Bounds().W() / 160
+	yScale := mw.Window.Bounds().H() / 144
+	scale := math.Min(yScale, xScale)
+
+	shift := mw.Window.Bounds().Size().Scaled(0.5).Sub(pixel.ZV)
+	cam := pixel.IM.Scaled(pixel.ZV, scale).Moved(shift)
+	mw.Window.SetMatrix(cam)
 
 	if internalGamePaused {
 		fmt.Fprint(internalConsoleTxt, "Game Paused")
@@ -148,7 +157,7 @@ func (g *GoBoyColor) Reset() {
 }
 
 func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
-	gameScale := 3
+	gameScale := 1
 	gameScreenWidth := internal.GB_SCREEN_WIDTH
 	gameScreenHeight := internal.GB_SCREEN_HEIGHT
 	cyclesFrame := CyclesFrameDMG

@@ -57,6 +57,7 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 	if l.scanlineCounter <= 0 {
 		l.Mb.Memory.IO[IO_LY-IO_START_ADDR]++ // directly change for optimized performance
 		if l.Mb.Memory.IO[IO_LY-IO_START_ADDR] > 153 {
+			logger.Debugf("Screen is done rendering")
 			l.PreparedData = l.screenData
 			l.screenData = ScreenData{}
 			l.bgPriority = ScreenPriority{}
