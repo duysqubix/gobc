@@ -15,6 +15,7 @@ type Window interface {
 	Update() error        // returns error if window should be closed
 	SetUp()               // Setup the window
 	Win() *pixelgl.Window // returns the pixelgl window
+	
 }
 
 func parseRangeBreakpoints(breakpoints string) []uint16 {

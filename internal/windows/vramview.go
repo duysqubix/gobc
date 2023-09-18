@@ -1,12 +1,16 @@
 package windows
 
 import (
+	"fmt"
+
 	"github.com/duysqubix/gobc/internal"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
+	"github.com/faiface/pixel/text"
 
 	"golang.org/x/image/colornames"
+	"golang.org/x/image/font/basicfont"
 )
 
 const (
@@ -25,6 +29,13 @@ const (
 	vramTileMapPictureWidth  = 32 * vramTileWidth
 	vramTileMapPictureHeight = 32 * vramTileHeight
 	vramTileMapScale         = 2
+)
+
+var (
+	vramTileAddressingMode uint8 = 0x01 // default 0x8000 mode
+	vramConsoleTxt         *text.Text
+	vramShowHelp           bool = false
+	vramShowGrid           bool = true
 )
 
 func init() {
@@ -70,12 +81,29 @@ func (mw *VramViewWindow) Win() *pixelgl.Window {
 
 func (mw *VramViewWindow) SetUp() {
 	mw.Window.SetBounds(pixel.R(0, 0, vramTrueWidth, vramTrueHeight))
+	vramConsoleTxt = text.New(
+		mw.Window.Bounds().Center(),
+		text.NewAtlas(basicfont.Face7x13, text.ASCII),
+	)
+	vramConsoleTxt.Color = colornames.Red
 }
 
 func (mw *VramViewWindow) Update() error {
 
+	if mw.Window.JustPressed(pixelgl.KeyT) || mw.Window.Repeated(pixelgl.KeyT) {
+		internal.ToggleBit(&vramTileAddressingMode, 0)
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyG) || mw.Window.Repeated(pixelgl.KeyG) {
+		vramShowGrid = !vramShowGrid
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyH) || mw.Window.Repeated(pixelgl.KeyH) {
+		vramShowHelp = !vramShowHelp
+	}
+
 	tileData := mw.hw.Mb.Memory.TileData()
-	tileMap := mw.hw.Mb.Memory.TileMap()
+	tileMap := mw.hw.Mb.Memory.TileMap(vramTileAddressingMode)
 
 	updatePicture(vramTilePictureHeight, vramTilePictureWidth, vramTileHeight, vramTileWidth, &tileData, mw.tileCanvas)
 	updatePicture(vramTileMapPictureHeight, vramTileMapPictureWidth, vramTileHeight, vramTileWidth, &tileMap, mw.tileMapCanvas)
@@ -83,37 +111,52 @@ func (mw *VramViewWindow) Update() error {
 	return nil
 }
 
-func drawSprite(win *pixelgl.Window, canvas *pixel.PictureData, scale float64, YOffset float64, XOffset float64) {
+func drawVramArea(win *pixelgl.Window, canvas *pixel.PictureData, scale float64, YOffset float64, XOffset float64) {
 	spr2 := pixel.NewSprite(canvas, canvas.Bounds())
 
 	spw := (spr2.Frame().W() / 2 * scale) + (XOffset * scale)
 	sph := (spr2.Frame().H() / 2 * scale) + (YOffset * scale)
 
 	spr2.Draw(win, pixel.IM.Scaled(pixel.ZV, scale).Moved(pixel.V(spw, sph)))
-}
 
-func (mw *VramViewWindow) drawBorder() *imdraw.IMDraw {
-	imd := imdraw.New(nil)
-	imd.Color = pixel.RGB(1, 0, 0)
+	if vramShowGrid {
+		// create grid for selected canvas by tile height and width
+		imd := imdraw.New(nil)
+		imd.Color = pixel.RGB(1, 0, 0)
+		// Draw vertical lines
+		for x := 0.0; x <= spr2.Frame().W()*scale; x += 8.0 * scale {
+			imd.Push(pixel.V(x+spw-spr2.Frame().W()/2*scale, sph-spr2.Frame().H()/2*scale))
+			imd.Push(pixel.V(x+spw-spr2.Frame().W()/2*scale, sph+spr2.Frame().H()/2*scale))
+			imd.Line(1)
+		}
 
-	x1 := 0.0
-	y1 := (mw.tileMapCanvas.Rect.H() * vramTileMapScale) - (vramTileMapScale * internal.GB_SCREEN_HEIGHT)
+		// Draw horizontal lines
+		for y := 0.0; y <= spr2.Frame().H()*scale; y += 8.0 * scale {
+			imd.Push(pixel.V(spw-spr2.Frame().W()/2*scale, y+sph-spr2.Frame().H()/2*scale))
+			imd.Push(pixel.V(spw+spr2.Frame().W()/2*scale, y+sph-spr2.Frame().H()/2*scale))
+			imd.Line(1)
+		}
 
-	x2 := float64(vramTileMapScale) * float64(internal.GB_SCREEN_WIDTH)
-	y2 := (mw.tileMapCanvas.Rect.H() * vramTileMapScale)
-
-	imd.Push(pixel.V(x1, y1), pixel.V(x2, y2))
-	imd.Rectangle(1)
-	return imd
+		imd.Draw(win)
+	}
 }
 
 func (mw *VramViewWindow) Draw() {
 	mw.Window.Clear(colornames.Black)
 
+	drawVramArea(mw.Window, mw.tileMapCanvas, vramTileMapScale, 0, 0)
+	drawVramArea(mw.Window, mw.tileCanvas, vramTileScale, (mw.tileCanvas.Rect.H()*vramTileMapScale)+100, 0)
 
-	drawSprite(mw.Window, mw.tileMapCanvas, vramTileMapScale, 0, 0)
-	drawSprite(mw.Window, mw.tileCanvas, vramTileScale, (mw.tileCanvas.Rect.H()*vramTileMapScale)+100, 0)
-	mw.drawBorder().Draw(mw.Window)
+	if vramShowHelp {
+		// TODO: not displaying...
+		vramConsoleTxt.Clear()
+		fmt.Fprintf(vramConsoleTxt, "VRAM View Help\n")
+		fmt.Fprintf(vramConsoleTxt, "T: Toggle Tile Addressing Mode\n")
+		fmt.Fprintf(vramConsoleTxt, "G: Toggle Grid\n")
+		fmt.Fprintf(vramConsoleTxt, "H: Show this menu\n")
+		vramConsoleTxt.Draw(mw.Window, pixel.IM.Moved(vramConsoleTxt.Orig).Scaled(vramConsoleTxt.Orig, 1.25))
+
+	}
 	mw.Window.Update()
 
 }

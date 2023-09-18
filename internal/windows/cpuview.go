@@ -15,7 +15,7 @@ import (
 
 const (
 	cpuScreenWidth  = 420
-	cpuScreenHeight = 500
+	cpuScreenHeight = 600
 	cpuScale        = 1
 	cpuTrueWidth    = float64(cpuScreenWidth * cpuScale)
 	cpuTrueHeight   = float64(cpuScreenHeight * cpuScale)
@@ -86,37 +86,59 @@ func (mw *CpuViewWindow) Update() error {
 	return nil
 }
 
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 func (mw *CpuViewWindow) Draw() {
 	cpuConsoleTxt.Clear()
 	mw.Window.Clear(colornames.Black)
-	cpuTableWriter.ClearRows()
+	// cpuTableWriter.ClearRows()
 
-	var data [][]string
-	// print rows from memory
-	for i := 0; i < 7; i++ {
-		switch i {
-		case 0: // AF flags
-			data = append(data, []string{"A", fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.A), fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.F), "F"})
-		case 1: // BC
-			data = append(data, []string{"B", fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.B), fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.C), "C"})
-		case 2: // DE
-			data = append(data, []string{"D", fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.D), fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.E), "E"})
-		case 3: // HL
-			data = append(data, []string{"H", fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.H), fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.L), "L"})
-		case 4: // SP
-			data = append(data, []string{"SPH", fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.SP>>8), fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.SP&0xff), "SPL"})
-		case 5: // PC
-			data = append(data, []string{"PCH", fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.PC>>8), fmt.Sprintf("%#x", mw.hw.Mb.Cpu.Registers.PC&0xff), "PCL"})
-		case 6: // IE & IF
-			data = append(data, []string{"IE", fmt.Sprintf("0b%08b", mw.hw.Mb.Cpu.Interrupts.IE), fmt.Sprintf("0b%08b", mw.hw.Mb.Cpu.Interrupts.IF), "IF"})
-		}
-	}
+	template := `
+-------------------------
+|     Z = %1d  | N = %1d    |
+|     H = %1d  | C = %1d    |
+-------------------------
+| A = $%02x    | F = $%02x  |
+| B = $%02x    | C = $%02x  |
+| D = $%02x    | E = $%02x  |
+| H = $%02x    | L = $%02x  |
+-------------------------
+|      SP = $%04x       |
+|      PC = $%04x       |
+-------------------------
+| IME=%1d    | HALT=%1d     |
+-------------------------
+| DOUBLE SPEED = %3s    |
+-------------------------
+| BOOTROM = %3s         |
+-------------------------
 
-	for _, d := range data {
-		// fmt.Println(d)
-		cpuTableWriter.Append(d)
-	}
-	cpuTableWriter.Render()
+`
+	fmt.Fprintf(cpuConsoleTxt, template,
+		internal.BitValue(mw.hw.Mb.Cpu.Registers.F, motherboard.FLAGZ),
+		internal.BitValue(mw.hw.Mb.Cpu.Registers.F, motherboard.FLAGN),
+		internal.BitValue(mw.hw.Mb.Cpu.Registers.F, motherboard.FLAGH),
+		internal.BitValue(mw.hw.Mb.Cpu.Registers.F, motherboard.FLAGC),
+		mw.hw.Mb.Cpu.Registers.A,
+		mw.hw.Mb.Cpu.Registers.F,
+		mw.hw.Mb.Cpu.Registers.B,
+		mw.hw.Mb.Cpu.Registers.C,
+		mw.hw.Mb.Cpu.Registers.D,
+		mw.hw.Mb.Cpu.Registers.E,
+		mw.hw.Mb.Cpu.Registers.H,
+		mw.hw.Mb.Cpu.Registers.L,
+		mw.hw.Mb.Cpu.Registers.SP,
+		mw.hw.Mb.Cpu.Registers.PC,
+		boolToInt(mw.hw.Mb.Cpu.Interrupts.InterruptsOn),
+		boolToInt(mw.hw.Mb.Cpu.Halted),
+		"N/A",
+		"N/A",
+	)
 
 	cntr := mw.hw.Mb.Cpu.PcHist.Len() - 1
 	for i := mw.hw.Mb.Cpu.PcHist.Back(); i != nil; i = i.Prev() {

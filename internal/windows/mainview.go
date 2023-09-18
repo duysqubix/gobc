@@ -3,7 +3,6 @@ package windows
 import (
 	"fmt"
 	"image/color"
-	"math"
 
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
@@ -24,6 +23,7 @@ const (
 var (
 	internalCycleCounter int
 	globalCycles         int
+	globalFrames         int
 	internalCycleReturn  motherboard.OpCycles
 	internalStatus       bool
 	internalGamePaused   bool = false
@@ -49,7 +49,9 @@ func (mw *MainGameWindow) SetUp() {
 // this will get called every frame
 // every frame must be called 1 / GB_CLOCK_HZ times in order to run the emulator at the correct speed
 func (mw *MainGameWindow) Update() error {
-
+	if !internalGamePaused {
+		globalFrames++
+	}
 	if mw.Window.JustPressed(pixelgl.KeyR) || mw.Window.Repeated(pixelgl.KeyR) {
 		mw.hw.Reset()
 	}
@@ -57,13 +59,18 @@ func (mw *MainGameWindow) Update() error {
 	if mw.Window.JustPressed(pixelgl.KeySpace) || mw.Window.Repeated(pixelgl.KeySpace) {
 		internalGamePaused = !internalGamePaused
 
-		if internalGamePaused {
-			fmt.Printf("%#v", mw.hw.Mb.Lcd.PreparedData)
-		}
+		// if internalGamePaused {
+		// 	fmt.Printf("%#v", mw.hw.Mb.Lcd.PreparedData)
+		// }
 	}
 
 	if (mw.Window.JustPressed(pixelgl.KeyN) || mw.Window.Repeated(pixelgl.KeyN)) && internalGamePaused {
 		mw.hw.UpdateInternalGameState(1) // update every tick
+	}
+
+	if (mw.Window.JustPressed(pixelgl.KeyF) || mw.Window.Repeated(pixelgl.KeyF)) && internalGamePaused {
+		mw.hw.UpdateInternalGameState(mw.cyclesFrame) // update every tick
+		globalFrames++
 	}
 
 	if !internalGamePaused {
@@ -99,21 +106,20 @@ func (mw *MainGameWindow) Draw() {
 	mw.Window.Clear(bg)
 
 	spr := pixel.NewSprite(mw.gameMapCanvas, pixel.R(0, 0, internal.GB_SCREEN_WIDTH, internal.GB_SCREEN_HEIGHT))
-	// spr.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), float64(mw.gameScale)))
-	spr.Draw(mw.Window, pixel.IM)
-	xScale := mw.Window.Bounds().W() / 160
-	yScale := mw.Window.Bounds().H() / 144
-	scale := math.Min(yScale, xScale)
+	spr.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), float64(mw.gameScale)))
+	// spr.Draw(mw.Window, pixel.IM)
+	// xScale := mw.Window.Bounds().W() / 160
+	// yScale := mw.Window.Bounds().H() / 144
+	// scale := math.Min(yScale, xScale)
 
-	shift := mw.Window.Bounds().Size().Scaled(0.5).Sub(pixel.ZV)
-	cam := pixel.IM.Scaled(pixel.ZV, scale).Moved(shift)
-	mw.Window.SetMatrix(cam)
+	// shift := mw.Window.Bounds().Size().Scaled(0.5).Sub(pixel.ZV)
+	// cam := pixel.IM.Scaled(pixel.ZV, scale).Moved(shift)
+	// mw.Window.SetMatrix(cam)
 
 	if internalGamePaused {
 		fmt.Fprint(internalConsoleTxt, "Game Paused")
-		internalConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(internalConsoleTxt.Orig, 2))
 	}
-	fmt.Fprintf(internalConsoleTxt, "Cycles: %d", globalCycles)
+	fmt.Fprintf(internalConsoleTxt, "\nCycles: %d\nTotal Frames: %d\n", globalCycles, globalFrames)
 	internalConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(internalConsoleTxt.Orig, 2))
 
 	mw.Window.Update()
@@ -157,7 +163,7 @@ func (g *GoBoyColor) Reset() {
 }
 
 func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
-	gameScale := 1
+	gameScale := 3
 	gameScreenWidth := internal.GB_SCREEN_WIDTH
 	gameScreenHeight := internal.GB_SCREEN_HEIGHT
 	cyclesFrame := CyclesFrameDMG
