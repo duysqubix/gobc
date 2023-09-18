@@ -216,10 +216,10 @@ type tileSettings struct {
 }
 
 func (l *LCD) getTileSettings(lcdControl uint8, windowY uint8) tileSettings {
-	tileData := uint16(0x8800)
-	var usingWindow bool
-	var bgMemory uint16
-	var unsigned bool
+	var usingWindow bool = false
+	var tileData uint16 = uint16(0x8800)
+	var bgMemory uint16 = uint16(0x9800)
+	var unsigned bool = false
 
 	if internal.IsBitSet(lcdControl, LCDC_WINEN) {
 		// is current scanline we are draing within the window?
@@ -239,7 +239,6 @@ func (l *LCD) getTileSettings(lcdControl uint8, windowY uint8) tileSettings {
 	if usingWindow {
 		testBit = 6
 	}
-	bgMemory = uint16(0x9800)
 
 	if internal.IsBitSet(lcdControl, testBit) {
 		bgMemory = 0x9C00
@@ -336,13 +335,13 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		colorNum := (internal.BitValue(data2, colorBit) << 1) | internal.BitValue(data1, colorBit)
 
 		// if data1 != 0x00 || data2 != 0x00 {
-		// fmt.Printf("-----------------\n"+
-		// 	"data1: %#x, data2: %#x, tileLocation: %#x, line: %#x, tileAddress: %#x, tileAttr: %#x\n"+
-		// 	"Unsigned: %t, tileNum: %#x, tileData: %#x, yPos: %#x, xPos: %#x, tileCol: %#x\n"+
-		// 	"tileRow: %#x, scrollX: %#x, scrollY: %#x, windowX: %#x, windowY: %#x, pixel: %#x, colorBit: %#x, colorNum: %#x\n",
-		// 	data1, data2, tileLocation, line, tileAddress, tileAttr, ts.Unsigned, tileNum, ts.TileData, yPos, xPos, tileCol,
-		// 	tileRow, scrollX, scrollY, windowX, windowY, pixel, colorBit, colorNum,
-		// )
+		// 	fmt.Printf("-----------------\n"+
+		// 		"data1: %#x, data2: %#x, tileLocation: %#x, line: %#x, tileAddress: %#x, tileAttr: %#x\n"+
+		// 		"Unsigned: %t, tileNum: %#x, tileData: %#x, yPos: %#x, xPos: %#x, tileCol: %#x\n"+
+		// 		"tileRow: %#x, scrollX: %#x, scrollY: %#x, windowX: %#x, windowY: %#x, pixel: %#x, colorBit: %#x, colorNum: %#x\n",
+		// 		data1, data2, tileLocation, line, tileAddress, tileAttr, ts.Unsigned, tileNum, ts.TileData, yPos, xPos, tileCol,
+		// 		tileRow, scrollX, scrollY, windowX, windowY, pixel, colorBit, colorNum,
+		// 	)
 		// 	l.setTilePixel(pixel, scanline, tileAttr, colorNum, palette, priority)
 
 		// }

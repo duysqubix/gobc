@@ -153,8 +153,9 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 		cycles = m.Cpu.Tick()
 	}
 
-	m.Lcd.Tick(cycles)
 	m.Cpu.Mb.Timer.Tick(cycles, m.Cpu)
+	m.Lcd.Tick(cycles)
+
 	cycles += m.Cpu.handleInterrupts()
 
 	return true, cycles

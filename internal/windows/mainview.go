@@ -3,6 +3,7 @@ package windows
 import (
 	"fmt"
 	"image/color"
+	"math"
 
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
@@ -22,13 +23,16 @@ const (
 )
 
 var (
-	internalCycleCounter int
-	globalCycles         int
-	globalFrames         int
-	internalCycleReturn  motherboard.OpCycles
-	internalStatus       bool
-	internalGamePaused   bool = false
-	internalConsoleTxt   *text.Text
+	internalCycleCounter       int
+	globalCycles               int
+	globalFrames               int
+	internalCycleReturn        motherboard.OpCycles
+	internalStatus             bool
+	internalGamePaused         bool = false
+	internalConsoleTxt         *text.Text
+	internalShowGrid           bool = false
+	internalDebugCyclePerFrame int  = 1
+	internalDebugCycleScaler   int  = 1
 )
 
 type MainGameWindow struct {
@@ -66,13 +70,30 @@ func (mw *MainGameWindow) Update() error {
 	}
 
 	if (mw.Window.JustPressed(pixelgl.KeyN) || mw.Window.Repeated(pixelgl.KeyN)) && internalGamePaused {
-		mw.hw.UpdateInternalGameState(1) // update every tick
+		mw.hw.UpdateInternalGameState(internalDebugCyclePerFrame) // update every tick
+	}
+
+	if (mw.Window.JustPressed(pixelgl.KeyUp) || mw.Window.Repeated(pixelgl.KeyUp)) && internalGamePaused {
+		internalDebugCycleScaler++
+		internalDebugCyclePerFrame = int(math.Pow10(internalDebugCycleScaler))
+	}
+
+	if (mw.Window.JustPressed(pixelgl.KeyDown) || mw.Window.Repeated(pixelgl.KeyDown)) && internalGamePaused {
+		internalDebugCycleScaler--
+		if internalDebugCycleScaler < 0 {
+			internalDebugCycleScaler = 0
+		}
+		internalDebugCyclePerFrame = int(math.Pow10(internalDebugCycleScaler))
 	}
 
 	if (mw.Window.JustPressed(pixelgl.KeyF) || mw.Window.Repeated(pixelgl.KeyF)) && internalGamePaused {
 		mw.hw.UpdateInternalGameState(mw.cyclesFrame) // update every tick
 		globalFrames++
 		mw.hw.Mb.Lcd.PrintPreparedData()
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyF1) || mw.Window.Repeated(pixelgl.KeyF1) {
+		internalShowGrid = !internalShowGrid
 	}
 
 	if !internalGamePaused {
@@ -109,7 +130,8 @@ func (mw *MainGameWindow) Draw() {
 
 	spr := pixel.NewSprite(mw.gameMapCanvas, pixel.R(0, 0, internal.GB_SCREEN_WIDTH, internal.GB_SCREEN_HEIGHT))
 	spr.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), float64(mw.gameScale)))
-	{
+
+	if internalShowGrid {
 		gameScale := float64(mw.gameScale)
 		spw := (spr.Frame().W() / 2 * gameScale) + (0 * gameScale)
 		sph := (spr.Frame().H() / 2 * gameScale) + (0 * gameScale)
@@ -135,7 +157,7 @@ func (mw *MainGameWindow) Draw() {
 	}
 
 	if internalGamePaused {
-		fmt.Fprint(internalConsoleTxt, "Game Paused")
+		fmt.Fprintf(internalConsoleTxt, "Game Paused\nN=%d\nF=%d\n", internalDebugCyclePerFrame, internalDebugCycleScaler)
 	}
 	fmt.Fprintf(internalConsoleTxt, "\nCycles: %d\nTotal Frames: %d\n", globalCycles, globalFrames)
 	internalConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(internalConsoleTxt.Orig, 2))
