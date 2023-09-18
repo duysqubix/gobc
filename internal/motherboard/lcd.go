@@ -82,6 +82,8 @@ func (l *LCD) PrintPreparedData() {
 	logger.Infof("%s", msg)
 }
 
+var frameCycles int = 0
+
 func (l *LCD) updateGraphics(cycles OpCycles) {
 	l.setLCDStatus()
 
@@ -90,14 +92,16 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 	}
 
 	l.scanlineCounter -= cycles
+	frameCycles += int(cycles)
 	if l.scanlineCounter <= 0 {
 		l.Mb.Memory.IO[IO_LY-IO_START_ADDR]++ // directly change for optimized performance
+		// logger.Debugf("LY: %#x", l.Mb.Memory.IO[IO_LY-IO_START_ADDR])
 		if l.Mb.Memory.IO[IO_LY-IO_START_ADDR] > 153 {
-			// logger.Debugf("Screen is done rendering")
 			l.PreparedData = l.screenData
 			l.screenData = ScreenData{}
 			l.bgPriority = ScreenPriority{}
 			l.Mb.Memory.IO[IO_LY-IO_START_ADDR] = 0
+			frameCycles = 0
 		}
 
 		currentLine := l.Mb.Memory.IO[IO_LY-IO_START_ADDR]
@@ -203,9 +207,9 @@ func (l *LCD) drawScanline(scanline uint8) {
 		l.renderTiles(control, scanline)
 	}
 
-	if internal.IsBitSet(control, LCDC_OBJEN) {
-		l.renderSprites(control, int32(scanline))
-	}
+	// if internal.IsBitSet(control, LCDC_OBJEN) {
+	// 	l.renderSprites(control, int32(scanline))
+	// }
 }
 
 type tileSettings struct {
