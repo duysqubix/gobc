@@ -3,8 +3,6 @@ package motherboard
 import (
 	"io"
 	"math/rand"
-
-	"github.com/duysqubix/gobc/internal"
 )
 
 type Tile [16]uint8
@@ -131,28 +129,28 @@ func (r *Memory) TileData() []uint8 {
 	return r.Vram[r.ActiveVramBank()][:0x17ff]
 }
 
-// TileMap returns a 256x256 array of tiles
-func (r *Memory) TileMap() []uint8 {
-	tileMap := r.Vram[r.ActiveVramBank()][0x1800:]
-	var tiles [256 * 256]uint8
+// TileMap returns a
+func (r *Memory) TileMap(addressingMode uint8) []uint8 {
+	// tileMap := r.Vram[0][0x1800:]
+	var tiles [131072]uint8 // 2, 32x32 tile maps
 	var tileAddrStart int
-	var Mode8000 bool = internal.IsBitSet(r.IO[IO_LCDC-IO_START_ADDR], 4)
-
+	// var Mode8000 bool = internal.IsBitSet(r.IO[IO_LCDC-IO_START_ADDR], LCDC_BGMAP)
 	tileCntr := 0
-	for tileIndex := 0; tileIndex < len(tileMap); tileIndex++ {
-		var tileOffset uint8 = tileMap[tileIndex]
-		if !Mode8000 {
+
+	for tileIndex := 0; tileIndex < (0xA000 - 0x9800); tileIndex++ {
+		// starting with 0x9800 tile
+		var tileOffset uint8 = r.Vram[0][0x1800+tileIndex]
+		if addressingMode == 0 {
 			// turn indexValue into a signed int
 			tileAddrStart = 0x1000 + int(int8(tileOffset))*16
 		} else {
 			tileAddrStart = 0x0000 + (int(uint8(tileOffset)) * 16)
 		}
-		// fmt.Printf("tileAddrStart: %#x\n", tileAddrStart+0x8000)
+		// now we have the tile address, we can copy the tile data into the tiles array
 		for i := 0; i < 16; i++ {
-			tiles[tileCntr] = r.Vram[r.ActiveVramBank()][tileAddrStart+i]
+			tiles[tileCntr] = r.Vram[0][tileAddrStart+i]
 			tileCntr++
 		}
-
 	}
 
 	return tiles[:]

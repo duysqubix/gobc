@@ -171,6 +171,17 @@ func MemoryMapName(addr uint16) string {
 	}
 }
 
+var LCDCBitNames = map[uint8]string{
+	LCDC_ENABLE: "LCD ENABLE",
+	LCDC_WINMAP: "WIN MAP",
+	LCDC_WINEN:  "WIN ENABLE",
+	LCDC_BGMAP:  "BG MAP",
+	LCDC_BGWIN:  "BG WIN",
+	LCDC_OBJSZ:  "OBJ SIZE",
+	LCDC_OBJEN:  "OBJ ENABLE",
+	LCDC_BGEN:   "BG ENABLE",
+}
+
 func InterruptFlagDump(v uint8) string {
 	var msg string = ""
 

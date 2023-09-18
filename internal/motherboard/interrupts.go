@@ -1,7 +1,7 @@
 package motherboard
 
 import (
-	"github.com/duysqubix/gobc/internal"
+	"fmt"
 )
 
 var interruptAddresses = map[byte]uint16{
@@ -13,7 +13,6 @@ var interruptAddresses = map[byte]uint16{
 }
 
 type Interrupts struct {
-	// Master_Enable bool  // Master interrupt enable
 
 	InterruptsEnabling bool  // Interrupts are being enabled
 	InterruptsOn       bool  // Interrupts are on
@@ -22,15 +21,55 @@ type Interrupts struct {
 
 }
 
+func (i *Interrupts) ReportOn(interrupt uint8) []string {
+
+	validInterrupts := i.CheckValidInterrupts()
+	var interruptOn string = "ON"
+	switch interrupt {
+	case 0:
+		if validInterrupts&0x01 == 0 {
+			interruptOn = "OFF"
+		}
+
+		return []string{"VBLNK", interruptOn, fmt.Sprintf("IF: %v", (i.IF&0x01)>>0), fmt.Sprintf("IE: %v", (i.IE&0x01)>>0)}
+
+	case 1:
+		if validInterrupts&0x02 == 0 {
+			interruptOn = "OFF"
+		}
+		return []string{"LCDST", interruptOn, fmt.Sprintf("IF: %v", (i.IF&0x02)>>1), fmt.Sprintf("IE: %v", (i.IE&0x02)>>1)}
+
+	case 2:
+		if validInterrupts&0x04 == 0 {
+			interruptOn = "OFF"
+		}
+		return []string{"TIMER", interruptOn, fmt.Sprintf("IF: %v", (i.IF&0x04)>>2), fmt.Sprintf("IE: %v", (i.IE&0x04)>>2)}
+
+	case 3:
+		if validInterrupts&0x08 == 0 {
+			interruptOn = "OFF"
+		}
+		return []string{"SERIA", interruptOn, fmt.Sprintf("IF: %v", (i.IF&0x08)>>3), fmt.Sprintf("IE: %v", (i.IE&0x08)>>3)}
+
+	case 4:
+		if validInterrupts&0x10 == 0 {
+			interruptOn = "OFF"
+		}
+		return []string{"HILO", interruptOn, fmt.Sprintf("IF: %v", (i.IF&0x10)>>4), fmt.Sprintf("IE: %v", (i.IE&0x10)>>4)}
+
+	}
+	return []string{"", "", "", ""}
+}
+
 func (i *Interrupts) CheckValidInterrupts() uint8 {
 	valid_interrupts := i.IE & i.IF
 
 	// Find flags that are set in IF but not enabled in IE
-	disabled_interrupts := i.IF &^ i.IE
+	// disabled_interrupts := i.IF &^ i.IE
 
-	if disabled_interrupts != 0 {
-		internal.Logger.Warningf("Warning: Interrupt flags are set but not enabled. IE: %08b, IF: %08b", i.IE, i.IF)
-	}
+	// if disabled_interrupts != 0 {
+	// 	internal.Logger.Warningf("Warning: Interrupt flags are set but not enabled. IE: %08b, IF: %08b", i.IE, i.IF)
+	// }
 
 	return valid_interrupts
 }

@@ -1016,7 +1016,7 @@ var OPCODES = OpCodeMap{
 
 	// HALT - Power down CPU until an interrupt occurs (118)
 	0x76: func(mb *Motherboard, value uint16) OpCycles {
-
+		// logger.Debug("HALT - Power down CPU until an interrupt occurs (118)")
 		mb.Cpu.Halted = true
 		return 4
 	},
