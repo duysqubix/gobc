@@ -57,8 +57,9 @@ func gameLoopGUI() {
 		wins = append(wins,
 			windows.NewVramViewWindow(g),
 			windows.NewMemoryViewWindow(g),
-			windows.NewCartViewWindow(g),
+			// windows.NewCartViewWindow(g),
 			windows.NewCpuViewWindow(g),
+			windows.NewIoViewWindow(g),
 		)
 	}
 
