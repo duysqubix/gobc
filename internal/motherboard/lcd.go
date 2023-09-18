@@ -57,6 +57,31 @@ func (l *LCD) ReportOnLCDC(bit uint8) []string {
 	}
 }
 
+func (l *LCD) PrintPreparedData() {
+	var msg string = "\n"
+	for y := 0; y < internal.GB_SCREEN_HEIGHT; y++ {
+		for x := 0; x < internal.GB_SCREEN_WIDTH; x++ {
+			r := l.PreparedData[x][y][0]
+			g := l.PreparedData[x][y][1]
+			b := l.PreparedData[x][y][2]
+			rgb := int(r) + int(g) + int(b)
+
+			switch {
+			case rgb == 0: // white
+				msg += "-"
+			case rgb == 765: // black
+				msg += "-"
+			default:
+				msg += "+"
+			}
+
+		}
+		msg += "\n"
+	}
+
+	logger.Infof("%s", msg)
+}
+
 func (l *LCD) updateGraphics(cycles OpCycles) {
 	l.setLCDStatus()
 
@@ -283,6 +308,7 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		// if tileAddress >= 0x8000 {
 		// 	fmt.Printf("tileAddress: %#x, VRAM Bank Flag: %08b\n", tileAddress, l.Mb.Memory.IO[IO_VBK-IO_START_ADDR])
 		// }
+
 		tileAttr := l.Mb.Memory.Vram[1][tileAddress-0x8000]
 		if l.Mb.Cgb && internal.IsBitSet(tileAttr, 3) {
 			bank = 1
@@ -291,7 +317,8 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		priority := internal.IsBitSet(tileAttr, 7)
 
 		var line uint8
-		if internal.IsBitSet(tileAttr, 6) {
+		if l.Mb.Cgb && internal.IsBitSet(tileAttr, 6) {
+			// vertical flip
 			line = ((7 - yPos) % 8) * 2
 		} else {
 			line = (yPos % 8) * 2
@@ -328,17 +355,23 @@ func (l *LCD) setTilePixel(x, y, tileAttr, colorNum, palette uint8, priority boo
 	if l.Mb.Cgb {
 		cgbPalette := tileAttr & 0x7
 		r, g, b := l.Mb.BGPalette.get(cgbPalette, colorNum)
-		// fmt.Printf("cgbPalette: %#x, colorNum: %#x, r: %#x, g: %#x, b: %#x\n", cgbPalette, colorNum, r, g, b)
 		l.setPixel(x, y, r, g, b, true)
 		l.bgPriority[x][y] = priority
 	} else {
-		// r, g, b := l.Mb.BGPalette.get(palette, colorNum)
-		r, g, b := l.getColour(palette, colorNum)
+		r, g, b := l.getColour(colorNum, palette)
 		l.setPixel(x, y, r, g, b, true)
 	}
 
 	l.tileScanline[x] = colorNum
 
+}
+
+func (l *LCD) setPixel(x, y, r, g, b uint8, priority bool) {
+	if (priority && !l.bgPriority[x][y]) || l.tileScanline[x] == 0 {
+		l.screenData[x][y][0] = r
+		l.screenData[x][y][1] = g
+		l.screenData[x][y][2] = b
+	}
 }
 
 // Get the RGB colour value for a colour num at an address using the current palette.
@@ -348,7 +381,9 @@ func (l *LCD) getColour(colourNum byte, palette byte) (uint8, uint8, uint8) {
 	index := (internal.BitValue(palette, hi) << 1) | internal.BitValue(palette, lo)
 	// col := Palettes[0][index]
 	// return col[0], col[1], col[2]
-	return GetPaletteColour(index)
+	r, g, b := GetPaletteColour(index)
+	// logger.Debugf("colourNum: %#x, palette: %#x, hi: %#x, lo: %#x, index: %#x, r: %#x, g: %#x, b: %#x\n", colourNum, palette, hi, lo, index, r, g, b)
+	return r, g, b
 }
 
 func (l *LCD) renderSprites(lcdControl uint8, scanline int32) {
@@ -458,14 +493,6 @@ func (l *LCD) renderSprites(lcdControl uint8, scanline int32) {
 		}
 	}
 
-}
-
-func (l *LCD) setPixel(x, y, r, g, b uint8, priority bool) {
-	if (priority && !l.bgPriority[x][y]) || l.tileScanline[x] == 0 {
-		l.screenData[x][y][0] = r
-		l.screenData[x][y][1] = g
-		l.screenData[x][y][2] = b
-	}
 }
 
 func (l *LCD) clearScreen() {

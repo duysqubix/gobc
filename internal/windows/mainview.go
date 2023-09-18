@@ -8,6 +8,7 @@ import (
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
 	"github.com/faiface/pixel"
+	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
 	"github.com/spf13/afero"
@@ -71,6 +72,7 @@ func (mw *MainGameWindow) Update() error {
 	if (mw.Window.JustPressed(pixelgl.KeyF) || mw.Window.Repeated(pixelgl.KeyF)) && internalGamePaused {
 		mw.hw.UpdateInternalGameState(mw.cyclesFrame) // update every tick
 		globalFrames++
+		mw.hw.Mb.Lcd.PrintPreparedData()
 	}
 
 	if !internalGamePaused {
@@ -97,7 +99,7 @@ func (mw *MainGameWindow) Update() error {
 }
 
 func (mw *MainGameWindow) Draw() {
-	mw.Window.Clear(colornames.Black)
+	// mw.Window.Clear(colornames.Black)
 	internalConsoleTxt.Clear()
 
 	// drawSprite(mw.Window, mw.gameMapCanvas, 1.5, 0, 0)
@@ -107,14 +109,30 @@ func (mw *MainGameWindow) Draw() {
 
 	spr := pixel.NewSprite(mw.gameMapCanvas, pixel.R(0, 0, internal.GB_SCREEN_WIDTH, internal.GB_SCREEN_HEIGHT))
 	spr.Draw(mw.Window, pixel.IM.Moved(mw.Window.Bounds().Center()).Scaled(mw.Window.Bounds().Center(), float64(mw.gameScale)))
-	// spr.Draw(mw.Window, pixel.IM)
-	// xScale := mw.Window.Bounds().W() / 160
-	// yScale := mw.Window.Bounds().H() / 144
-	// scale := math.Min(yScale, xScale)
+	{
+		gameScale := float64(mw.gameScale)
+		spw := (spr.Frame().W() / 2 * gameScale) + (0 * gameScale)
+		sph := (spr.Frame().H() / 2 * gameScale) + (0 * gameScale)
 
-	// shift := mw.Window.Bounds().Size().Scaled(0.5).Sub(pixel.ZV)
-	// cam := pixel.IM.Scaled(pixel.ZV, scale).Moved(shift)
-	// mw.Window.SetMatrix(cam)
+		// create grid for selected canvas by tile height and width
+		imd := imdraw.New(nil)
+		imd.Color = pixel.RGB(1, 0, 0)
+		// Draw vertical lines
+		for x := 0.0; x <= spr.Frame().W()*gameScale; x += 8.0 * gameScale {
+			imd.Push(pixel.V(x+spw-spr.Frame().W()/2*gameScale, sph-spr.Frame().H()/2*gameScale))
+			imd.Push(pixel.V(x+spw-spr.Frame().W()/2*gameScale, sph+spr.Frame().H()/2*gameScale))
+			imd.Line(1)
+		}
+
+		// Draw horizontal lines
+		for y := 0.0; y <= spr.Frame().H()*gameScale; y += 8.0 * gameScale {
+			imd.Push(pixel.V(spw-spr.Frame().W()/2*gameScale, y+sph-spr.Frame().H()/2*gameScale))
+			imd.Push(pixel.V(spw+spr.Frame().W()/2*gameScale, y+sph-spr.Frame().H()/2*gameScale))
+			imd.Line(1)
+		}
+
+		imd.Draw(mw.Window)
+	}
 
 	if internalGamePaused {
 		fmt.Fprint(internalConsoleTxt, "Game Paused")

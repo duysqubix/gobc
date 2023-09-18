@@ -153,7 +153,7 @@ func (mw *CpuViewWindow) Draw() {
 	}
 
 	// look into the future by 5 steps
-	for i := uint16(0); i < 3; i++ {
+	for i := uint16(1); i < 3; i++ {
 		fpc := mw.hw.Mb.Cpu.Registers.PC + i
 		fmt.Fprintf(cpuConsoleTxt, "PC+%d: %04x (%02x)\n", i, fpc, mw.hw.Mb.GetItem(fpc))
 	}
