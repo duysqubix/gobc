@@ -89,7 +89,7 @@ func (mw *MainGameWindow) Update() error {
 	if (mw.Window.JustPressed(pixelgl.KeyF) || mw.Window.Repeated(pixelgl.KeyF)) && internalGamePaused {
 		mw.hw.UpdateInternalGameState(mw.cyclesFrame) // update every tick
 		globalFrames++
-		mw.hw.Mb.Lcd.PrintPreparedData()
+		// mw.hw.Mb.Lcd.PrintPreparedData()
 	}
 
 	if mw.Window.JustPressed(pixelgl.KeyF1) || mw.Window.Repeated(pixelgl.KeyF1) {
@@ -112,7 +112,7 @@ func (mw *MainGameWindow) Update() error {
 			if y == 0 || x == 0 || y == internal.GB_SCREEN_HEIGHT-1 || x == internal.GB_SCREEN_WIDTH-1 {
 				rgb = colornames.Red
 			}
-			mw.gameMapCanvas.Pix[(internal.GB_SCREEN_HEIGHT-1-y)*internal.GB_SCREEN_WIDTH+x] = rgb
+			mw.gameMapCanvas.Pix[((internal.GB_SCREEN_HEIGHT-1-y)*internal.GB_SCREEN_WIDTH)+x] = rgb
 		}
 	}
 

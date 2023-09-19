@@ -182,6 +182,16 @@ var LCDCBitNames = map[uint8]string{
 	LCDC_BGEN:   "BG ENABLE",
 }
 
+var STATBitNames = map[uint8]string{
+	STAT_LYCINT: "LYC INT",
+	STAT_OAMINT: "OAM INT",
+	STAT_VBLINT: "VBL INT",
+	STAT_HBLINT: "HBL INT",
+	STAT_LYC:    "LYC=LY",
+	STAT_MODE1:  "MODE 1",
+	STAT_MODE0:  "MODE 0",
+}
+
 func InterruptFlagDump(v uint8) string {
 	var msg string = ""
 

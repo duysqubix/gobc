@@ -15,7 +15,7 @@ import (
 
 const (
 	ioScreenWidth  = 1000
-	ioScreenHeight = 600
+	ioScreenHeight = 700
 	ioScale        = 1
 	ioTrueWidth    = float64(ioScreenWidth * ioScale)
 	ioTrueHeight   = float64(ioScreenHeight * ioScale)
@@ -98,6 +98,19 @@ func (mw *IoViewWindow) Draw() {
 	mw.Window.Clear(colornames.Black)
 	ioTableWriter.ClearRows()
 
+	statIO := mw.hw.Mb.Memory.IO[0x41] & 0x3
+	var statMode string
+	switch statIO {
+	case motherboard.STAT_MODE_HBLANK:
+		statMode = "H-Blank"
+	case motherboard.STAT_MODE_VBLANK:
+		statMode = "V-Blank"
+	case motherboard.STAT_MODE_OAM:
+		statMode = "OAM"
+	default:
+		statMode = "Transfer"
+	}
+
 	ioTableWriter.AppendBulk(
 		[][]string{
 			{"INTERRUPTS:", "", "", "", "LCD:"},
@@ -130,7 +143,10 @@ func (mw *IoViewWindow) Draw() {
 			append(append([]string{"GBC INFRARED", "", "", ""}, mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_ENABLE)...), mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_WINMAP)...),
 			append(append([]string{"$FF56", "RP", fmt.Sprintf("0x%02x", mw.hw.Mb.Memory.IO[0x56]), formatBitValue(mw.hw.Mb.Memory.IO[0x56])}, mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_WINEN)...), mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_BGMAP)...),
 			append(append([]string{"", "", "", ""}, mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_BGWIN)...), mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_OBJSZ)...),
-			append(append([]string{"", "", "", ""}, mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_OBJEN)...), mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_BGEN)...),
+			append(append([]string{"STAT Flags:", "", "", ""}, mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_OBJEN)...), mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_BGEN)...),
+			append(mw.hw.Mb.Lcd.ReportOnSTAT(motherboard.STAT_LYCINT), mw.hw.Mb.Lcd.ReportOnSTAT(motherboard.STAT_OAMINT)...),
+			append(mw.hw.Mb.Lcd.ReportOnSTAT(motherboard.STAT_VBLINT), mw.hw.Mb.Lcd.ReportOnSTAT(motherboard.STAT_HBLINT)...),
+			append(mw.hw.Mb.Lcd.ReportOnSTAT(motherboard.STAT_LYC), []string{"Mode", statMode}...),
 		},
 	)
 

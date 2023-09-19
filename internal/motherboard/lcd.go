@@ -46,6 +46,17 @@ func (l *LCD) Tick(cycles OpCycles) {
 	l.updateGraphics(cycles)
 }
 
+func (l *LCD) ReportOnSTAT(bit uint8) []string {
+	var bitOff = "OFF"
+	if internal.IsBitSet(l.Mb.Memory.IO[IO_STAT-IO_START_ADDR], bit) {
+		bitOff = "ON"
+	}
+	return []string{
+		STATBitNames[bit],
+		bitOff,
+	}
+}
+
 func (l *LCD) ReportOnLCDC(bit uint8) []string {
 	var bitOff = "OFF"
 	if internal.IsBitSet(l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], bit) {
@@ -57,32 +68,30 @@ func (l *LCD) ReportOnLCDC(bit uint8) []string {
 	}
 }
 
-func (l *LCD) PrintPreparedData() {
-	var msg string = "\n"
-	for y := 0; y < internal.GB_SCREEN_HEIGHT; y++ {
-		for x := 0; x < internal.GB_SCREEN_WIDTH; x++ {
-			r := l.PreparedData[x][y][0]
-			g := l.PreparedData[x][y][1]
-			b := l.PreparedData[x][y][2]
-			rgb := int(r) + int(g) + int(b)
+// func (l *LCD) PrintPreparedData() {
+// 	var msg string = "\n"
+// 	for y := 0; y < internal.GB_SCREEN_HEIGHT; y++ {
+// 		for x := 0; x < internal.GB_SCREEN_WIDTH; x++ {
+// 			r := l.PreparedData[x][y][0]
+// 			g := l.PreparedData[x][y][1]
+// 			b := l.PreparedData[x][y][2]
+// 			rgb := int(r) + int(g) + int(b)
 
-			switch {
-			case rgb == 0: // white
-				msg += "-"
-			case rgb == 765: // black
-				msg += "-"
-			default:
-				msg += "+"
-			}
+// 			switch {
+// 			case rgb == 0: // white
+// 				msg += "-"
+// 			case rgb == 765: // black
+// 				msg += "-"
+// 			default:
+// 				msg += "+"
+// 			}
 
-		}
-		msg += "\n"
-	}
+// 		}
+// 		msg += "\n"
+// 	}
 
-	logger.Infof("%s", msg)
-}
-
-var frameCycles int = 0
+// 	logger.Infof("%s", msg)
+// }
 
 func (l *LCD) updateGraphics(cycles OpCycles) {
 	l.setLCDStatus()
@@ -92,7 +101,6 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 	}
 
 	l.scanlineCounter -= cycles
-	frameCycles += int(cycles)
 	if l.scanlineCounter <= 0 {
 		l.Mb.Memory.IO[IO_LY-IO_START_ADDR]++ // directly change for optimized performance
 		// logger.Debugf("LY: %#x", l.Mb.Memory.IO[IO_LY-IO_START_ADDR])
@@ -101,7 +109,6 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 			l.screenData = ScreenData{}
 			l.bgPriority = ScreenPriority{}
 			l.Mb.Memory.IO[IO_LY-IO_START_ADDR] = 0
-			frameCycles = 0
 		}
 
 		currentLine := l.Mb.Memory.IO[IO_LY-IO_START_ADDR]
@@ -117,11 +124,10 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 func (l *LCD) setLCDStatus() {
 
 	status := l.Mb.Memory.IO[IO_STAT-IO_START_ADDR]
-
 	if !l.isLCDEnabled() {
 		// clear the screen
 		l.clearScreen()
-		l.scanlineCounter = 456
+		l.scanlineCounter = 456 // total cycles per scanline
 
 		l.Mb.Memory.IO[IO_LY-IO_START_ADDR] = 0
 
@@ -172,6 +178,7 @@ func (l *LCD) setLCDStatus() {
 		internal.ResetBit(&status, STAT_MODE0)
 		rqstInterrupt = internal.IsBitSet(status, STAT_HBLINT)
 		if mode != currentMode {
+			// fmt.Printf("Mode is now HBLANK\n")
 			l.Mb.DoHDMATransfer() // do HDMATransfer when we start mode 0
 		}
 	}
@@ -180,7 +187,7 @@ func (l *LCD) setLCDStatus() {
 		l.Mb.Cpu.SetInterruptFlag(INTR_LCDSTAT)
 	}
 
-	// check if LYC == LY (coincedence flag)
+	// // check if LYC == LY (coincedence flag)
 	if currentLine == l.Mb.Memory.IO[IO_LYC-IO_START_ADDR] {
 		internal.SetBit(&status, STAT_LYC)
 		if internal.IsBitSet(status, STAT_LYCINT) {
@@ -191,7 +198,6 @@ func (l *LCD) setLCDStatus() {
 	}
 
 	// write status to memory
-	// l.Mb.SetItem(IO_STAT, uint16(status))
 	l.Mb.Memory.IO[IO_STAT-IO_START_ADDR] = status
 }
 
@@ -207,9 +213,9 @@ func (l *LCD) drawScanline(scanline uint8) {
 		l.renderTiles(control, scanline)
 	}
 
-	// if internal.IsBitSet(control, LCDC_OBJEN) {
-	// 	l.renderSprites(control, int32(scanline))
-	// }
+	if internal.IsBitSet(control, LCDC_OBJEN) {
+		l.renderSprites(control, int32(scanline))
+	}
 }
 
 type tileSettings struct {
@@ -355,6 +361,8 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 }
 
 func (l *LCD) setTilePixel(x, y, tileAttr, colorNum, palette uint8, priority bool) {
+	l.tileScanline[x] = colorNum
+
 	if l.Mb.Cgb {
 		cgbPalette := tileAttr & 0x7
 		r, g, b := l.Mb.BGPalette.get(cgbPalette, colorNum)
@@ -364,8 +372,6 @@ func (l *LCD) setTilePixel(x, y, tileAttr, colorNum, palette uint8, priority boo
 		r, g, b := l.getColour(colorNum, palette)
 		l.setPixel(x, y, r, g, b, true)
 	}
-
-	l.tileScanline[x] = colorNum
 
 }
 
