@@ -68,31 +68,6 @@ func (l *LCD) ReportOnLCDC(bit uint8) []string {
 	}
 }
 
-// func (l *LCD) PrintPreparedData() {
-// 	var msg string = "\n"
-// 	for y := 0; y < internal.GB_SCREEN_HEIGHT; y++ {
-// 		for x := 0; x < internal.GB_SCREEN_WIDTH; x++ {
-// 			r := l.PreparedData[x][y][0]
-// 			g := l.PreparedData[x][y][1]
-// 			b := l.PreparedData[x][y][2]
-// 			rgb := int(r) + int(g) + int(b)
-
-// 			switch {
-// 			case rgb == 0: // white
-// 				msg += "-"
-// 			case rgb == 765: // black
-// 				msg += "-"
-// 			default:
-// 				msg += "+"
-// 			}
-
-// 		}
-// 		msg += "\n"
-// 	}
-
-// 	logger.Infof("%s", msg)
-// }
-
 func (l *LCD) updateGraphics(cycles OpCycles) {
 	l.setLCDStatus()
 
@@ -103,7 +78,6 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 	l.scanlineCounter -= cycles
 	if l.scanlineCounter <= 0 {
 		l.Mb.Memory.IO[IO_LY-IO_START_ADDR]++ // directly change for optimized performance
-		// logger.Debugf("LY: %#x", l.Mb.Memory.IO[IO_LY-IO_START_ADDR])
 		if l.Mb.Memory.IO[IO_LY-IO_START_ADDR] > 153 {
 			l.PreparedData = l.screenData
 			l.screenData = ScreenData{}
@@ -111,14 +85,12 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 			l.Mb.Memory.IO[IO_LY-IO_START_ADDR] = 0
 		}
 
-		currentLine := l.Mb.Memory.IO[IO_LY-IO_START_ADDR]
 		l.scanlineCounter += (456 * 1) // change 1 to 2 for double speed
 
-		if currentLine == internal.GB_SCREEN_HEIGHT {
+		if l.Mb.Memory.IO[IO_LY-IO_START_ADDR] == internal.GB_SCREEN_HEIGHT {
 			l.Mb.Cpu.SetInterruptFlag(INTR_VBLANK)
 		}
 	}
-
 }
 
 func (l *LCD) setLCDStatus() {
@@ -207,6 +179,10 @@ func (l *LCD) isLCDEnabled() bool {
 
 func (l *LCD) drawScanline(scanline uint8) {
 	control := l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR]
+
+	// disable window  for debugging
+	internal.ResetBit(&control, LCDC_WINEN)
+	internal.ResetBit(&control, LCDC_OBJEN)
 
 	// LCDC bit 0 clears tiles on DMG but controls priority on CBG
 	if l.Mb.Cgb || internal.IsBitSet(control, LCDC_BGEN) {

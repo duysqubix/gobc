@@ -157,7 +157,6 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 	m.Lcd.Tick(cycles)
 
 	cycles += m.Cpu.handleInterrupts()
-
 	return true, cycles
 }
 
