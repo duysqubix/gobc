@@ -2,6 +2,8 @@ package motherboard
 
 import (
 	"fmt"
+
+	"github.com/duysqubix/gobc/internal"
 )
 
 var interruptAddresses = map[byte]uint16{
@@ -13,7 +15,6 @@ var interruptAddresses = map[byte]uint16{
 }
 
 type Interrupts struct {
-
 	InterruptsEnabling bool  // Interrupts are being enabled
 	InterruptsOn       bool  // Interrupts are on
 	IE                 uint8 // Interrupt enable register
@@ -88,7 +89,7 @@ func (c *CPU) ServiceInterrupt(interrupt uint8) {
 
 	c.Interrupts.InterruptsOn = false
 	c.Halted = false
-	c.Interrupts.IF &^= (1 << interrupt)
+	internal.ResetBit(&c.Interrupts.IF, interrupt)
 	sp := c.Registers.SP
 	pc := c.Registers.PC
 

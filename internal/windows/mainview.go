@@ -57,12 +57,20 @@ func (mw *MainGameWindow) Update() error {
 	if !internalGamePaused {
 		globalFrames++
 	}
+
+	if mw.hw.Mb.GuiPause {
+		internalGamePaused = true
+	}
+
 	if mw.Window.JustPressed(pixelgl.KeyR) || mw.Window.Repeated(pixelgl.KeyR) {
 		mw.hw.Reset()
 	}
 
 	if mw.Window.JustPressed(pixelgl.KeySpace) || mw.Window.Repeated(pixelgl.KeySpace) {
 		internalGamePaused = !internalGamePaused
+		if !internalGamePaused {
+			mw.hw.Mb.GuiPause = false
+		}
 
 		// if internalGamePaused {
 		// 	fmt.Printf("%#v", mw.hw.Mb.Lcd.PreparedData)
@@ -112,6 +120,14 @@ func (mw *MainGameWindow) Update() error {
 			if y == 0 || x == 0 || y == internal.GB_SCREEN_HEIGHT-1 || x == internal.GB_SCREEN_WIDTH-1 {
 				rgb = colornames.Red
 			}
+
+			if y == int(mw.hw.Mb.Lcd.CurrentScanline) {
+				rgb = colornames.Green
+				if x == int(mw.hw.Mb.Lcd.CurrentPixelPosition) {
+					rgb = colornames.Blue
+				}
+			}
+
 			mw.gameMapCanvas.Pix[((internal.GB_SCREEN_HEIGHT-1-y)*internal.GB_SCREEN_WIDTH)+x] = rgb
 		}
 	}
@@ -159,7 +175,8 @@ func (mw *MainGameWindow) Draw() {
 	if internalGamePaused {
 		fmt.Fprintf(internalConsoleTxt, "Game Paused\nN=%d\nF=%d\n", internalDebugCyclePerFrame, internalDebugCycleScaler)
 	}
-	fmt.Fprintf(internalConsoleTxt, "\nCycles: %d\nTotal Frames: %d\n", globalCycles, globalFrames)
+
+	fmt.Fprintf(internalConsoleTxt, "\nCycles: %d\nTotal Frames: %d\nLY: %d", globalCycles, globalFrames, mw.hw.Mb.Lcd.CurrentScanline)
 	internalConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(internalConsoleTxt.Orig, 2))
 
 	mw.Window.Update()
@@ -262,6 +279,9 @@ func (g *GoBoyColor) UpdateInternalGameState(every int) bool {
 			internalCycleCounter += int(internalCycleReturn)
 			globalCycles += int(internalCycleReturn)
 			if !internalStatus {
+				if g.Mb.GuiPause {
+					break
+				}
 				g.Stopped = true
 				break
 			}

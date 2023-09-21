@@ -1652,7 +1652,6 @@ var OPCODES = OpCodeMap{
 
 	// JP (HL) - Jump to address contained in HL (233)
 	0xe9: func(mb *Motherboard, value uint16) OpCycles {
-
 		mb.Cpu.Registers.PC = mb.Cpu.HL()
 		return 4
 	},

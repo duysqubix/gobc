@@ -1,6 +1,8 @@
 package motherboard
 
 import (
+	"sort"
+
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -16,7 +18,7 @@ const (
 type LCD struct {
 
 	// Matrix of pixel data which is used while the screen is rendering. When the screen is done rendering, this data is copied to the PreparedData matrix.
-	screenData ScreenData
+	// screenData ScreenData
 	bgPriority ScreenPriority
 
 	tileScanline    [internal.GB_SCREEN_WIDTH]uint8
@@ -24,8 +26,11 @@ type LCD struct {
 	screenCleared   bool
 
 	// PreparedData is a matrix of screen pixel data for a single frame which has been fully rendered
-	PreparedData ScreenData
-	Mb           *Motherboard
+	PreparedData         ScreenData
+	Mb                   *Motherboard
+	CurrentPixelPosition uint8 // current pixel position in the scanline
+	CurrentScanline      uint8 // current scanline being rendered
+	WindowLY             uint8 // current window scanline being rendered
 }
 
 func NewLCD(mb *Motherboard) *LCD {
@@ -35,7 +40,7 @@ func NewLCD(mb *Motherboard) *LCD {
 }
 
 func (l *LCD) Reset() {
-	l.screenData = ScreenData{}
+	// l.screenData = ScreenData{}
 	l.bgPriority = ScreenPriority{}
 	l.PreparedData = ScreenData{}
 	l.scanlineCounter = 0
@@ -57,10 +62,10 @@ func (l *LCD) ReportOnSTAT(bit uint8) []string {
 	}
 }
 
-func (l *LCD) ReportOnLCDC(bit uint8) []string {
-	var bitOff = "OFF"
+func (l *LCD) ReportOnLCDC(bit uint8, on, off string) []string {
+	var bitOff = off
 	if internal.IsBitSet(l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], bit) {
-		bitOff = "ON"
+		bitOff = on
 	}
 	return []string{
 		LCDCBitNames[bit],
@@ -69,18 +74,19 @@ func (l *LCD) ReportOnLCDC(bit uint8) []string {
 }
 
 func (l *LCD) updateGraphics(cycles OpCycles) {
-	l.setLCDStatus()
 
 	if !l.isLCDEnabled() {
 		return
 	}
-
 	l.scanlineCounter -= cycles
+
+	l.setLCDStatus()
 	if l.scanlineCounter <= 0 {
 		l.Mb.Memory.IO[IO_LY-IO_START_ADDR]++ // directly change for optimized performance
 		if l.Mb.Memory.IO[IO_LY-IO_START_ADDR] > 153 {
-			l.PreparedData = l.screenData
-			l.screenData = ScreenData{}
+			// l.PreparedData = ScreenData{}
+			// l.screenData = ScreenData{}
+			// l.clearScreen()
 			l.bgPriority = ScreenPriority{}
 			l.Mb.Memory.IO[IO_LY-IO_START_ADDR] = 0
 		}
@@ -116,7 +122,8 @@ func (l *LCD) setLCDStatus() {
 	l.screenCleared = false
 
 	currentLine := l.Mb.Memory.IO[IO_LY-IO_START_ADDR]
-	currentMode := status & 0x3
+	l.CurrentScanline = currentLine
+	currentMode := status & 0b11
 
 	var mode uint8
 	rqstInterrupt := false
@@ -163,6 +170,7 @@ func (l *LCD) setLCDStatus() {
 	if currentLine == l.Mb.Memory.IO[IO_LYC-IO_START_ADDR] {
 		internal.SetBit(&status, STAT_LYC)
 		if internal.IsBitSet(status, STAT_LYCINT) {
+			// l.Mb.GuiPause = true
 			l.Mb.Cpu.SetInterruptFlag(INTR_LCDSTAT)
 		}
 	} else {
@@ -178,20 +186,21 @@ func (l *LCD) isLCDEnabled() bool {
 }
 
 func (l *LCD) drawScanline(scanline uint8) {
+	internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_WINEN)
+	internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_OBJEN)
+
 	control := l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR]
 
 	// disable window  for debugging
-	internal.ResetBit(&control, LCDC_WINEN)
-	internal.ResetBit(&control, LCDC_OBJEN)
 
 	// LCDC bit 0 clears tiles on DMG but controls priority on CBG
 	if l.Mb.Cgb || internal.IsBitSet(control, LCDC_BGEN) {
 		l.renderTiles(control, scanline)
 	}
 
-	if internal.IsBitSet(control, LCDC_OBJEN) {
-		l.renderSprites(control, int32(scanline))
-	}
+	// if internal.IsBitSet(control, LCDC_OBJEN) {
+	// 	l.renderSprites(control, int32(scanline))
+	// }
 }
 
 type tileSettings struct {
@@ -208,12 +217,11 @@ func (l *LCD) getTileSettings(lcdControl uint8, windowY uint8) tileSettings {
 	var unsigned bool = false
 
 	if internal.IsBitSet(lcdControl, LCDC_WINEN) {
-		// is current scanline we are draing within the window?
+		// is current scanline we are drawing within the window?
 		if windowY <= l.Mb.Memory.IO[IO_LY-IO_START_ADDR] {
 			usingWindow = true
 		}
 	}
-
 	// test if we are using unsigned bytes
 	if internal.IsBitSet(lcdControl, LCDC_BGMAP) {
 		tileData = 0x8000
@@ -258,12 +266,15 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 	l.tileScanline = [internal.GB_SCREEN_WIDTH]uint8{}
 
 	for pixel := uint8(0); pixel < internal.GB_SCREEN_WIDTH; pixel++ {
+
 		xPos := pixel + scrollX
 
 		// translate current x pos to window space if necessary
 		if ts.UsingWindow && pixel >= windowX {
 			xPos = pixel - windowX
 		}
+
+		l.CurrentPixelPosition = xPos
 		// which of the 32 horizontal tiles does this xPos fall within?
 		tileCol := uint16(xPos / 8)
 
@@ -271,13 +282,16 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 		//deduce tile id in memory
 		tileLocation := ts.TileData
-		var tileNum int16
+		var tileNum int
+
+
 		if ts.Unsigned {
-			tileNum = int16(l.Mb.Memory.Vram[0][tileAddress-0x8000])
-			tileLocation = tileLocation + uint16(tileNum*16)
+			tileNum = int(uint8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
+			tileLocation += (uint16(tileNum * 16))
 		} else {
-			tileNum = int16(int8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
-			tileLocation = uint16(int32(tileLocation) + int32((tileNum+128)*16))
+			tileNum = int(int8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
+			tileLocation += (uint16((int(tileNum)+128)*16) - 0x800)
+
 		}
 
 		// Attributes used in CGB mode TODO: check in CGB mode
@@ -290,9 +304,6 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		//
 
 		bank := 0
-		// if tileAddress >= 0x8000 {
-		// 	fmt.Printf("tileAddress: %#x, VRAM Bank Flag: %08b\n", tileAddress, l.Mb.Memory.IO[IO_VBK-IO_START_ADDR])
-		// }
 
 		tileAttr := l.Mb.Memory.Vram[1][tileAddress-0x8000]
 		if l.Mb.Cgb && internal.IsBitSet(tileAttr, 3) {
@@ -301,12 +312,12 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 		priority := internal.IsBitSet(tileAttr, 7)
 
-		var line uint8
+		var line uint16
 		if l.Mb.Cgb && internal.IsBitSet(tileAttr, 6) {
 			// vertical flip
-			line = ((7 - yPos) % 8) * 2
+			line = uint16((7-yPos)%8) * 2
 		} else {
-			line = (yPos % 8) * 2
+			line = uint16(yPos%8) * 2
 		}
 
 		data1 := l.Mb.Memory.Vram[bank][tileLocation+uint16(line)-0x8000]
@@ -319,7 +330,23 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 		colorBit := uint8(int8((xPos%8)-7) * -1)
 		colorNum := (internal.BitValue(data2, colorBit) << 1) | internal.BitValue(data1, colorBit)
+		if lcdControl != oldlcdc {
+			oldlcdc = lcdControl
+			// logger.Debug(l.CurrentScanline)
+			lys.Add(int(l.CurrentScanline))
+			slice := lys.ToSlice()
+			sort.Ints(slice)
+			// logger.Debug(slice)
+		}
 
+		if (scanline == 53) && (pixel == 48) {
+			// Map Address: 0x9945
+			// Tile Address: 0:8090
+			// tileNum: 0x09
+			// logger.Debugf("Map Address: %#x, Tile Address: %#x, tileNum: %#x, unsignedTile: %t, LCDC: %08b", tileAddress, tileLocation, tileNum, ts.Unsigned, lcdControl)
+
+			logger.Debugf("Scanline: %d, Pixel: %d, xPos: %d, yPos: %d, tileNum: %#x, tileLocation: %#x, tileData: %#x,  tileAddress: %#x, tileAttr: %#x, data1: %#x, data2: %#x, LCDC: %08b, STAT: %08b, IE: %08b, IF: %08b: BGMem: %#x, Unsigned: %t\n", scanline, pixel, xPos, yPos, tileNum, tileLocation, ts.TileData, tileAddress, tileAttr, data1, data2, lcdControl, l.Mb.Memory.IO[IO_STAT-IO_START_ADDR], l.Mb.Cpu.Interrupts.IE, l.Mb.Cpu.Interrupts.IF, ts.BgMemory, ts.Unsigned)
+		}
 		// if data1 != 0x00 || data2 != 0x00 {
 		// 	fmt.Printf("-----------------\n"+
 		// 		"data1: %#x, data2: %#x, tileLocation: %#x, line: %#x, tileAddress: %#x, tileAttr: %#x\n"+
@@ -335,6 +362,41 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 	}
 }
+
+var oldlcdc = uint8(0)
+
+type Set struct {
+	list map[int]bool
+}
+
+func (s *Set) Add(value int) {
+	s.list[value] = true
+}
+
+func (s *Set) Contains(value int) bool {
+	_, ok := s.list[value]
+	return ok
+}
+
+func (s *Set) Remove(value int) {
+	delete(s.list, value)
+}
+
+func (s *Set) ToSlice() []int {
+	keys := make([]int, 0, len(s.list))
+	for key := range s.list {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+func NewSet() *Set {
+	return &Set{make(map[int]bool)}
+}
+
+var lys = NewSet()
+
+// var beginLogging bool = false
 
 func (l *LCD) setTilePixel(x, y, tileAttr, colorNum, palette uint8, priority bool) {
 	l.tileScanline[x] = colorNum
@@ -353,9 +415,9 @@ func (l *LCD) setTilePixel(x, y, tileAttr, colorNum, palette uint8, priority boo
 
 func (l *LCD) setPixel(x, y, r, g, b uint8, priority bool) {
 	if (priority && !l.bgPriority[x][y]) || l.tileScanline[x] == 0 {
-		l.screenData[x][y][0] = r
-		l.screenData[x][y][1] = g
-		l.screenData[x][y][2] = b
+		l.PreparedData[x][y][0] = r
+		l.PreparedData[x][y][1] = g
+		l.PreparedData[x][y][2] = b
 	}
 }
 
@@ -364,10 +426,7 @@ func (l *LCD) getColour(colourNum byte, palette byte) (uint8, uint8, uint8) {
 	hi := colourNum<<1 | 1
 	lo := colourNum << 1
 	index := (internal.BitValue(palette, hi) << 1) | internal.BitValue(palette, lo)
-	// col := Palettes[0][index]
-	// return col[0], col[1], col[2]
 	r, g, b := GetPaletteColour(index)
-	// logger.Debugf("colourNum: %#x, palette: %#x, hi: %#x, lo: %#x, index: %#x, r: %#x, g: %#x, b: %#x\n", colourNum, palette, hi, lo, index, r, g, b)
 	return r, g, b
 }
 
@@ -481,20 +540,20 @@ func (l *LCD) renderSprites(lcdControl uint8, scanline int32) {
 }
 
 func (l *LCD) clearScreen() {
-	if l.screenCleared {
-		return
-	}
+	// if l.screenCleared {
+	// 	return
+	// }
 
 	// set every pixel to white
 
-	for x := 0; x < len(l.screenData); x++ {
-		for y := 0; y < len(l.screenData[x]); y++ {
-			l.screenData[x][y][0] = 0xFF
-			l.screenData[x][y][1] = 0xFF
-			l.screenData[x][y][2] = 0xFF
+	for x := 0; x < len(l.PreparedData); x++ {
+		for y := 0; y < len(l.PreparedData[x]); y++ {
+			l.PreparedData[x][y][0] = 0xFF
+			l.PreparedData[x][y][1] = 0xFF
+			l.PreparedData[x][y][2] = 0xFF
 		}
 	}
 
-	l.PreparedData = l.screenData
+	// l.PreparedData = l.PreparedData
 	l.screenCleared = true
 }

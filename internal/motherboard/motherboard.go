@@ -37,6 +37,7 @@ type Motherboard struct {
 	Decouple     bool         // Decouple Motherboard from other components, and all calls to read/write memory will be mocked
 	Breakpoints  *Breakpoints // Breakpoints
 	PanicOnStuck bool         // Panic when CPU is stuck
+	GuiPause     bool         // Pause GUI
 }
 
 type MotherboardParams struct {
@@ -145,7 +146,7 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 	}()
 	var cycles OpCycles = 4
 
-	if m.Cpu.Stopped || m.Cpu.IsStuck {
+	if m.Cpu.Stopped || m.Cpu.IsStuck || m.GuiPause {
 		return false, cycles
 	}
 
@@ -481,7 +482,9 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 			return
 
 		case 0xFF41: /* STAT */
-			m.Memory.IO[IO_STAT-IO_START_ADDR] = v | 0x80
+			// do not set bits 0-1, they are read_only bits, bit 7 always reads 1
+			stat := (m.Memory.IO[IO_STAT-IO_START_ADDR] & 0x83) | (v & 0xFC)
+			m.Memory.IO[IO_STAT-IO_START_ADDR] = stat
 
 		case 0xFF44: /* LY */
 			m.Memory.IO[IO_LY-IO_START_ADDR] = 0
@@ -583,7 +586,7 @@ func (m *Motherboard) DoHDMATransfer() {
 	if !m.hdmaActive {
 		return
 	}
-
+	logger.Debug("Performing HDMA transfer")
 	m.performNewDMATransfer(0x10)
 	if m.hdmaLength > 0 {
 		m.hdmaLength--

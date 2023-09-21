@@ -107,6 +107,13 @@ func (mw *VramViewWindow) Update() error {
 		vramShowHelp = !vramShowHelp
 	}
 
+	// v := mw.Window.MousePosition()
+	// x, y := v.X, v.Y
+	// fmt.Println(x, y)
+	// //tile picture bounds
+	// // x1, y1 := 0, 775
+	// // x2, y2 := 505, 585
+
 	tileData := mw.hw.Mb.Memory.TileData()
 	tileMap := mw.hw.Mb.Memory.TileMap(vramTileAddressingMode, vramBgAddressingMode)
 
