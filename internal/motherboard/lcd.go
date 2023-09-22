@@ -135,6 +135,7 @@ func (l *LCD) setLCDStatus() {
 		internal.SetBit(&status, STAT_MODE0)
 		internal.ResetBit(&status, STAT_MODE1)
 		rqstInterrupt = internal.IsBitSet(status, STAT_VBLINT)
+		l.WindowLY = 0
 
 	case l.scanlineCounter >= lcdMode2Bounds:
 		mode = STAT_MODE_OAM
@@ -191,7 +192,7 @@ func (l *LCD) isLCDEnabled() bool {
 
 func (l *LCD) drawScanline(scanline uint8) {
 	// internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_WINEN)
-	// internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_OBJEN)
+	internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_OBJEN)
 
 	control := l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR]
 
@@ -212,12 +213,14 @@ type tileSettings struct {
 	Unsigned    bool   // true if using unsigned tile numbers
 	TileData    uint16 // address of tile data
 	BgMemory    uint16 // address of background tile map
+	WinMemory   uint16 // address of window tile map
 }
 
 func (l *LCD) getTileSettings(lcdControl uint8, windowY uint8) tileSettings {
 	var usingWindow bool = false
 	var tileData uint16 = uint16(0x8800)
 	var bgMemory uint16 = uint16(0x9800)
+	var winMemory uint16 = uint16(0x9800)
 	var unsigned bool = false
 
 	if internal.IsBitSet(lcdControl, LCDC_WINEN) {
@@ -232,19 +235,18 @@ func (l *LCD) getTileSettings(lcdControl uint8, windowY uint8) tileSettings {
 		unsigned = true
 	}
 
-	// work out where to look in the background memory
-	var testBit uint8 = 3
-	if usingWindow {
-		testBit = 6
+	if internal.IsBitSet(lcdControl, LCDC_BGWIN) {
+		bgMemory = 0x9C00
 	}
 
-	if internal.IsBitSet(lcdControl, testBit) {
-		bgMemory = 0x9C00
+	if internal.IsBitSet(lcdControl, LCDC_WINMAP) {
+		winMemory = 0x9C00
 	}
 
 	return tileSettings{
 		TileData:    tileData,
 		BgMemory:    bgMemory,
+		WinMemory:   winMemory,
 		UsingWindow: usingWindow,
 		Unsigned:    unsigned,
 	}
@@ -258,11 +260,16 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 	ts := l.getTileSettings(lcdControl, windowY)
 
+	if ts.UsingWindow && windowY < scanline && windowX <= internal.GB_SCREEN_WIDTH {
+		l.WindowLY++
+	}
+
 	var yPos uint8
+	var xPos uint8
 	if !ts.UsingWindow {
 		yPos = scrollY + scanline
 	} else {
-		yPos = scanline - windowY
+		yPos = l.WindowLY - windowY
 	}
 
 	tileRow := uint16(yPos/8) * 32
@@ -271,10 +278,8 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 	for pixel := uint8(0); pixel < internal.GB_SCREEN_WIDTH; pixel++ {
 
-		xPos := pixel + scrollX
-
-		// translate current x pos to window space if necessary
-		if ts.UsingWindow && pixel >= windowX {
+		xPos = pixel + scrollX
+		if ts.UsingWindow {
 			xPos = pixel - windowX
 		}
 
@@ -282,8 +287,14 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		// which of the 32 horizontal tiles does this xPos fall within?
 		tileCol := uint16(xPos / 8)
 
-		tileAddress := ts.BgMemory + tileRow + tileCol
-
+		var tileAddress uint16
+		if ts.UsingWindow && pixel >= windowX && scanline >= windowY {
+			// tileAddress = ts.WinMemory + tileRow + tileCol
+			tileAddress = ts.WinMemory + (uint16(l.WindowLY))/8*32%0x400 + (uint16(pixel)-uint16(windowX))/8%32
+		} else {
+			tileAddress = ts.BgMemory + tileRow + tileCol
+			tileAddress = ts.BgMemory + (uint16(scanline)+uint16(scrollY))/8*32%0x400 + (uint16(pixel)+uint16(scrollX))/8%32
+		}
 		//deduce tile id in memory
 		tileLocation := ts.TileData
 
@@ -341,13 +352,15 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 			// // logger.Debug(slice)
 		}
 
-		if (scanline == 53) && (pixel == 48) {
+		if (scanline == 112) && (pixel == 88) {
 			// Map Address: 0x9945
 			// Tile Address: 0:8090
 			// tileNum: 0x09
 			// logger.Debugf("Map Address: %#x, Tile Address: %#x, tileNum: %#x, unsignedTile: %t, LCDC: %08b", tileAddress, tileLocation, tileNum, ts.Unsigned, lcdControl)
 
-			// logger.Debugf("Scanline: %d, Pixel: %d, xPos: %d, yPos: %d, offSet: %#x, oldoffSet: %#x, tileLocation: %#x, tileData: %#x,  tileAddress: %#x, tileAttr: %#x, data1: %#x, data2: %#x, LCDC: %08b, STAT: %08b, IE: %08b, IF: %08b: BGMem: %#x, Unsigned: %t\n", scanline, pixel, xPos, yPos, offSet, oldOffSet, tileLocation, ts.TileData, tileAddress, tileAttr, data1, data2, lcdControl, l.Mb.Memory.IO[IO_STAT-IO_START_ADDR], l.Mb.Cpu.Interrupts.IE, l.Mb.Cpu.Interrupts.IF, ts.BgMemory, ts.Unsigned)
+			// logger.Debugf("Y: %d, X: %d, wx: %d, wy: %d, tileNum: %#x, tileLocation: %#x, tileData: %#x, tileAddress: %#x, xPos: %d, yPos: %d, bgMemory: %#x, winMemory: %#x, WindowLY: %d",
+			// 	scanline, pixel, windowX, windowY, tileNum, tileLocation, ts.TileData, tileAddress, xPos, yPos, ts.BgMemory, ts.WinMemory, l.WindowLY)
+			// logger.Debugf("Scanline: %d, Pixel: %d, xPos: %d, yPos: %d, tileNum: %#x, tileLocation: %#x, tileData: %#x,  tileAddress: %#x, tileAttr: %#x, data1: %#x, data2: %#x, LCDC: %08b, STAT: %08b, IE: %08b, IF: %08b: BGMem: %#x, Unsigned: %t\n", scanline, pixel, xPos, yPos, tileNum, tileLocation, ts.TileData, tileAddress, tileAttr, data1, data2, lcdControl, l.Mb.Memory.IO[IO_STAT-IO_START_ADDR], l.Mb.Cpu.Interrupts.IE, l.Mb.Cpu.Interrupts.IF, ts.BgMemory, ts.Unsigned)
 			// logger.Debugf("Cycles: %d)", l.scanlineCounter)
 		}
 
