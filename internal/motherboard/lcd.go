@@ -1,8 +1,6 @@
 package motherboard
 
 import (
-	"sort"
-
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -99,6 +97,8 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 	}
 }
 
+var prevLY = uint8(0)
+
 func (l *LCD) setLCDStatus() {
 
 	status := l.Mb.Memory.IO[IO_STAT-IO_START_ADDR]
@@ -129,6 +129,7 @@ func (l *LCD) setLCDStatus() {
 	rqstInterrupt := false
 
 	switch {
+
 	case currentLine >= 144:
 		mode = STAT_MODE_VBLANK
 		internal.SetBit(&status, STAT_MODE0)
@@ -162,21 +163,24 @@ func (l *LCD) setLCDStatus() {
 		}
 	}
 
-	if rqstInterrupt && mode != currentMode {
+	if rqstInterrupt && mode != currentMode && prevLY != currentLine {
 		l.Mb.Cpu.SetInterruptFlag(INTR_LCDSTAT)
 	}
 
 	// // check if LYC == LY (coincedence flag)
 	if currentLine == l.Mb.Memory.IO[IO_LYC-IO_START_ADDR] {
 		internal.SetBit(&status, STAT_LYC)
-		if internal.IsBitSet(status, STAT_LYCINT) {
+		if internal.IsBitSet(status, STAT_LYCINT) && prevLY != currentLine {
 			// l.Mb.GuiPause = true
 			l.Mb.Cpu.SetInterruptFlag(INTR_LCDSTAT)
+
 		}
 	} else {
 		internal.ResetBit(&status, STAT_LYC)
 	}
-
+	if prevLY != currentLine {
+		prevLY = currentLine
+	}
 	// write status to memory
 	l.Mb.Memory.IO[IO_STAT-IO_START_ADDR] = status
 }
@@ -186,8 +190,8 @@ func (l *LCD) isLCDEnabled() bool {
 }
 
 func (l *LCD) drawScanline(scanline uint8) {
-	internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_WINEN)
-	internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_OBJEN)
+	// internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_WINEN)
+	// internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_OBJEN)
 
 	control := l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR]
 
@@ -198,9 +202,9 @@ func (l *LCD) drawScanline(scanline uint8) {
 		l.renderTiles(control, scanline)
 	}
 
-	// if internal.IsBitSet(control, LCDC_OBJEN) {
-	// 	l.renderSprites(control, int32(scanline))
-	// }
+	if internal.IsBitSet(control, LCDC_OBJEN) {
+		l.renderSprites(control, int32(scanline))
+	}
 }
 
 type tileSettings struct {
@@ -282,19 +286,14 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 		//deduce tile id in memory
 		tileLocation := ts.TileData
-		var offSet int
-		var oldOffSet int
 
+		var tileNum int16
 		if ts.Unsigned {
-			offSet = int(uint8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
-			oldOffSet = offSet
-			tileLocation += (uint16(offSet * 16))
+			tileNum = int16(l.Mb.Memory.Vram[0][tileAddress-0x8000])
+			tileLocation = tileLocation + uint16(tileNum*16)
 		} else {
-			offSet = int(int8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
-			oldOffSet = offSet
-			offSet = (offSet ^ 0x80) + 128
-			tileLocation += (uint16(offSet * 16))
-
+			tileNum = int16(int8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
+			tileLocation = uint16(int32(tileLocation) + int32((tileNum+128)*16))
 		}
 
 		// Attributes used in CGB mode TODO: check in CGB mode
@@ -335,11 +334,11 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		colorNum := (internal.BitValue(data2, colorBit) << 1) | internal.BitValue(data1, colorBit)
 		if lcdControl != oldlcdc {
 			oldlcdc = lcdControl
-			// logger.Debug(l.CurrentScanline)
-			lys.Add(int(l.CurrentScanline))
-			slice := lys.ToSlice()
-			sort.Ints(slice)
-			// logger.Debug(slice)
+			// // logger.Debug(l.CurrentScanline)
+			// lys.Add(int(l.CurrentScanline))
+			// slice := lys.ToSlice()
+			// sort.Ints(slice)
+			// // logger.Debug(slice)
 		}
 
 		if (scanline == 53) && (pixel == 48) {
@@ -348,8 +347,10 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 			// tileNum: 0x09
 			// logger.Debugf("Map Address: %#x, Tile Address: %#x, tileNum: %#x, unsignedTile: %t, LCDC: %08b", tileAddress, tileLocation, tileNum, ts.Unsigned, lcdControl)
 
-			logger.Debugf("Scanline: %d, Pixel: %d, xPos: %d, yPos: %d, offSet: %#x, oldoffSet: %#x, tileLocation: %#x, tileData: %#x,  tileAddress: %#x, tileAttr: %#x, data1: %#x, data2: %#x, LCDC: %08b, STAT: %08b, IE: %08b, IF: %08b: BGMem: %#x, Unsigned: %t\n", scanline, pixel, xPos, yPos, offSet, oldOffSet, tileLocation, ts.TileData, tileAddress, tileAttr, data1, data2, lcdControl, l.Mb.Memory.IO[IO_STAT-IO_START_ADDR], l.Mb.Cpu.Interrupts.IE, l.Mb.Cpu.Interrupts.IF, ts.BgMemory, ts.Unsigned)
+			// logger.Debugf("Scanline: %d, Pixel: %d, xPos: %d, yPos: %d, offSet: %#x, oldoffSet: %#x, tileLocation: %#x, tileData: %#x,  tileAddress: %#x, tileAttr: %#x, data1: %#x, data2: %#x, LCDC: %08b, STAT: %08b, IE: %08b, IF: %08b: BGMem: %#x, Unsigned: %t\n", scanline, pixel, xPos, yPos, offSet, oldOffSet, tileLocation, ts.TileData, tileAddress, tileAttr, data1, data2, lcdControl, l.Mb.Memory.IO[IO_STAT-IO_START_ADDR], l.Mb.Cpu.Interrupts.IE, l.Mb.Cpu.Interrupts.IF, ts.BgMemory, ts.Unsigned)
+			// logger.Debugf("Cycles: %d)", l.scanlineCounter)
 		}
+
 		// if data1 != 0x00 || data2 != 0x00 {
 		// 	fmt.Printf("-----------------\n"+
 		// 		"data1: %#x, data2: %#x, tileLocation: %#x, line: %#x, tileAddress: %#x, tileAttr: %#x\n"+
