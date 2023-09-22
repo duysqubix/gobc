@@ -436,6 +436,10 @@ func (l *LCD) renderSprites(lcdControl uint8) {
 
 		xPos := int32(l.Mb.Memory.Oam[index+1]) - 8
 		tileLocation := l.Mb.Memory.Oam[index+2]
+		if ySize == 16 {
+			tileLocation &= 0b11111110
+		}
+
 		attributes := l.Mb.Memory.Oam[index+3]
 
 		yFlip := internal.IsBitSet(attributes, 6)
@@ -455,7 +459,7 @@ func (l *LCD) renderSprites(lcdControl uint8) {
 		}
 
 		// Load the data containing the sprite data for this line
-		dataAddress := (uint16(tileLocation) * 16) + uint16(line*2) // + (bank * 0x2000))
+		dataAddress := (uint16(tileLocation) * 16) + (uint16(line * 2))
 
 		data1 := l.Mb.Memory.Vram[bank][dataAddress]
 		data2 := l.Mb.Memory.Vram[bank][dataAddress+1]
