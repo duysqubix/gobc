@@ -282,15 +282,18 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 		//deduce tile id in memory
 		tileLocation := ts.TileData
-		var tileNum int
-
+		var offSet int
+		var oldOffSet int
 
 		if ts.Unsigned {
-			tileNum = int(uint8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
-			tileLocation += (uint16(tileNum * 16))
+			offSet = int(uint8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
+			oldOffSet = offSet
+			tileLocation += (uint16(offSet * 16))
 		} else {
-			tileNum = int(int8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
-			tileLocation += (uint16((int(tileNum)+128)*16) - 0x800)
+			offSet = int(int8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
+			oldOffSet = offSet
+			offSet = (offSet ^ 0x80) + 128
+			tileLocation += (uint16(offSet * 16))
 
 		}
 
@@ -345,7 +348,7 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 			// tileNum: 0x09
 			// logger.Debugf("Map Address: %#x, Tile Address: %#x, tileNum: %#x, unsignedTile: %t, LCDC: %08b", tileAddress, tileLocation, tileNum, ts.Unsigned, lcdControl)
 
-			logger.Debugf("Scanline: %d, Pixel: %d, xPos: %d, yPos: %d, tileNum: %#x, tileLocation: %#x, tileData: %#x,  tileAddress: %#x, tileAttr: %#x, data1: %#x, data2: %#x, LCDC: %08b, STAT: %08b, IE: %08b, IF: %08b: BGMem: %#x, Unsigned: %t\n", scanline, pixel, xPos, yPos, tileNum, tileLocation, ts.TileData, tileAddress, tileAttr, data1, data2, lcdControl, l.Mb.Memory.IO[IO_STAT-IO_START_ADDR], l.Mb.Cpu.Interrupts.IE, l.Mb.Cpu.Interrupts.IF, ts.BgMemory, ts.Unsigned)
+			logger.Debugf("Scanline: %d, Pixel: %d, xPos: %d, yPos: %d, offSet: %#x, oldoffSet: %#x, tileLocation: %#x, tileData: %#x,  tileAddress: %#x, tileAttr: %#x, data1: %#x, data2: %#x, LCDC: %08b, STAT: %08b, IE: %08b, IF: %08b: BGMem: %#x, Unsigned: %t\n", scanline, pixel, xPos, yPos, offSet, oldOffSet, tileLocation, ts.TileData, tileAddress, tileAttr, data1, data2, lcdControl, l.Mb.Memory.IO[IO_STAT-IO_START_ADDR], l.Mb.Cpu.Interrupts.IE, l.Mb.Cpu.Interrupts.IF, ts.BgMemory, ts.Unsigned)
 		}
 		// if data1 != 0x00 || data2 != 0x00 {
 		// 	fmt.Printf("-----------------\n"+
