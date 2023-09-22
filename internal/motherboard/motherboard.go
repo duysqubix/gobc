@@ -254,6 +254,7 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 	*
 	 */
 	case 0xFE00 <= addr && addr < 0xFEA0:
+		return m.Memory.Oam[addr-0xFE00]
 
 	/*
 	*

@@ -403,9 +403,9 @@ func (l *LCD) getColour(colourNum byte, palette byte) (uint8, uint8, uint8) {
 	return r, g, b
 }
 
-func (l *LCD) renderSprites(lcdControl uint8, scanline int32) {
+func (l *LCD) renderSprites(lcdControl uint8) {
 	var ySize int32 = 8
-
+	scanline := int32(l.CurrentScanline)
 	if internal.IsBitSet(lcdControl, LCDC_OBJSZ) {
 		ySize = 16
 
@@ -423,7 +423,7 @@ func (l *LCD) renderSprites(lcdControl uint8, scanline int32) {
 		index := sprite * 4
 
 		// If this is true the scanline is out of the area we care about
-		yPos := int32(l.Mb.GetItem(uint16(0xFE00+index))) - 16
+		yPos := int32(l.Mb.Memory.Oam[index]) - 16
 		if scanline < yPos || scanline >= (yPos+ySize) {
 			continue
 		}
@@ -434,9 +434,9 @@ func (l *LCD) renderSprites(lcdControl uint8, scanline int32) {
 		}
 		lineSprites++
 
-		xPos := int32(l.Mb.GetItem(uint16(0xFE00+index+1))) - 8
-		tileLocation := l.Mb.GetItem(uint16(0xFE00 + index + 2))
-		attributes := l.Mb.GetItem(uint16(0xFE00 + index + 3))
+		xPos := int32(l.Mb.Memory.Oam[index+1]) - 8
+		tileLocation := l.Mb.Memory.Oam[index+2]
+		attributes := l.Mb.Memory.Oam[index+3]
 
 		yFlip := internal.IsBitSet(attributes, 6)
 		xFlip := internal.IsBitSet(attributes, 5)
@@ -455,11 +455,10 @@ func (l *LCD) renderSprites(lcdControl uint8, scanline int32) {
 		}
 
 		// Load the data containing the sprite data for this line
-		dataAddress := (uint16(tileLocation) * 16) + uint16(line*2) + (bank * 0x2000)
-		// data1 := gb.Memory.VRAM[dataAddress]
-		// data2 := gb.Memory.VRAM[dataAddress+1]
-		data1 := l.Mb.Memory.Vram[bank][dataAddress-0x8000]
-		data2 := l.Mb.Memory.Vram[bank][dataAddress+1-0x8000]
+		dataAddress := (uint16(tileLocation) * 16) + uint16(line*2) // + (bank * 0x2000))
+
+		data1 := l.Mb.Memory.Vram[bank][dataAddress]
+		data2 := l.Mb.Memory.Vram[bank][dataAddress+1]
 
 		// Draw the line of the sprite
 		for tilePixel := byte(0); tilePixel < 8; tilePixel++ {
