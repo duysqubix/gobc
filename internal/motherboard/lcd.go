@@ -13,6 +13,10 @@ const (
 	spritePriorityOffset = 100
 )
 
+var (
+	prevLY = uint8(0)
+)
+
 type LCD struct {
 
 	// Matrix of pixel data which is used while the screen is rendering. When the screen is done rendering, this data is copied to the PreparedData matrix.
@@ -97,8 +101,6 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 	}
 }
 
-var prevLY = uint8(0)
-
 func (l *LCD) setLCDStatus() {
 
 	status := l.Mb.Memory.IO[IO_STAT-IO_START_ADDR]
@@ -121,8 +123,7 @@ func (l *LCD) setLCDStatus() {
 
 	l.screenCleared = false
 
-	currentLine := l.Mb.Memory.IO[IO_LY-IO_START_ADDR]
-	l.CurrentScanline = currentLine
+	l.CurrentScanline = l.Mb.Memory.IO[IO_LY-IO_START_ADDR]
 	currentMode := status & 0b11
 
 	var mode uint8
@@ -130,7 +131,7 @@ func (l *LCD) setLCDStatus() {
 
 	switch {
 
-	case currentLine >= 144:
+	case l.CurrentScanline >= 144:
 		mode = STAT_MODE_VBLANK
 		internal.SetBit(&status, STAT_MODE0)
 		internal.ResetBit(&status, STAT_MODE1)
@@ -151,7 +152,7 @@ func (l *LCD) setLCDStatus() {
 			// draw scanline when we start mode 3. In the real gameboy
 			// this would be done through mode 3 by readong OAM and VRAM
 			// to generate the picture
-			l.drawScanline(currentLine)
+			l.drawScanline()
 		}
 	default:
 		mode = STAT_MODE_HBLANK
@@ -159,28 +160,26 @@ func (l *LCD) setLCDStatus() {
 		internal.ResetBit(&status, STAT_MODE0)
 		rqstInterrupt = internal.IsBitSet(status, STAT_HBLINT)
 		if mode != currentMode {
-			// fmt.Printf("Mode is now HBLANK\n")
 			l.Mb.DoHDMATransfer() // do HDMATransfer when we start mode 0
 		}
 	}
 
-	if rqstInterrupt && mode != currentMode && prevLY != currentLine {
+	if rqstInterrupt && mode != currentMode && prevLY != l.CurrentScanline {
 		l.Mb.Cpu.SetInterruptFlag(INTR_LCDSTAT)
 	}
 
 	// // check if LYC == LY (coincedence flag)
-	if currentLine == l.Mb.Memory.IO[IO_LYC-IO_START_ADDR] {
+	if l.CurrentScanline == l.Mb.Memory.IO[IO_LYC-IO_START_ADDR] {
 		internal.SetBit(&status, STAT_LYC)
-		if internal.IsBitSet(status, STAT_LYCINT) && prevLY != currentLine {
-			// l.Mb.GuiPause = true
+		if internal.IsBitSet(status, STAT_LYCINT) && prevLY != l.CurrentScanline {
 			l.Mb.Cpu.SetInterruptFlag(INTR_LCDSTAT)
 
 		}
 	} else {
 		internal.ResetBit(&status, STAT_LYC)
 	}
-	if prevLY != currentLine {
-		prevLY = currentLine
+	if prevLY != l.CurrentScanline {
+		prevLY = l.CurrentScanline
 	}
 	// write status to memory
 	l.Mb.Memory.IO[IO_STAT-IO_START_ADDR] = status
@@ -190,21 +189,19 @@ func (l *LCD) isLCDEnabled() bool {
 	return internal.IsBitSet(l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_ENABLE)
 }
 
-func (l *LCD) drawScanline(scanline uint8) {
+func (l *LCD) drawScanline() {
 	// internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_WINEN)
-	internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_OBJEN)
+	// internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_OBJEN)
 
 	control := l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR]
 
-	// disable window  for debugging
-
 	// LCDC bit 0 clears tiles on DMG but controls priority on CBG
 	if l.Mb.Cgb || internal.IsBitSet(control, LCDC_BGEN) {
-		l.renderTiles(control, scanline)
+		l.renderTiles(control)
 	}
 
 	if internal.IsBitSet(control, LCDC_OBJEN) {
-		l.renderSprites(control, int32(scanline))
+		l.renderSprites(control)
 	}
 }
 
@@ -252,7 +249,7 @@ func (l *LCD) getTileSettings(lcdControl uint8, windowY uint8) tileSettings {
 	}
 }
 
-func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
+func (l *LCD) renderTiles(lcdControl uint8) {
 	scrollY := l.Mb.Memory.IO[IO_SCY-IO_START_ADDR]
 	scrollX := l.Mb.Memory.IO[IO_SCX-IO_START_ADDR]
 	windowY := l.Mb.Memory.IO[IO_WY-IO_START_ADDR]
@@ -260,19 +257,20 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 	ts := l.getTileSettings(lcdControl, windowY)
 
-	if ts.UsingWindow && windowY < scanline && windowX <= internal.GB_SCREEN_WIDTH {
+	if ts.UsingWindow && windowY < l.CurrentScanline && windowX <= internal.GB_SCREEN_WIDTH {
 		l.WindowLY++
 	}
 
-	var yPos uint8
-	var xPos uint8
-	if !ts.UsingWindow {
-		yPos = scrollY + scanline
-	} else {
-		yPos = l.WindowLY - windowY
+	var (
+		yPos, xPos       uint8
+		tileRow, tileCol uint16
+	)
+
+	yPos = scrollY + l.CurrentScanline
+	if ts.UsingWindow {
+		yPos = l.CurrentScanline - windowY
 	}
 
-	tileRow := uint16(yPos/8) * 32
 	palette := l.Mb.Memory.IO[IO_BGP-IO_START_ADDR]
 	l.tileScanline = [internal.GB_SCREEN_WIDTH]uint8{}
 
@@ -283,18 +281,21 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 			xPos = pixel - windowX
 		}
 
-		l.CurrentPixelPosition = xPos
-		// which of the 32 horizontal tiles does this xPos fall within?
-		tileCol := uint16(xPos / 8)
+		tileCol = (uint16(pixel) + uint16(scrollX)) / 8 % 32
+		tileRow = (uint16(l.CurrentScanline) + uint16(scrollY)) / 8 * 32 % 0x400
+		if ts.UsingWindow && pixel >= windowX && l.CurrentScanline >= windowY {
+			tileCol = (uint16(pixel) - uint16(windowX)) / 8 % 32
+			tileRow = (uint16(l.WindowLY)) / 8 * 32 % 0x400
+
+		}
 
 		var tileAddress uint16
-		if ts.UsingWindow && pixel >= windowX && scanline >= windowY {
-			// tileAddress = ts.WinMemory + tileRow + tileCol
-			tileAddress = ts.WinMemory + (uint16(l.WindowLY))/8*32%0x400 + (uint16(pixel)-uint16(windowX))/8%32
+		if ts.UsingWindow && pixel >= windowX && l.CurrentScanline >= windowY {
+			tileAddress = ts.WinMemory + tileRow + tileCol
 		} else {
 			tileAddress = ts.BgMemory + tileRow + tileCol
-			tileAddress = ts.BgMemory + (uint16(scanline)+uint16(scrollY))/8*32%0x400 + (uint16(pixel)+uint16(scrollX))/8%32
 		}
+
 		//deduce tile id in memory
 		tileLocation := ts.TileData
 
@@ -315,9 +316,7 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		//    Bit 6    Vertical Flip              (0=Normal, 1=Mirror vertically)
 		//    Bit 7    BG-to-OAM Priority         (0=Use OAM priority bit, 1=BG Priority)
 		//
-
 		bank := 0
-
 		tileAttr := l.Mb.Memory.Vram[1][tileAddress-0x8000]
 		if l.Mb.Cgb && internal.IsBitSet(tileAttr, 3) {
 			bank = 1
@@ -343,16 +342,8 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 
 		colorBit := uint8(int8((xPos%8)-7) * -1)
 		colorNum := (internal.BitValue(data2, colorBit) << 1) | internal.BitValue(data1, colorBit)
-		if lcdControl != oldlcdc {
-			oldlcdc = lcdControl
-			// // logger.Debug(l.CurrentScanline)
-			// lys.Add(int(l.CurrentScanline))
-			// slice := lys.ToSlice()
-			// sort.Ints(slice)
-			// // logger.Debug(slice)
-		}
 
-		if (scanline == 112) && (pixel == 88) {
+		if (l.CurrentScanline == 112) && (pixel == 88) {
 			// Map Address: 0x9945
 			// Tile Address: 0:8090
 			// tileNum: 0x09
@@ -375,45 +366,10 @@ func (l *LCD) renderTiles(lcdControl uint8, scanline uint8) {
 		// 	l.setTilePixel(pixel, scanline, tileAttr, colorNum, palette, priority)
 
 		// }
-		l.setTilePixel(pixel, scanline, tileAttr, colorNum, palette, priority)
+		l.setTilePixel(pixel, l.CurrentScanline, tileAttr, colorNum, palette, priority)
 
 	}
 }
-
-var oldlcdc = uint8(0)
-
-type Set struct {
-	list map[int]bool
-}
-
-func (s *Set) Add(value int) {
-	s.list[value] = true
-}
-
-func (s *Set) Contains(value int) bool {
-	_, ok := s.list[value]
-	return ok
-}
-
-func (s *Set) Remove(value int) {
-	delete(s.list, value)
-}
-
-func (s *Set) ToSlice() []int {
-	keys := make([]int, 0, len(s.list))
-	for key := range s.list {
-		keys = append(keys, key)
-	}
-	return keys
-}
-
-func NewSet() *Set {
-	return &Set{make(map[int]bool)}
-}
-
-var lys = NewSet()
-
-// var beginLogging bool = false
 
 func (l *LCD) setTilePixel(x, y, tileAttr, colorNum, palette uint8, priority bool) {
 	l.tileScanline[x] = colorNum

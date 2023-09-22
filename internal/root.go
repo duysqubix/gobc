@@ -2,6 +2,7 @@ package internal
 
 import (
 	"os"
+	"sort"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -94,7 +95,6 @@ func IsInUint16Array(value uint16, array []uint16) bool {
 	return false
 }
 
-
 // used to know how many bytes to read after the opcode
 // during instruction decoding from Program Counter
 var OPCODE_LENGTHS = [512]uint8{
@@ -167,4 +167,39 @@ var OPCODE_NAMES = [512]string{
 	"SET 2, B", "SET 2, C", "SET 2, D", "SET 2, E", "SET 2, H", "SET 2, L", "SET 2, (HL)", "SET 2, A", "SET 3, B", "SET 3, C", "SET 3, D", "SET 3, E", "SET 3, H", "SET 3, L", "SET 3, (HL)", "SET 3, A",
 	"SET 4, B", "SET 4, C", "SET 4, D", "SET 4, E", "SET 4, H", "SET 4, L", "SET 4, (HL)", "SET 4, A", "SET 5, B", "SET 5, C", "SET 5, D", "SET 5, E", "SET 5, H", "SET 5, L", "SET 5, (HL)", "SET 5, A",
 	"SET 6, B", "SET 6, C", "SET 6, D", "SET 6, E", "SET 6, H", "SET 6, L", "SET 6, (HL)", "SET 6, A", "SET 7, B", "SET 7, C", "SET 7, D", "SET 7, E", "SET 7, H", "SET 7, L", "SET 7, (HL)", "SET 7, A",
+}
+
+type Set struct {
+	list map[int]bool
+}
+
+func (s *Set) Add(value int) {
+	s.list[value] = true
+}
+
+func (s *Set) Contains(value int) bool {
+	_, ok := s.list[value]
+	return ok
+}
+
+func (s *Set) Remove(value int) {
+	delete(s.list, value)
+}
+
+func (s *Set) ToSlice() []int {
+	keys := make([]int, 0, len(s.list))
+	for key := range s.list {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+func (s *Set) Sort() []int {
+	keys := s.ToSlice()
+	sort.Ints(keys)
+	return keys
+}
+
+func NewSet() *Set {
+	return &Set{make(map[int]bool)}
 }
