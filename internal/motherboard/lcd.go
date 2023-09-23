@@ -173,7 +173,6 @@ func (l *LCD) setLCDStatus() {
 		internal.SetBit(&status, STAT_LYC)
 		if internal.IsBitSet(status, STAT_LYCINT) && prevLY != l.CurrentScanline {
 			l.Mb.Cpu.SetInterruptFlag(INTR_LCDSTAT)
-
 		}
 	} else {
 		internal.ResetBit(&status, STAT_LYC)
@@ -190,9 +189,6 @@ func (l *LCD) isLCDEnabled() bool {
 }
 
 func (l *LCD) drawScanline() {
-	// internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_WINEN)
-	// internal.ResetBit(&l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_OBJEN)
-
 	control := l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR]
 
 	// LCDC bit 0 clears tiles on DMG but controls priority on CBG
