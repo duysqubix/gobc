@@ -12,6 +12,14 @@ Generate GIF with the layout and captions
 -->
 <table>
   <tbody>
+      <tr>
+      <td align="center">
+        <img src="docs/tetris.gif" width="400">
+      </td>
+      <!-- <td align="center">
+        <img src="docs/cgb-acid2.png" width="400">
+      </td> -->
+    </tr>
     <tr>
       <td align="center">
         <img src="docs/cpu_instrs.png" width="400">

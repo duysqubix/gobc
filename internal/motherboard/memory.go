@@ -55,6 +55,8 @@ func initIo(ram *IO, cgb bool) {
 
 	// delete once LCD is implemented
 	// ram[IO_LY-IO_START_ADDR] = 0x90
+
+	ram[IO_P1_JOYP-IO_START_ADDR] = 0xFF
 }
 
 func initVram(ram *VRAM, random bool) {

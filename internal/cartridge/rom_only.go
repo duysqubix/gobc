@@ -8,16 +8,8 @@ type RomOnlyCartridge struct {
 }
 
 func (c *RomOnlyCartridge) SetItem(addr uint16, value uint8) {
-	switch {
-	case addr < 0x4000:
-		c.parent.RomBanks[0][addr] = value
-
-	case 0x4000 <= addr && addr < 0x8000:
-		c.parent.RomBanks[1][addr-0x4000] = value
-
-	case 0xA000 <= addr && addr < 0xC000:
-		c.parent.RamBanks[0][addr-0xA000] = value
-	}
+	// do nothing
+	// can't write to ROM and RAM doesn't exist on these carts
 }
 
 func (c *RomOnlyCartridge) GetItem(addr uint16) uint8 {
@@ -30,7 +22,8 @@ func (c *RomOnlyCartridge) GetItem(addr uint16) uint8 {
 		return c.parent.RomBanks[1][addr-0x4000]
 
 	case 0xA000 <= addr && addr < 0xC000:
-		return c.parent.RamBanks[0][addr-0xA000]
+		// RAM doesn't exist, but if an attempt is made, return 0xFF
+		return 0xFF
 	default:
 
 	}

@@ -272,6 +272,9 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 
 		switch addr {
 
+		case 0xFF00: /* P1 */
+			return m.Memory.IO[IO_P1_JOYP-IO_START_ADDR]
+
 		case 0xFF04: /* DIV */
 			return uint8(m.Timer.DIV)
 
@@ -454,6 +457,8 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	case 0xFF00 <= addr && addr < 0xFF80:
 
 		switch addr {
+		case 0xFF00: /* P1 */
+			m.Memory.IO[IO_P1_JOYP-IO_START_ADDR] = 0xFF //v
 
 		case 0xFF04: /* DIV */
 			m.Timer.TimaCounter = 0
