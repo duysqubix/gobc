@@ -14,26 +14,26 @@ Generate GIF with the layout and captions
   <tbody>
       <tr>
       <td align="center">
-        <img src="docs/tetris.gif" width="400">
-      </td>
-      <!-- <td align="center">
-        <img src="docs/cgb-acid2.png" width="400">
-      </td> -->
-    </tr>
-    <tr>
-      <td align="center">
-        <img src="docs/cpu_instrs.png" width="400">
+        <img src="docs/tetris.gif" width="200">
       </td>
       <td align="center">
-        <img src="docs/instr_timing.png" width="400">
+        <img src="docs/dr_mario.png" width="200">
       </td>
     </tr>
     <tr>
       <td align="center">
-        <img src="docs/dmg-acid2.png" width="400">
+        <img src="docs/cpu_instrs.png" width="200">
       </td>
       <td align="center">
-        <img src="docs/cgb-acid2.png" width="400">
+        <img src="docs/instr_timing.png" width="200">
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="docs/dmg-acid2.png" width="200">
+      </td>
+      <td align="center">
+        <img src="docs/cgb-acid2.png" width="200">
       </td>
     </tr>
   </tbody>
