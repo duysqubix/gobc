@@ -337,7 +337,7 @@ func (l *LCD) renderTiles(lcdControl uint8) {
 
 		if l.Mb.Cgb && internal.IsBitSet(tileAttr, 5) {
 			// horizontal flip
-			xPos -= 7
+			xPos = (7 - (pixel+(scrollX&0b111))%8)
 		}
 
 		colorBit := uint8(int8((xPos%8)-7) * -1)
@@ -366,6 +366,10 @@ func (l *LCD) renderTiles(lcdControl uint8) {
 		// 	l.setTilePixel(pixel, scanline, tileAttr, colorNum, palette, priority)
 
 		// }
+
+		if l.Mb.Cgb && !internal.IsBitSet(lcdControl, LCDC_BGEN) {
+			priority = false
+		}
 		l.setTilePixel(pixel, l.CurrentScanline, tileAttr, colorNum, palette, priority)
 
 	}

@@ -13,17 +13,19 @@ Generate GIF with the layout and captions
 <table>
   <tbody>
     <tr>
-      <td align="center">CPU_INSTRS<br>
-      </td>
-      <td align="center">INSTR_TIMING<br>
-      </td>
-    </tr>
-    <tr>
       <td align="center">
         <img src="docs/cpu_instrs.png" width="400">
       </td>
       <td align="center">
         <img src="docs/instr_timing.png" width="400">
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="docs/dmg-acid2.png" width="400">
+      </td>
+      <td align="center">
+        <img src="docs/cgb-acid2.png" width="400">
       </td>
     </tr>
   </tbody>
@@ -34,8 +36,8 @@ Supported Features
 - [x] Emulated CPU (LR35902)
 - [ ] DMG Sound
 - [x] Interrupts
-    * [] V-Blank
-    * [] LCD STAT
+    * [x] V-Blank
+    * [x] LCD STAT
     * [x] Timer
     * [] Serial
     * [] Joypad
@@ -52,8 +54,10 @@ Supported Features
     - [ ] Cartridge Bandai TAMA5
     - [ ] Cartridge Hudson HuC-1
     - [ ] Cartridge Hudson HuC-3
-- [ ] Graphics 
-- [x] RAM
+- [x] Graphics 
+- [x] Memory
+- [x] Timers
+- [x] CGB Mode
 - [x] Opcodes
 
 

@@ -33,6 +33,7 @@ var (
 	internalShowGrid           bool = false
 	internalDebugCyclePerFrame int  = 1
 	internalDebugCycleScaler   int  = 1
+	internalShowDebugInfo      bool = false
 )
 
 type MainGameWindow struct {
@@ -66,42 +67,48 @@ func (mw *MainGameWindow) Update() error {
 		mw.hw.Reset()
 	}
 
-	if mw.Window.JustPressed(pixelgl.KeySpace) || mw.Window.Repeated(pixelgl.KeySpace) {
-		internalGamePaused = !internalGamePaused
-		if !internalGamePaused {
-			mw.hw.Mb.GuiPause = false
+	if internalShowDebugInfo {
+		if mw.Window.JustPressed(pixelgl.KeySpace) || mw.Window.Repeated(pixelgl.KeySpace) {
+			internalGamePaused = !internalGamePaused
+			if !internalGamePaused {
+				mw.hw.Mb.GuiPause = false
+			}
+
+			// if internalGamePaused {
+			// 	fmt.Printf("%#v", mw.hw.Mb.Lcd.PreparedData)
+			// }
 		}
 
-		// if internalGamePaused {
-		// 	fmt.Printf("%#v", mw.hw.Mb.Lcd.PreparedData)
-		// }
-	}
-
-	if (mw.Window.JustPressed(pixelgl.KeyN) || mw.Window.Repeated(pixelgl.KeyN)) && internalGamePaused {
-		mw.hw.UpdateInternalGameState(internalDebugCyclePerFrame) // update every tick
-	}
-
-	if (mw.Window.JustPressed(pixelgl.KeyUp) || mw.Window.Repeated(pixelgl.KeyUp)) && internalGamePaused {
-		internalDebugCycleScaler++
-		internalDebugCyclePerFrame = int(math.Pow10(internalDebugCycleScaler))
-	}
-
-	if (mw.Window.JustPressed(pixelgl.KeyDown) || mw.Window.Repeated(pixelgl.KeyDown)) && internalGamePaused {
-		internalDebugCycleScaler--
-		if internalDebugCycleScaler < 0 {
-			internalDebugCycleScaler = 0
+		if (mw.Window.JustPressed(pixelgl.KeyN) || mw.Window.Repeated(pixelgl.KeyN)) && internalGamePaused {
+			mw.hw.UpdateInternalGameState(internalDebugCyclePerFrame) // update every tick
 		}
-		internalDebugCyclePerFrame = int(math.Pow10(internalDebugCycleScaler))
-	}
 
-	if (mw.Window.JustPressed(pixelgl.KeyF) || mw.Window.Repeated(pixelgl.KeyF)) && internalGamePaused {
-		mw.hw.UpdateInternalGameState(mw.cyclesFrame) // update every tick
-		globalFrames++
-		// mw.hw.Mb.Lcd.PrintPreparedData()
+		if (mw.Window.JustPressed(pixelgl.KeyUp) || mw.Window.Repeated(pixelgl.KeyUp)) && internalGamePaused {
+			internalDebugCycleScaler++
+			internalDebugCyclePerFrame = int(math.Pow10(internalDebugCycleScaler))
+		}
+
+		if (mw.Window.JustPressed(pixelgl.KeyDown) || mw.Window.Repeated(pixelgl.KeyDown)) && internalGamePaused {
+			internalDebugCycleScaler--
+			if internalDebugCycleScaler < 0 {
+				internalDebugCycleScaler = 0
+			}
+			internalDebugCyclePerFrame = int(math.Pow10(internalDebugCycleScaler))
+		}
+
+		if (mw.Window.JustPressed(pixelgl.KeyF) || mw.Window.Repeated(pixelgl.KeyF)) && internalGamePaused {
+			mw.hw.UpdateInternalGameState(mw.cyclesFrame) // update every tick
+			globalFrames++
+			// mw.hw.Mb.Lcd.PrintPreparedData()
+		}
 	}
 
 	if mw.Window.JustPressed(pixelgl.KeyF1) || mw.Window.Repeated(pixelgl.KeyF1) {
 		internalShowGrid = !internalShowGrid
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyF2) || mw.Window.Repeated(pixelgl.KeyF2) {
+		internalShowDebugInfo = !internalShowDebugInfo
 	}
 
 	if !internalGamePaused {
@@ -117,14 +124,17 @@ func (mw *MainGameWindow) Update() error {
 		for x := 0; x < internal.GB_SCREEN_WIDTH; x++ {
 			col := mw.hw.Mb.Lcd.PreparedData[x][y]
 			rgb := color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
-			if y == 0 || x == 0 || y == internal.GB_SCREEN_HEIGHT-1 || x == internal.GB_SCREEN_WIDTH-1 {
-				rgb = colornames.Red
-			}
 
-			if y == int(mw.hw.Mb.Lcd.CurrentScanline) {
-				rgb = colornames.Green
-				if x == int(mw.hw.Mb.Lcd.CurrentPixelPosition) {
-					rgb = colornames.Blue
+			if internalShowDebugInfo {
+				if y == 0 || x == 0 || y == internal.GB_SCREEN_HEIGHT-1 || x == internal.GB_SCREEN_WIDTH-1 {
+					rgb = colornames.Red
+				}
+
+				if y == int(mw.hw.Mb.Lcd.CurrentScanline) {
+					rgb = colornames.Green
+					if x == int(mw.hw.Mb.Lcd.CurrentPixelPosition) {
+						rgb = colornames.Blue
+					}
 				}
 			}
 
@@ -176,7 +186,9 @@ func (mw *MainGameWindow) Draw() {
 		fmt.Fprintf(internalConsoleTxt, "Game Paused\nN=%d\nF=%d\n", internalDebugCyclePerFrame, internalDebugCycleScaler)
 	}
 
-	fmt.Fprintf(internalConsoleTxt, "\nCycles: %d\nTotal Frames: %d\nLY: %d", globalCycles, globalFrames, mw.hw.Mb.Lcd.CurrentScanline)
+	if internalShowDebugInfo {
+		fmt.Fprintf(internalConsoleTxt, "\nCycles: %d\nTotal Frames: %d\nLY: %d", globalCycles, globalFrames, mw.hw.Mb.Lcd.CurrentScanline)
+	}
 	internalConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(internalConsoleTxt.Orig, 2))
 
 	mw.Window.Update()
