@@ -190,11 +190,6 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 			reader.ReadString('\n')
 		}
 	}
-
-	// if !c.Mb.BootRomEnabled() {
-	// 	logger.Debugf("BOOTROM DISABLED: PC: %#x SP: %#x, OpCode: %#x", c.Registers.PC, c.Registers.SP, opcode)
-	// }
-	// return OPCODES[opcode](c.Mb, value)
 	return executeOpcode(opcode, c.Mb, value)
 }
 

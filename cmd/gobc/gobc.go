@@ -122,9 +122,14 @@ func mainAction(ctx *cli.Context) error {
 	var force_cgb bool = false
 	var panicOnStuck bool = false
 	var randomize bool = false
+	var force_dmg bool = false
 
 	if ctx.Bool("force-cgb") {
 		force_cgb = true
+	}
+
+	if ctx.Bool("force-dmg") {
+		force_dmg = true
 	}
 
 	if !ctx.Args().Present() {
@@ -146,7 +151,7 @@ func mainAction(ctx *cli.Context) error {
 	}
 
 	romfile := ctx.Args().First()
-	g = windows.NewGoBoyColor(romfile, breakpoints, force_cgb, panicOnStuck, randomize)
+	g = windows.NewGoBoyColor(romfile, breakpoints, force_cgb, force_dmg, panicOnStuck, randomize)
 
 	if ctx.Bool("debug") {
 		// logger.SetLevel(log.DebugLevel)
@@ -197,6 +202,11 @@ func main() {
 			&cli.BoolFlag{
 				Name:  "force-cgb",
 				Usage: "Force CGB mode",
+			},
+
+			&cli.BoolFlag{
+				Name:  "force-dmg",
+				Usage: "Force DMG mode",
 			},
 			&cli.BoolFlag{
 				Name:  "no-gui",

@@ -81,20 +81,27 @@ func (c *CPU) SetInterruptFlag(f uint8) {
 }
 
 func (c *CPU) ServiceInterrupt(interrupt uint8) {
-	if !c.Interrupts.InterruptsOn && c.Halted {
-		c.Halted = false
+	// if !c.Interrupts.InterruptsOn && c.Halted {
+	// 	c.Halted = false
+	// 	c.Mb.Cpu.Registers.PC++
+	// 	return
+	// }
+
+	if c.Halted {
 		c.Mb.Cpu.Registers.PC++
-		return
 	}
 
-	c.Interrupts.InterruptsOn = false
-	c.Halted = false
-	internal.ResetBit(&c.Interrupts.IF, interrupt)
-	sp := c.Registers.SP
-	pc := c.Registers.PC
+	if c.Interrupts.InterruptsOn {
 
-	c.Mb.SetItem(sp-1, (pc&0xff00)>>8)
-	c.Mb.SetItem(sp-2, pc&0xFF)
-	c.Registers.SP -= 2
-	c.Registers.PC = interruptAddresses[interrupt]
+		c.Interrupts.InterruptsOn = false
+		c.Halted = false
+		internal.ResetBit(&c.Interrupts.IF, interrupt)
+		sp := c.Registers.SP
+		pc := c.Registers.PC
+
+		c.Mb.SetItem(sp-1, (pc&0xff00)>>8)
+		c.Mb.SetItem(sp-2, pc&0xFF)
+		c.Registers.SP -= 2
+		c.Registers.PC = interruptAddresses[interrupt]
+	}
 }

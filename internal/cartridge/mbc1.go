@@ -2,10 +2,9 @@ package cartridge
 
 type Mbc1Cartridge struct {
 	parent        *Cartridge
-	romBankSelect uint8
-	ramBankSelect uint8
+	romBankSelect uint16
+	ramBankSelect uint16
 	mode          bool
-	hasBattery    bool
 }
 
 func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
@@ -23,10 +22,10 @@ func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
 		if value == 0 {
 			value = 1
 		}
-		c.romBankSelect = value
+		c.romBankSelect = uint16(value)
 
 	case 0x4000 <= addr && addr < 0x6000:
-		c.ramBankSelect = value & 0x3
+		c.ramBankSelect = uint16(value) & 0x3
 		logger.Debugf("RAM Bank selected: %d", c.ramBankSelect)
 
 	case 0x6000 <= addr && addr < 0x8000:
@@ -63,7 +62,8 @@ func (c *Mbc1Cartridge) GetItem(addr uint16) uint8 {
 
 	case 0x4000 <= addr && addr < 0x8000:
 		c.parent.RomBankSelected = (c.ramBankSelect<<5)%c.parent.RomBanksCount | c.romBankSelect
-		bank := c.parent.RomBankSelected % uint8(len(c.parent.RomBanks))
+		// bank := c.parent.RomBankSelected % uint8(len(c.parent.RomBanks))
+		bank := c.parent.RomBankSelected % c.parent.RomBanksCount
 		return c.parent.RomBanks[bank][addr-0x4000]
 
 	case 0xA000 <= addr && addr < 0xC000:
@@ -77,7 +77,8 @@ func (c *Mbc1Cartridge) GetItem(addr uint16) uint8 {
 			c.parent.RamBankSelected = 0
 		}
 
-		bank := c.parent.RamBankSelected % uint8(c.parent.RamBankCount)
+		// bank := c.parent.RamBankSelected % uint8(c.parent.RamBankCount)
+		bank := c.parent.RamBankSelected % c.parent.RamBankCount
 		return c.parent.RamBanks[bank][addr-0xA000]
 	default:
 		logger.Errorf("Memory read error! Can't read from %#x\n", addr)

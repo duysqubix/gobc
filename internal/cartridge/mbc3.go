@@ -1,82 +1,81 @@
 package cartridge
 
 type Mbc3Cartridge struct {
-	parent  *Cartridge
-	sram    bool
-	battery bool
-	rtc     bool
+	parent         *Cartridge
+	romBankSelect  uint32
+	ramBankSelect  uint32
+	ramBankEnabled bool
+	hasBattery     bool
+	hasRTC         bool
 }
 
 func (c *Mbc3Cartridge) SetItem(addr uint16, value uint8) {
 	switch {
 	case addr < 0x2000:
-		switch {
-		case value&0xf == 0xa:
-			c.parent.RamBankEnabled = true
-		case value == 0:
-			c.parent.RamBankEnabled = false
-
-		default:
-			c.parent.RamBankEnabled = false
-			logger.Debugf("Unexpected command for MBC3: Address: %X, Value: %X", addr, value)
+		if (value & 0b00001111) == 0b1010 {
+			c.ramBankEnabled = true
+		} else if value == 0 {
+			c.ramBankEnabled = false
+		} else {
+			c.ramBankEnabled = false
+			logger.Debugf("Unexpected value for RAM bank enable: %#x", value)
 		}
 
 	case 0x2000 <= addr && addr < 0x4000:
-		value &= 0x7F
+		// value &= 0b01111111 // passes MBC30 test allowing upto 256 banks (4MB ROM)
 		if value == 0 {
 			value = 1
 		}
-		c.parent.RomBankSelected = uint8(value)
+		c.romBankSelect = uint32(value)
 
 	case 0x4000 <= addr && addr < 0x6000:
-		c.parent.RamBankSelected = value
+		c.ramBankSelect = uint32(value)
 
-		if c.parent.RtcEnabled {
-			// TODO: Handle RTC here
+	case 0x6000 <= addr && addr < 0x8000:
+		if c.hasRTC {
+
 		} else {
-			logger.Debugf("RTC not present. Game tried to issue RTC command at address: %X, value: %X", addr, value)
+			logger.Debugf("RTC not present. Game attempted to write to RTC register %#x: %#x", addr, value)
 		}
 
 	case 0xA000 <= addr && addr < 0xC000:
-		if c.parent.RamBankEnabled {
-			switch {
-			case c.parent.RamBankSelected <= 0x03:
-				c.parent.RamBanks[c.parent.RamBankSelected][addr-0xA000] = value
-			case 0x08 <= c.parent.RamBankSelected && c.parent.RamBankSelected <= 0x0C:
-				// TODO: Handle RTC here
-			default:
-				logger.Errorf("Unexpected RAM bank selected: %X", c.parent.RamBankSelected)
+		if c.ramBankEnabled {
+			if c.ramBankSelect <= 0x07 {
+				c.parent.RamBanks[c.ramBankSelect%uint32(c.parent.RamBankCount)][addr-0xA000] = value
+			} else if 0x08 <= c.ramBankSelect && c.ramBankSelect <= 0x0C {
+				// rtc set register}
+			} else {
+				logger.Errorf("Invalid RAM bank selected: %#x", c.ramBankSelect)
+
 			}
-
 		}
-
 	default:
-		logger.Errorf("Invalid writing address for MBC3: %X", addr)
-
+		logger.Errorf("invalid address: %#x", addr)
 	}
 }
 
 func (c *Mbc3Cartridge) GetItem(addr uint16) uint8 {
-	rombank_n := c.parent.RomBankSelected % c.parent.RomBanksCount
 	switch {
 	case addr < 0x4000:
 		return c.parent.RomBanks[0][addr]
 
 	case 0x4000 <= addr && addr < 0x8000:
-
-		return c.parent.RomBanks[rombank_n][addr-0x4000]
+		// logger.Debugf("Reading from ROM bank %#x", c.romBankSelect)
+		return c.parent.RomBanks[c.romBankSelect%uint32(c.parent.RomBanksCount)][addr-0x4000]
 
 	case 0xA000 <= addr && addr < 0xC000:
-
-		if !c.parent.RamBankEnabled {
+		if !c.ramBankEnabled {
 			return 0xFF
 		}
 
-		// TODO: Future handle RTC here
-
-		return c.parent.RamBanks[rombank_n][addr-0xA000]
+		if c.hasRTC && 0x08 <= c.ramBankSelect && c.ramBankSelect <= 0x0C {
+			// rtc get register
+			return 0xFF
+		} else {
+			return c.parent.RamBanks[c.ramBankSelect%uint32(c.parent.RamBankCount)][addr-0xA000]
+		}
 	default:
-
+		logger.Errorf("Read error! Can't read from %#x\n", addr)
 	}
-	return 0
+	return 0xff
 }

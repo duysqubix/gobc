@@ -1,10 +1,7 @@
 package cartridge
 
 type RomOnlyCartridge struct {
-	parent  *Cartridge
-	sram    bool
-	battery bool
-	rtc     bool
+	parent *Cartridge
 }
 
 func (c *RomOnlyCartridge) SetItem(addr uint16, value uint8) {

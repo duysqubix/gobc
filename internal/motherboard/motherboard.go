@@ -44,6 +44,7 @@ type MotherboardParams struct {
 	Filename     *pathlib.Path
 	Randomize    bool
 	ForceCgb     bool
+	ForceDmg     bool
 	Breakpoints  []uint16
 	Decouple     bool
 	PanicOnStuck bool
@@ -82,6 +83,11 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	}
 
 	mb.Cgb = mb.Cartridge.CgbModeEnabled() || params.ForceCgb
+
+	if mb.Cgb && params.ForceDmg {
+		logger.Warn("Forcing DMG mode on CGB cartridge")
+		mb.Cgb = false
+	}
 
 	mb.CpuFreq = internal.DMG_CLOCK_SPEED
 
@@ -369,6 +375,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 			logger.Errorf("Can't write to ROM bank 0 when boot ROM is enabled")
 			return
 		}
+
 		m.Cartridge.CartType.SetItem(addr, v)
 
 	/*
@@ -626,12 +633,10 @@ func (m *Motherboard) performNewDMATransfer(length uint16) {
 
 // Perform a DMA transfer.
 func (m *Motherboard) doDMATransfer(value byte) {
-	// TODO: This may need to be done instead of CPU ticks
 	address := uint16(value) << 8 // (data * 100)
 
 	var i uint16
 	for i = 0; i < 0xA0; i++ {
-		// TODO: Check this doesn't prevent
 		m.SetItem(0xFE00+i, uint16(m.GetItem(address+i)))
 	}
 }

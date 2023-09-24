@@ -5,7 +5,6 @@ package cartridge
 import (
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"reflect"
 
@@ -53,7 +52,7 @@ type CartridgeType interface {
 var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 	// ROM ONLY
 	0x00: func(c *Cartridge) CartridgeType {
-		return &RomOnlyCartridge{parent: c, sram: false, battery: false, rtc: false}
+		return &RomOnlyCartridge{parent: c}
 	},
 
 	0x01: func(c *Cartridge) CartridgeType {
@@ -62,7 +61,6 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 			romBankSelect: 1,
 			ramBankSelect: 0,
 			mode:          false,
-			hasBattery:    false,
 		}
 	},
 
@@ -73,7 +71,6 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 			romBankSelect: 1,
 			ramBankSelect: 0,
 			mode:          false,
-			hasBattery:    false,
 		}
 	},
 
@@ -84,17 +81,29 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 			romBankSelect: 1,
 			ramBankSelect: 0,
 			mode:          false,
-			hasBattery:    true,
 		}
 	},
 
 	// MBC3+TIMER+RAM+BATTERY
 	0x10: func(c *Cartridge) CartridgeType {
-		return &Mbc3Cartridge{parent: c, sram: true, battery: true, rtc: true}
+		return &Mbc3Cartridge{
+			parent:        c,
+			romBankSelect: 1,
+			ramBankSelect: 0,
+			hasBattery:    true,
+			hasRTC:        true,
+		}
 	},
 	// MBC3+RAM+BATTERY
 	0x13: func(c *Cartridge) CartridgeType {
-		return &Mbc3Cartridge{parent: c, sram: true, battery: true, rtc: false}
+		return &Mbc3Cartridge{
+			parent:        c,
+			romBankSelect: 1,
+			ramBankSelect: 0,
+			hasBattery:    true,
+			hasRTC:        false,
+		}
+
 	},
 }
 
@@ -106,13 +115,13 @@ type Cartridge struct {
 	// ROM Banks
 	// RomBanks        [128][MEMORY_BANK_SIZE]uint8 // slice of ROM banks
 	RomBanks        [][]uint8 // slice of ROM banks
-	RomBanksCount   uint8     // number of ROM banks
-	RomBankSelected uint8     // currently selected ROM bank
+	RomBanksCount   uint16    // number of ROM banks
+	RomBankSelected uint16    // currently selected ROM bank
 
 	// RAM Banks
 	RamBanks           [16][RAM_BANK_SIZE]uint8 // slice of RAM banks
-	RamBankCount       uint8                    // number of RAM banks
-	RamBankSelected    uint8                    // currently selected RAM bank
+	RamBankCount       uint16                   // number of RAM banks
+	RamBankSelected    uint16                   // currently selected RAM bank
 	RamBankEnabled     bool                     // whether RAM bank is supported
 	RamBankInitialized bool                     // whether RAM bank has been initialized
 
@@ -207,7 +216,7 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 		fname = ""
 	}
 
-	var ramBankCount uint8
+	var ramBankCount uint16
 
 	switch rom_banks[0][SRAM_SIZE_ADDR] {
 	case 0x00:
@@ -226,15 +235,41 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 		logger.Panicf("Invalid RAM size: %02X", rom_banks[0][SRAM_SIZE_ADDR])
 	}
 
+	var romBankCount uint16
+	switch rom_banks[0][ROM_SIZE_ADDR] {
+	case 0x00:
+		romBankCount = 2
+	case 0x01:
+		romBankCount = 4
+	case 0x02:
+		romBankCount = 8
+	case 0x03:
+		romBankCount = 16
+	case 0x04:
+		romBankCount = 32
+	case 0x05:
+		romBankCount = 64
+	case 0x06:
+		romBankCount = 128
+	case 0x07:
+		romBankCount = 256
+	case 0x08:
+		romBankCount = 512
+	}
+	logger.Debugf("Detected ROM bank count: %d, Calculated Number of ROM Banks: %d", romBankCount, len(rom_data)/int(MEMORY_BANK_SIZE))
+	if romBankCount != uint16(len(rom_data)/int(MEMORY_BANK_SIZE)) {
+		logger.Fatalf("ROM bank count mismatch. Expected %d, got %d", romBankCount, len(rom_data)/int(MEMORY_BANK_SIZE))
+	}
+
 	cart := Cartridge{
 		RomBanks:        rom_banks,
 		filename:        fname,
-		RomBanksCount:   uint8(len(rom_banks)),
+		RomBanksCount:   romBankCount,
 		RomBankSelected: 0,
 		RamBankSelected: 0,
 		RamBankCount:    ramBankCount,
 		MemoryModel:     0,
-		Randomize:       false, // TODO: make this configurable
+		Randomize:       false,
 	}
 
 	cart_type_addr := rom_banks[0][CARTRIDGE_TYPE_ADDR]
@@ -261,32 +296,6 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 	logger.Infof("ROM Banks: %d, Size: %dKb", cart.RomBanksCount, cart.RomBanksCount*16)
 	logger.Infof("RAM Banks: %d, Size: %dKb", cart.RamBankCount, cart.RamBankCount*8)
 	return &cart
-}
-
-func (c *Cartridge) initRambanks() {
-	if c.CartType == nil {
-		return
-	}
-
-	c.RamBankInitialized = true
-
-	if c.Randomize {
-		for _, ram := range c.RamBanks {
-			for i := range ram {
-				ram[i] = uint8(rand.Intn(256))
-			}
-		}
-	}
-
-	// set initial RAM values as specified by Moon-Eye-Test Suite
-	ctype := c.RomBanks[0][CARTRIDGE_TYPE_ADDR]
-	banks := initialCartRam.numberOfBanks(ctype)
-
-	for i := uint8(0); i < banks; i++ {
-		bank := initialCartRam.get(ctype, i)
-		copy(c.RamBanks[i][:], bank[:])
-	}
-
 }
 
 func (c *Cartridge) ValidateChecksum() (uint8, bool) {
