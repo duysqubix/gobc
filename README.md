@@ -14,6 +14,14 @@ Generate GIF with the layout and captions
   <tbody>
       <tr>
       <td align="center">
+        <img src="docs/crystal.gif" width="200">
+      </td>
+      <td align="center">
+        <img src="docs/blue.gif" width="200">
+      </td>
+    </tr>
+      <tr>
+      <td align="center">
         <img src="docs/tetris.gif" width="200">
       </td>
       <td align="center">
