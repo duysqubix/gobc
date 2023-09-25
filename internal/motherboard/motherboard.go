@@ -484,7 +484,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 
 		switch addr {
 		case 0xFF00: /* P1 */
-			m.Memory.IO[IO_P1_JOYP-IO_START_ADDR] = 0xff
+			m.Memory.IO[IO_P1_JOYP-IO_START_ADDR] = 0xCF
 
 		case 0xFF04: /* DIV */
 			m.Timer.TimaCounter = 0

@@ -516,11 +516,6 @@ func (l *LCD) renderSprites(lcdControl uint8) {
 }
 
 func (l *LCD) clearScreen() {
-	// if l.screenCleared {
-	// 	return
-	// }
-
-	// set every pixel to white
 
 	for x := 0; x < len(l.PreparedData); x++ {
 		for y := 0; y < len(l.PreparedData[x]); y++ {
