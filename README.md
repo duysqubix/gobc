@@ -50,13 +50,10 @@ Generate GIF with the layout and captions
 Supported Features
 ==================
 - [x] Emulated CPU (LR35902)
-- [ ] DMG Sound
+- [ ] Sound
 - [x] Interrupts
-    * [x] V-Blank
-    * [x] LCD STAT
-    * [x] Timer
-    * [] Serial
-    * [] Joypad
+- [ ] Joypad
+- [ ] Serial
 - [ ] Cartridges
     - [x] Cartridge RAM_ONLY
     - [x] Cartridge MBC1
@@ -71,10 +68,8 @@ Supported Features
     - [ ] Cartridge Hudson HuC-1
     - [ ] Cartridge Hudson HuC-3
 - [x] Graphics 
-- [x] Memory
 - [x] Timers
 - [x] CGB Mode
-- [x] Opcodes
 
 
 Installation

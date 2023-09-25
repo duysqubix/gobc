@@ -52,31 +52,13 @@ func (mw *MainGameWindow) SetUp() {
 	internalConsoleTxt.Color = colornames.Red
 }
 
-// this will get called every frame
-// every frame must be called 1 / GB_CLOCK_HZ times in order to run the emulator at the correct speed
-func (mw *MainGameWindow) Update() error {
-	if !internalGamePaused {
-		globalFrames++
-	}
-
-	if mw.hw.Mb.GuiPause {
-		internalGamePaused = true
-	}
-
-	if mw.Window.JustPressed(pixelgl.KeyR) || mw.Window.Repeated(pixelgl.KeyR) {
-		mw.hw.Reset()
-	}
-
+func (mw *MainGameWindow) _handleDebugInput() {
 	if internalShowDebugInfo {
 		if mw.Window.JustPressed(pixelgl.KeySpace) || mw.Window.Repeated(pixelgl.KeySpace) {
 			internalGamePaused = !internalGamePaused
 			if !internalGamePaused {
 				mw.hw.Mb.GuiPause = false
 			}
-
-			// if internalGamePaused {
-			// 	fmt.Printf("%#v", mw.hw.Mb.Lcd.PreparedData)
-			// }
 		}
 
 		if (mw.Window.JustPressed(pixelgl.KeyN) || mw.Window.Repeated(pixelgl.KeyN)) && internalGamePaused {
@@ -99,7 +81,6 @@ func (mw *MainGameWindow) Update() error {
 		if (mw.Window.JustPressed(pixelgl.KeyF) || mw.Window.Repeated(pixelgl.KeyF)) && internalGamePaused {
 			mw.hw.UpdateInternalGameState(mw.cyclesFrame) // update every tick
 			globalFrames++
-			// mw.hw.Mb.Lcd.PrintPreparedData()
 		}
 	}
 
@@ -109,6 +90,57 @@ func (mw *MainGameWindow) Update() error {
 
 	if mw.Window.JustPressed(pixelgl.KeyF2) || mw.Window.Repeated(pixelgl.KeyF2) {
 		internalShowDebugInfo = !internalShowDebugInfo
+	}
+}
+
+func (mw *MainGameWindow) _handleJoyPadInput() {
+	/*
+		KeyA = Button B
+		KeyS = Button A
+		KeyEnter = Start
+		KeyBackspace = Select
+
+		KeyUp = Up
+		KeyDown = Down
+		KeyLeft = Left
+		KeyRight = Right
+	*/
+
+	if mw.Window.JustPressed(pixelgl.KeyEnter) || mw.Window.Repeated(pixelgl.KeyEnter) {
+		mw.hw.Mb.PressButton(motherboard.ButtonStart)
+	}
+	if mw.Window.JustReleased(pixelgl.KeyEnter) {
+		mw.hw.Mb.ReleaseButton(motherboard.ButtonStart)
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyS) || mw.Window.Repeated(pixelgl.KeyS) {
+		mw.hw.Mb.PressButton(motherboard.ButtonA)
+	}
+	if mw.Window.JustReleased(pixelgl.KeyS) {
+		mw.hw.Mb.ReleaseButton(motherboard.ButtonA)
+	}
+
+}
+
+func (mw *MainGameWindow) handleInput() {
+	if mw.Window.JustPressed(pixelgl.KeyR) || mw.Window.Repeated(pixelgl.KeyR) {
+		mw.hw.Reset()
+	}
+
+	mw._handleDebugInput()
+	mw._handleJoyPadInput()
+
+}
+
+func (mw *MainGameWindow) Update() error {
+	if !internalGamePaused {
+		globalFrames++
+	}
+
+	mw.handleInput()
+
+	if mw.hw.Mb.GuiPause {
+		internalGamePaused = true
 	}
 
 	if !internalGamePaused {

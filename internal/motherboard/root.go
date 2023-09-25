@@ -139,6 +139,24 @@ type OpCode uint16                                        // 16-bit opcodes
 type OpCycles int64                                       // Number of cycles an operation takes
 type OpLogic func(mb *Motherboard, value uint16) OpCycles // Operation logic
 type OpCodeMap map[OpCode]OpLogic                         // Map of opcodes to their logic
+const (
+	// ButtonA is the A button on the GameBoy.
+	ButtonA = 0
+	// ButtonB is the B button on the GameBoy.
+	ButtonB = 1
+	// ButtonSelect is the select button on the GameBoy.
+	ButtonSelect = 2
+	// ButtonStart is the start button on the GameBoy.
+	ButtonStart = 3
+	// ButtonRight is the right dpad direction on the GameBoy.
+	ButtonRight = 4
+	// ButtonLeft is the left dpad direction on the GameBoy.
+	ButtonLeft = 5
+	// ButtonUp is the up dpad direction on the GameBoy.
+	ButtonUp = 6
+	// ButtonDown is the down dpad direction on the GameBoy.
+	ButtonDown = 7
+)
 
 func MemoryMapName(addr uint16) string {
 	switch {
