@@ -1,10 +1,6 @@
 package motherboard
 
 func (m *Motherboard) GetItem(addr uint16) uint8 {
-	if m.Decouple {
-		logger.Warn("Decoupled Motherboard from other components. Memory read is mocked")
-		return 0xDA // mock return value
-	}
 
 	// debugging
 	switch {
@@ -108,10 +104,6 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 	*
 	 */
 	case 0xFF00 <= addr && addr < 0xFF80:
-		switch {
-		case 0xFF10 <= addr && addr <= 0xFF3F: /* Sound Registers */
-			return 0xFF
-		}
 
 		switch addr {
 
@@ -138,6 +130,9 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 
 		case 0xFF41: /* STAT */
 			return m.Memory.IO[IO_STAT-IO_START_ADDR]
+
+		case 0xFF44: /* LY */
+			return m.Memory.IO[IO_LY-IO_START_ADDR]
 
 		case 0xFF46: /* DMA */
 			return 0x00
