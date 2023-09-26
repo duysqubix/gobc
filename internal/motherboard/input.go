@@ -35,7 +35,7 @@ type Input struct {
 	standard    uint8
 }
 
-func (i *Input) NewInput() *Input {
+func NewInput() *Input {
 	return &Input{
 		directional: 0x0F,
 		standard:    0x0F,

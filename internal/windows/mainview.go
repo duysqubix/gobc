@@ -107,17 +107,67 @@ func (mw *MainGameWindow) _handleJoyPadInput() {
 	*/
 
 	if mw.Window.JustPressed(pixelgl.KeyEnter) || mw.Window.Repeated(pixelgl.KeyEnter) {
-		mw.hw.Mb.PressButton(motherboard.ButtonStart)
+		mw.hw.Mb.ButtonEvent(motherboard.StartPress)
 	}
+
 	if mw.Window.JustReleased(pixelgl.KeyEnter) {
-		mw.hw.Mb.ReleaseButton(motherboard.ButtonStart)
+		mw.hw.Mb.ButtonEvent(motherboard.StartRelease)
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyRightShift) || mw.Window.Repeated(pixelgl.KeyRightShift) {
+		mw.hw.Mb.ButtonEvent(motherboard.SelectPress)
+	}
+
+	if mw.Window.JustReleased(pixelgl.KeyRightShift) {
+		mw.hw.Mb.ButtonEvent(motherboard.SelectRelease)
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyLeft) || mw.Window.Repeated(pixelgl.KeyLeft) {
+		mw.hw.Mb.ButtonEvent(motherboard.LeftArrowPress)
+	}
+
+	if mw.Window.JustReleased(pixelgl.KeyLeft) {
+		mw.hw.Mb.ButtonEvent(motherboard.LeftArrowRelease)
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyRight) || mw.Window.Repeated(pixelgl.KeyRight) {
+		mw.hw.Mb.ButtonEvent(motherboard.RightArrowPress)
+	}
+
+	if mw.Window.JustReleased(pixelgl.KeyRight) {
+		mw.hw.Mb.ButtonEvent(motherboard.RightArrowRelease)
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyUp) || mw.Window.Repeated(pixelgl.KeyUp) {
+		mw.hw.Mb.ButtonEvent(motherboard.UpArrowPress)
+	}
+
+	if mw.Window.JustReleased(pixelgl.KeyUp) {
+		mw.hw.Mb.ButtonEvent(motherboard.UpArrowRelease)
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyDown) || mw.Window.Repeated(pixelgl.KeyDown) {
+		mw.hw.Mb.ButtonEvent(motherboard.DownArrowPress)
+	}
+
+	if mw.Window.JustReleased(pixelgl.KeyDown) {
+		mw.hw.Mb.ButtonEvent(motherboard.DownArrowRelease)
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyA) || mw.Window.Repeated(pixelgl.KeyA) {
+		mw.hw.Mb.ButtonEvent(motherboard.BPress)
+	}
+
+	if mw.Window.JustReleased(pixelgl.KeyA) {
+		mw.hw.Mb.ButtonEvent(motherboard.BRelease)
 	}
 
 	if mw.Window.JustPressed(pixelgl.KeyS) || mw.Window.Repeated(pixelgl.KeyS) {
-		mw.hw.Mb.PressButton(motherboard.ButtonA)
+		mw.hw.Mb.ButtonEvent(motherboard.APress)
 	}
+
 	if mw.Window.JustReleased(pixelgl.KeyS) {
-		mw.hw.Mb.ReleaseButton(motherboard.ButtonA)
+		mw.hw.Mb.ButtonEvent(motherboard.ARelease)
 	}
 
 }

@@ -23,12 +23,12 @@ type Motherboard struct {
 	BootRom       *BootRom             // Boot ROM
 	Timer         *Timer               // Timer
 	Lcd           *LCD                 // LCD
+	Input         *Input               // Input
 	Cgb           bool                 // Color Gameboy
 	CpuFreq       uint32               // CPU frequency
 	Randomize     bool                 // Randomize RAM on startup
 	BGPalette     *cgbPalette          // Background palette
 	SpritePalette *cgbPalette          // Sprite palette
-	JoyPadMask    uint8                // Joypad mask
 
 	hdmaActive  bool  // HDMA active
 	hdmaLength  uint8 // HDMA length
@@ -81,6 +81,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 		PanicOnStuck:  params.PanicOnStuck,
 		BGPalette:     NewPalette(),
 		SpritePalette: NewPalette(),
+		Input:         NewInput(),
 	}
 
 	mb.Cgb = mb.Cartridge.CgbModeEnabled() || params.ForceCgb
@@ -134,18 +135,6 @@ func (m *Motherboard) BootRomEnabled() bool {
 	return m.BootRom.IsEnabled
 }
 
-func (m *Motherboard) PressButton(button uint8) {
-	// need to check if the previous state of the button was 1
-	if internal.IsBitSet(m.JoyPadMask, button) {
-		m.Cpu.SetInterruptFlag(INTR_HIGHTOLOW)
-	}
-	internal.ResetBit(&m.JoyPadMask, button)
-}
-
-func (m *Motherboard) ReleaseButton(button uint8) {
-	internal.SetBit(&m.JoyPadMask, button)
-}
-
 func (m *Motherboard) Tick() (bool, OpCycles) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -177,6 +166,13 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 
 	cycles += m.Cpu.handleInterrupts()
 	return true, cycles
+}
+
+func (m *Motherboard) ButtonEvent(key Key) {
+	result := m.Input.KeyEvent(key)
+	if result != 0 {
+		m.Cpu.SetInterruptFlag(INTR_HIGHTOLOW)
+	}
 }
 
 func (m *Motherboard) GetItem(addr uint16) uint8 {
@@ -291,14 +287,7 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 		switch addr {
 
 		case 0xFF00: /* P1 */
-			currentState := m.Memory.IO[IO_P1_JOYP-IO_START_ADDR]
-			var in uint8 = 0xF
-			if internal.IsBitSet(currentState, 4) {
-				in = m.JoyPadMask & 0xF
-			} else if internal.IsBitSet(currentState, 5) {
-				in = (m.JoyPadMask >> 4) & 0xF
-			}
-			return currentState | 0xC0 | in
+			return m.Memory.IO[IO_P1_JOYP-IO_START_ADDR]
 
 		case 0xFF04: /* DIV */
 			return uint8(m.Timer.DIV)
@@ -484,7 +473,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 
 		switch addr {
 		case 0xFF00: /* P1 */
-			m.Memory.IO[IO_P1_JOYP-IO_START_ADDR] = 0xCF
+			m.Memory.IO[IO_P1_JOYP-IO_START_ADDR] = m.Input.Pull(v)
 
 		case 0xFF04: /* DIV */
 			m.Timer.TimaCounter = 0
@@ -618,7 +607,6 @@ func (m *Motherboard) DoHDMATransfer() {
 	if !m.hdmaActive {
 		return
 	}
-	logger.Debug("Performing HDMA transfer")
 	m.performNewDMATransfer(0x10)
 	if m.hdmaLength > 0 {
 		m.hdmaLength--
