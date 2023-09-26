@@ -223,6 +223,32 @@ func main() {
 		},
 	}
 
+	var cmdsMessage string = `
+	Commands: 
+		Arrow Up:                    Up
+		Arrow Down:                  Down
+		Arrow Left:                  Left
+		Arrow Right:                 Right
+		S:                           A
+		A:                           B
+		Enter:                       Start
+		Backspace:                   Select
+
+	FKeys:
+		F1:                          Toggle Grid
+		F2:                          Toggle DebugMode
+		F3:                          Cycle Color Palette (DMG Only)
+	
+	Debug Commands:
+		Space:                       Game Pause
+		F:                           1x Step Frame
+		B:                           10x Step Frame
+		N:                           nX Step Frame (Based on Value set by B,M)
+		M:                           -10x Step Frame
+
+
+	`
+	fmt.Println(cmdsMessage)
 	if err := app.Run(os.Args); err != nil {
 
 		log.Fatal(err)

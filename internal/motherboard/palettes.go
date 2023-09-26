@@ -60,7 +60,7 @@ func NewPalette() *cgbPalette {
 	return &cgbPalette{Palette: pal}
 }
 
-func changePallete() {
+func ChangePallete() {
 	CurrentPalette = (CurrentPalette + 1) % byte(len(Palettes))
 }
 

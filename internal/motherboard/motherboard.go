@@ -81,7 +81,6 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 		PanicOnStuck:  params.PanicOnStuck,
 		BGPalette:     NewPalette(),
 		SpritePalette: NewPalette(),
-		Input:         NewInput(),
 	}
 
 	mb.Cgb = mb.Cartridge.CgbModeEnabled() || params.ForceCgb
@@ -96,6 +95,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 		mb.CpuFreq = internal.CGB_CLOCK_SPEED
 	}
 
+	mb.Input = NewInput(mb)
 	mb.Cpu = NewCpu(mb)
 	mb.Memory = NewInternalRAM(mb.Cgb, params.Randomize)
 	mb.Lcd = NewLCD(mb)

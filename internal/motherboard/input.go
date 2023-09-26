@@ -33,12 +33,14 @@ const (
 type Input struct {
 	directional uint8
 	standard    uint8
+	Mb          *Motherboard
 }
 
-func NewInput() *Input {
+func NewInput(mb *Motherboard) *Input {
 	return &Input{
 		directional: 0x0F,
 		standard:    0x0F,
+		Mb:          mb,
 	}
 }
 
@@ -90,6 +92,7 @@ func (i *Input) KeyEvent(key Key) uint8 {
 }
 
 func (i *Input) Pull(joystickbyte uint8) uint8 {
+	// prevState := i.Mb.Memory.IO[IO_P1-IO_START_ADDR]
 	P14 := (joystickbyte >> 4) & 0x01
 	P15 := (joystickbyte >> 5) & 0x01
 	// # Bit 7 - Not used (No$GMB)
@@ -102,14 +105,13 @@ func (i *Input) Pull(joystickbyte uint8) uint8 {
 	// # Bit 0 - P10 in port
 
 	joystickByte := 0xFF & (joystickbyte | 0b11001111)
-	if P14 != 0 && P15 != 0 {
-		return 0
-	} else if P14 == 0 && P15 == 0 {
-		return 0
-	} else if P14 == 0 {
+	if P14 == 0 {
 		joystickByte &= i.directional
-	} else if P15 == 0 {
+	}
+
+	if P15 == 0 {
 		joystickByte &= i.standard
 	}
+
 	return joystickByte
 }

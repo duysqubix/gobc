@@ -65,12 +65,12 @@ func (mw *MainGameWindow) _handleDebugInput() {
 			mw.hw.UpdateInternalGameState(internalDebugCyclePerFrame) // update every tick
 		}
 
-		if (mw.Window.JustPressed(pixelgl.KeyUp) || mw.Window.Repeated(pixelgl.KeyUp)) && internalGamePaused {
+		if (mw.Window.JustPressed(pixelgl.KeyM) || mw.Window.Repeated(pixelgl.KeyM)) && internalGamePaused {
 			internalDebugCycleScaler++
 			internalDebugCyclePerFrame = int(math.Pow10(internalDebugCycleScaler))
 		}
 
-		if (mw.Window.JustPressed(pixelgl.KeyDown) || mw.Window.Repeated(pixelgl.KeyDown)) && internalGamePaused {
+		if (mw.Window.JustPressed(pixelgl.KeyB) || mw.Window.Repeated(pixelgl.KeyB)) && internalGamePaused {
 			internalDebugCycleScaler--
 			if internalDebugCycleScaler < 0 {
 				internalDebugCycleScaler = 0
@@ -91,6 +91,11 @@ func (mw *MainGameWindow) _handleDebugInput() {
 	if mw.Window.JustPressed(pixelgl.KeyF2) || mw.Window.Repeated(pixelgl.KeyF2) {
 		internalShowDebugInfo = !internalShowDebugInfo
 	}
+
+	if mw.Window.JustPressed(pixelgl.KeyF3) || mw.Window.Repeated(pixelgl.KeyF3) {
+		motherboard.ChangePallete()
+	}
+
 }
 
 func (mw *MainGameWindow) _handleJoyPadInput() {
