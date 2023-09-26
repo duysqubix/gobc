@@ -140,6 +140,11 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 		case 0xFF4D: /* KEY1 */
 			// TODO: implement double speed mode
 			return 0xFF
+		case 0xFF4F: /* VBK */
+			if m.Cgb {
+				return m.Memory.IO[IO_VBK-IO_START_ADDR] | 0xFE
+			}
+			return 0xFF
 
 		case 0xFF50: /* Disable Boot ROM */
 			return 0xFF

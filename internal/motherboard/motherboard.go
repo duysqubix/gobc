@@ -194,7 +194,7 @@ func (m *Motherboard) performNewDMATransfer(length uint16) {
 	// load the source and destination from RAM
 	source := (uint16(m.Memory.IO[IO_HDMA1-IO_START_ADDR])<<8 | uint16(m.Memory.IO[IO_HDMA2-IO_START_ADDR])) & 0xFFF0
 	destination := (uint16(m.Memory.IO[IO_HDMA3-IO_START_ADDR])<<8 | uint16(m.Memory.IO[IO_HDMA4-IO_START_ADDR])) & 0x1FF0
-	destination += 0x8000
+	destination |= 0x8000
 
 	// copy the data
 	for i := uint16(0); i < length; i++ {
@@ -226,20 +226,24 @@ func (m *Motherboard) doNewDMATransfer(value byte) {
 	if m.hdmaActive && !internal.IsBitSet(value, 7) {
 		// Abort a HDMA transfer
 		m.hdmaActive = false
-		m.Memory.Hram[0x55] |= 0x80 // Set bit 7
+		// m.Memory.Hram[0x55] |= 0x80 // Set bit 7
+		m.Memory.IO[IO_HDMA5-IO_START_ADDR] |= 0x80
+
 		return
 	}
 
 	length := ((uint16(value) & 0x7F) + 1) * 0x10
+	// length := ((uint16(value) & 0x7F) / 0x10) - 1
 
 	// The 7th bit is DMA mode
 	if value>>7 == 0 {
 		// Mode 0, general purpose DMA
 		m.performNewDMATransfer(length)
-		m.Memory.Hram[0x55] = 0xFF
+		// m.Memory.Hram[0x55] = 0xFF
+		m.Memory.IO[IO_HDMA5-IO_START_ADDR] = 0xFF
 	} else {
 		// Mode 1, H-Blank DMA
-		m.hdmaLength = byte(value)
+		m.hdmaLength = uint8(value)
 		m.hdmaActive = true
 	}
 }
