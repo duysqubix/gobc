@@ -196,9 +196,19 @@ func (m *Motherboard) performNewDMATransfer(length uint16) {
 	destination := (uint16(m.Memory.IO[IO_HDMA3-IO_START_ADDR])<<8 | uint16(m.Memory.IO[IO_HDMA4-IO_START_ADDR])) & 0x1FF0
 	destination |= 0x8000
 
+	srcH := uint16(m.Memory.IO[IO_HDMA1-IO_START_ADDR]) << 8
+	srcL := uint16(m.Memory.IO[IO_HDMA2-IO_START_ADDR]) & 0xF0
+	dstH := (uint16(m.Memory.IO[IO_HDMA3-IO_START_ADDR]) << 8) & 0x1F00
+	dstL := uint16(m.Memory.IO[IO_HDMA4-IO_START_ADDR]) & 0xF0
+
+	source = srcH | srcL
+	destination = dstH | dstL | 0x8000
+
 	// copy the data
 	for i := uint16(0); i < length; i++ {
-		m.SetItem(destination, uint16(m.GetItem(source)))
+		// m.SetItem(destination, uint16(m.GetItem(source)))
+		// srcData :=
+		m.Memory.Vram[m.Memory.ActiveVramBank()][destination-0x8000] = m.GetItem(source)
 		source++
 		destination++
 	}
@@ -233,7 +243,7 @@ func (m *Motherboard) doNewDMATransfer(value byte) {
 	}
 
 	length := ((uint16(value) & 0x7F) + 1) * 0x10
-	// length := ((uint16(value) & 0x7F) / 0x10) - 1
+	// length := ((uint16(value) & 0x7F) * 16) + 16
 
 	// The 7th bit is DMA mode
 	if value>>7 == 0 {
