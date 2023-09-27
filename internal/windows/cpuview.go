@@ -45,7 +45,7 @@ func NewCpuViewWindow(gobc *GoBoyColor) *CpuViewWindow {
 	/// create memory window
 	memWin, err := pixelgl.NewWindow(pixelgl.WindowConfig{
 		Title:       "gobc v0.1 | Cpu View",
-		Bounds:      pixel.R(0, 0, 670, 1000),
+		Bounds:      pixel.R(0, 0, cpuTrueWidth, cpuTrueHeight),
 		VSync:       true,
 		AlwaysOnTop: true,
 		Resizable:   true,
@@ -68,7 +68,7 @@ func (mw *CpuViewWindow) Win() *pixelgl.Window {
 func (mw *CpuViewWindow) SetUp() {
 	mw.Window.SetBounds(pixel.R(0, 0, cpuTrueWidth, cpuTrueHeight))
 	cpuConsoleTxt = text.New(
-		pixel.V(10, mw.Window.Bounds().Max.Y-40),
+		pixel.V(10, 5),
 		text.NewAtlas(cpuDefaultFont, text.ASCII),
 		// text.NewAtlas(inconsolata.Regular8x16, text.ASCII),
 	)

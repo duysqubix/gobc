@@ -57,51 +57,41 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 
 	0x01: func(c *Cartridge) CartridgeType {
 		return &Mbc1Cartridge{
-			parent:        c,
-			romBankSelect: 1,
-			ramBankSelect: 0,
-			mode:          false,
+			parent: c,
+			mode:   false,
 		}
 	},
 
 	// MBC1+RAM
 	0x02: func(c *Cartridge) CartridgeType {
 		return &Mbc1Cartridge{
-			parent:        c,
-			romBankSelect: 1,
-			ramBankSelect: 0,
-			mode:          false,
+			parent: c,
+			mode:   false,
 		}
 	},
 
 	// MBC1+RAM+BATTERY
 	0x03: func(c *Cartridge) CartridgeType {
 		return &Mbc1Cartridge{
-			parent:        c,
-			romBankSelect: 1,
-			ramBankSelect: 0,
-			mode:          false,
+			parent: c,
+			mode:   false,
 		}
 	},
 
 	// MBC3+TIMER+RAM+BATTERY
 	0x10: func(c *Cartridge) CartridgeType {
 		return &Mbc3Cartridge{
-			parent:        c,
-			romBankSelect: 1,
-			ramBankSelect: 0,
-			hasBattery:    true,
-			hasRTC:        true,
+			parent:     c,
+			hasBattery: true,
+			hasRTC:     true,
 		}
 	},
 	// MBC3+RAM+BATTERY
 	0x13: func(c *Cartridge) CartridgeType {
 		return &Mbc3Cartridge{
-			parent:        c,
-			romBankSelect: 1,
-			ramBankSelect: 0,
-			hasBattery:    true,
-			hasRTC:        false,
+			parent:     c,
+			hasBattery: true,
+			hasRTC:     false,
 		}
 
 	},
@@ -265,7 +255,7 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 		RomBanks:        rom_banks,
 		filename:        fname,
 		RomBanksCount:   romBankCount,
-		RomBankSelected: 0,
+		RomBankSelected: 1,
 		RamBankSelected: 0,
 		RamBankCount:    ramBankCount,
 		MemoryModel:     0,

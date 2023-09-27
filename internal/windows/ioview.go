@@ -15,7 +15,7 @@ import (
 
 const (
 	ioScreenWidth  = 1200
-	ioScreenHeight = 700
+	ioScreenHeight = 670
 	ioScale        = 1
 	ioTrueWidth    = float64(ioScreenWidth * ioScale)
 	ioTrueHeight   = float64(ioScreenHeight * ioScale)
@@ -44,7 +44,7 @@ func NewIoViewWindow(gobc *GoBoyColor) *IoViewWindow {
 	/// create memory window
 	memWin, err := pixelgl.NewWindow(pixelgl.WindowConfig{
 		Title:       "gobc v0.1 | IO View",
-		Bounds:      pixel.R(0, 0, 670, 1000),
+		Bounds:      pixel.R(0, 0, ioScreenWidth, ioTrueHeight),
 		VSync:       true,
 		AlwaysOnTop: true,
 		Resizable:   true,
@@ -67,7 +67,7 @@ func (mw *IoViewWindow) Win() *pixelgl.Window {
 func (mw *IoViewWindow) SetUp() {
 	mw.Window.SetBounds(pixel.R(0, 0, ioTrueWidth, ioTrueHeight))
 	ioConsoleTxt = text.New(
-		pixel.V(10, mw.Window.Bounds().Max.Y-40),
+		pixel.V(10, 5),
 		text.NewAtlas(ioDefaultFont, text.ASCII),
 		// text.NewAtlas(inconsolata.Regular8x16, text.ASCII),
 	)
