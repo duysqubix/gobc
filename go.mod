@@ -5,7 +5,7 @@ go 1.21.0
 require (
 	github.com/chigopher/pathlib v0.15.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/faiface/pixel v0.10.0
+	github.com/faiface/pixel v0.11.0-beta
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/afero v1.4.0

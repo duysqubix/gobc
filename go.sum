@@ -11,6 +11,8 @@ github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3 h1:baVdMKlASEHr
 github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3/go.mod h1:VEPNJUlxl5KdWjDvz6Q1l+rJlxF2i6xqDeGuGAxa87M=
 github.com/faiface/pixel v0.10.0 h1:EHm3ZdQw2Ck4y51cZqFfqQpwLqNHOoXwbNEc9Dijql0=
 github.com/faiface/pixel v0.10.0/go.mod h1:lU0YYcW77vL0F1CG8oX51GXurymL45MXd57otHNLK7A=
+github.com/faiface/pixel v0.11.0-beta h1:fnqbwutoJWgnfGsuGAXeVgSOVz2kOhknbFOIN/nEoOo=
+github.com/faiface/pixel v0.11.0-beta/go.mod h1:hVfcuxlgBHDYw32viMEU0RnOAOzrLTBhNjyw5DhUqAk=
 github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7 h1:SCYMcCJ89LjRGwEa0tRluNRiMjZHalQZrVrvTbPh+qw=
 github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7/go.mod h1:482civXOzJJCPzJ4ZOX/pwvXBWSnzD4OKMdH4ClKGbk=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
