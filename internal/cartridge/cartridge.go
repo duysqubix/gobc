@@ -57,24 +57,27 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 
 	0x01: func(c *Cartridge) CartridgeType {
 		return &Mbc1Cartridge{
-			parent: c,
-			mode:   false,
+			parent:        c,
+			romBankSelect: 1,
+			mode:          false,
 		}
 	},
 
 	// MBC1+RAM
 	0x02: func(c *Cartridge) CartridgeType {
 		return &Mbc1Cartridge{
-			parent: c,
-			mode:   false,
+			parent:        c,
+			romBankSelect: 1,
+			mode:          false,
 		}
 	},
 
 	// MBC1+RAM+BATTERY
 	0x03: func(c *Cartridge) CartridgeType {
 		return &Mbc1Cartridge{
-			parent: c,
-			mode:   false,
+			parent:        c,
+			romBankSelect: 1,
+			mode:          false,
 		}
 	},
 
