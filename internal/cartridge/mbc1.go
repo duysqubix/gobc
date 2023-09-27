@@ -2,8 +2,8 @@ package cartridge
 
 type Mbc1Cartridge struct {
 	parent        *Cartridge
-	// romBankSelect uint16
-	// ramBankSelect uint16
+	romBankSelect uint16
+	ramBankSelect uint16
 	mode          bool
 }
 
@@ -22,11 +22,11 @@ func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
 		if value == 0 {
 			value = 1
 		}
-		c.parent.RomBankSelected = uint16(value)
+		c.romBankSelect = uint16(value)
 
 	case 0x4000 <= addr && addr < 0x6000:
-		c.parent.RamBankSelected = uint16(value) & 0x3
-		logger.Debugf("RAM Bank selected: %d", c.parent.RamBankSelected)
+		c.ramBankSelect = uint16(value) & 0x3
+		logger.Debugf("RAM Bank selected: %d", c.ramBankSelect)
 
 	case 0x6000 <= addr && addr < 0x8000:
 		c.parent.MemoryModel = value & 0x1
@@ -39,7 +39,7 @@ func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
 		}
 
 		if c.parent.MemoryModel == 1 {
-			c.parent.RamBankSelected = c.parent.RamBankSelected
+			c.parent.RamBankSelected = c.ramBankSelect
 		} else {
 			c.parent.RamBankSelected = 0
 		}
@@ -54,14 +54,14 @@ func (c *Mbc1Cartridge) GetItem(addr uint16) uint8 {
 	switch {
 	case addr < 0x4000:
 		if c.parent.MemoryModel == 1 {
-			c.parent.RomBankSelected = (c.parent.RamBankSelected << 5) % c.parent.RomBanksCount
+			c.parent.RomBankSelected = (c.ramBankSelect << 5) % c.parent.RomBanksCount
 		} else {
 			c.parent.RomBankSelected = 0
 		}
 		return c.parent.RomBanks[c.parent.RomBankSelected][addr]
 
 	case 0x4000 <= addr && addr < 0x8000:
-		c.parent.RomBankSelected = (c.parent.RamBankSelected<<5)%c.parent.RomBanksCount | c.parent.RomBankSelected
+		c.parent.RomBankSelected = (c.ramBankSelect<<5)%c.parent.RomBanksCount | c.romBankSelect
 		// bank := c.parent.RomBankSelected % uint8(len(c.parent.RomBanks))
 		bank := c.parent.RomBankSelected % c.parent.RomBanksCount
 		return c.parent.RomBanks[bank][addr-0x4000]
@@ -72,7 +72,7 @@ func (c *Mbc1Cartridge) GetItem(addr uint16) uint8 {
 		}
 
 		if c.parent.MemoryModel == 1 {
-			c.parent.RamBankSelected = c.parent.RamBankSelected
+			c.parent.RamBankSelected = c.ramBankSelect
 		} else {
 			c.parent.RamBankSelected = 0
 		}
