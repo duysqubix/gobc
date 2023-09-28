@@ -158,7 +158,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 			//TODO: implement double speed mode
 
 		case 0xFF4F: /* VBK */
-			if m.Cgb && !m.hdmaActive {
+			if m.Cgb && !m.HdmaActive {
 				m.Memory.IO[IO_VBK-IO_START_ADDR] = v & 0x01
 			}
 

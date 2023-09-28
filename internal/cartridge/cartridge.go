@@ -98,6 +98,13 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 		}
 
 	},
+	// MBC5+RAM+BATTERY
+	0x1b: func(c *Cartridge) CartridgeType {
+		return &Mbc5Cartridge{
+			parent:     c,
+			hasBattery: true,
+		}
+	},
 }
 
 type Cartridge struct {

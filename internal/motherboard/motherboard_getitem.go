@@ -148,6 +148,12 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 
 		case 0xFF50: /* Disable Boot ROM */
 			return 0xFF
+
+		case 0xFF55: /* HDMA5 */
+			if m.Cgb {
+				return m.Memory.IO[IO_HDMA5-IO_START_ADDR]
+			}
+
 		case 0xFF68: /* BG Palette Index */
 			if m.Cgb {
 				return m.BGPalette.readIndex()
