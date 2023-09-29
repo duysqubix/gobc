@@ -44,7 +44,8 @@ func NewLCD(mb *Motherboard) *LCD {
 func (l *LCD) Reset() {
 	// l.screenData = ScreenData{}
 	l.bgPriority = ScreenPriority{}
-	l.PreparedData = ScreenData{}
+	// l.PreparedData = ScreenData{}
+	l.clearScreen()
 	l.scanlineCounter = 0
 	l.screenCleared = false
 }
@@ -245,6 +246,19 @@ func (l *LCD) getTileSettings(lcdControl uint8, windowY uint8) tileSettings {
 	}
 }
 
+func (l *LCD) FindTileLocation(tileAddress uint16, tileData uint16, unsigned bool) (uint16, int16) {
+	var tileNum int16
+	var tileLocation uint16 = tileData
+	if unsigned {
+		tileNum = int16(l.Mb.Memory.Vram[0][tileAddress-0x8000])
+		tileLocation = tileLocation + uint16(tileNum*16)
+	} else {
+		tileNum = int16(int8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
+		tileLocation = uint16(int32(tileLocation) + int32((tileNum+128)*16))
+	}
+	return tileLocation, tileNum
+}
+
 func (l *LCD) renderTiles(lcdControl uint8) {
 	scrollY := l.Mb.Memory.IO[IO_SCY-IO_START_ADDR]
 	scrollX := l.Mb.Memory.IO[IO_SCX-IO_START_ADDR]
@@ -292,17 +306,8 @@ func (l *LCD) renderTiles(lcdControl uint8) {
 			tileAddress = ts.BgMemory + tileRow + tileCol
 		}
 
-		//deduce tile id in memory
-		tileLocation := ts.TileData
-
-		var tileNum int16
-		if ts.Unsigned {
-			tileNum = int16(l.Mb.Memory.Vram[0][tileAddress-0x8000])
-			tileLocation = tileLocation + uint16(tileNum*16)
-		} else {
-			tileNum = int16(int8(l.Mb.Memory.Vram[0][tileAddress-0x8000]))
-			tileLocation = uint16(int32(tileLocation) + int32((tileNum+128)*16))
-		}
+		// //deduce tile id in memory
+		tileLocation, _ := l.FindTileLocation(tileAddress, ts.TileData, ts.Unsigned)
 
 		// Attributes used in CGB mode TODO: check in CGB mode
 		//

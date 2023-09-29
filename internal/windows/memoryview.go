@@ -155,10 +155,10 @@ func (mw *MemoryViewWindow) Draw() {
 		if 0x4000 <= row_addr_start && row_addr_start < 0x8000 {
 			// ramSelect = mw.hw.Mb.Cartridge.RamBankSelected
 			romSelect = mw.hw.Mb.Cartridge.RomBankSelected
-			row_addr = fmt.Sprintf("%03d:0x%04x", romSelect, row_addr_start)
+			row_addr = fmt.Sprintf("%#x:0x%04x", romSelect, row_addr_start)
 		} else if 0xA000 <= row_addr_start && row_addr_start < 0xC000 {
 			ramSelect = mw.hw.Mb.Cartridge.RamBankSelected
-			row_addr = fmt.Sprintf("%03d:0x%04x", ramSelect, row_addr_start)
+			row_addr = fmt.Sprintf("%#x:0x%04x", ramSelect, row_addr_start)
 		}
 
 		for j := 0; j < 16; j++ {

@@ -29,6 +29,13 @@ const (
 	vramTileMapPictureWidth  = 32 * vramTileWidth
 	vramTileMapPictureHeight = 32 * vramTileHeight
 	vramTileMapScale         = 2
+
+	vramTilePreviewPictureWidth  = vramTileWidth
+	vramTilePreviewPictureHeight = vramTileHeight
+	vramTilePreviewScale         = 2
+
+	gridSize    = 16
+	gridSizeMax = 32
 )
 
 var (
@@ -44,11 +51,12 @@ func init() {
 }
 
 type VramViewWindow struct {
-	hw            *GoBoyColor
-	YOffset       float64
-	Window        *pixelgl.Window
-	tileCanvas    *pixel.PictureData
-	tileMapCanvas *pixel.PictureData
+	hw                *GoBoyColor
+	YOffset           float64
+	Window            *pixelgl.Window
+	tileCanvas        *pixel.PictureData
+	tileMapCanvas     *pixel.PictureData
+	tilePreviewCanvas *pixel.PictureData
 }
 
 func NewVramViewWindow(gobc *GoBoyColor) *VramViewWindow {
@@ -56,7 +64,7 @@ func NewVramViewWindow(gobc *GoBoyColor) *VramViewWindow {
 	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
 		Title:       "gobc v0.1 | VRAM View",
 		Bounds:      pixel.R(0, 0, vramTrueWidth, vramTrueHeight),
-		VSync:       false,
+		VSync:       true,
 		AlwaysOnTop: true,
 		Resizable:   true,
 	})
@@ -67,12 +75,15 @@ func NewVramViewWindow(gobc *GoBoyColor) *VramViewWindow {
 
 	tileCanvas := pixel.MakePictureData(pixel.R(0, 0, float64(vramTilePictureWidth), float64(vramTilePictureHeight)))
 	tileMapCanvas := pixel.MakePictureData(pixel.R(0, 0, float64(vramTileMapPictureWidth), float64(vramTileMapPictureHeight)))
+	tilePreviewCanvas := pixel.MakePictureData(pixel.R(0, 0, float64(vramTilePreviewPictureWidth), float64(vramTilePreviewPictureHeight)))
+
 	return &VramViewWindow{
-		Window:        win,
-		YOffset:       0,
-		hw:            gobc,
-		tileCanvas:    tileCanvas,
-		tileMapCanvas: tileMapCanvas,
+		Window:            win,
+		YOffset:           0,
+		hw:                gobc,
+		tileCanvas:        tileCanvas,
+		tileMapCanvas:     tileMapCanvas,
+		tilePreviewCanvas: tilePreviewCanvas,
 	}
 }
 
@@ -83,11 +94,29 @@ func (mw *VramViewWindow) Win() *pixelgl.Window {
 func (mw *VramViewWindow) SetUp() {
 	mw.Window.SetBounds(pixel.R(0, 0, vramTrueWidth, vramTrueHeight))
 	vramConsoleTxt = text.New(
-		mw.Window.Bounds().Center(),
+		pixel.V(520, 520),
 		text.NewAtlas(basicfont.Face7x13, text.ASCII),
 	)
 	vramConsoleTxt.Color = colornames.Red
 }
+
+func calculateVramIndex(x, y int) int {
+	// cover bounds of tile map
+	if x < 0 || x > vramTileMapPictureWidth*vramTileMapScale || y < 0 || y > vramTileMapPictureHeight*vramTileMapScale {
+		return -1
+	}
+	row := y / gridSize
+	col := x / gridSize
+
+	index := (gridSizeMax-row-1)*gridSizeMax + col
+	return index
+}
+
+var currentIndex int = 0
+var currentTileOffset int16 = 0
+var currentTileLocation uint16 = 0
+var bgAddressingMode uint16
+var tileAddressingMode uint16
 
 func (mw *VramViewWindow) Update() error {
 
@@ -107,12 +136,28 @@ func (mw *VramViewWindow) Update() error {
 		vramShowHelp = !vramShowHelp
 	}
 
-	// v := mw.Window.MousePosition()
-	// x, y := v.X, v.Y
-	// fmt.Println(x, y)
-	// //tile picture bounds
-	// // x1, y1 := 0, 775
-	// // x2, y2 := 505, 585
+	var unsigned bool = false
+	if vramBgAddressingMode == 0x01 {
+		bgAddressingMode = 0x9800
+	} else {
+		bgAddressingMode = 0x9C00
+	}
+
+	if vramTileAddressingMode == 0x01 {
+		tileAddressingMode = 0x8000
+		unsigned = true
+	} else {
+		tileAddressingMode = 0x8800
+		unsigned = false
+	}
+
+	mw.Window.SetTitle(fmt.Sprintf("gobc v0.1 | VRAM View | BG: %#x | Tile: %#x | Unsigned: %v", bgAddressingMode, tileAddressingMode, unsigned))
+
+	v := mw.Window.MousePosition()
+	currentIndex = calculateVramIndex(int(v.X), int(v.Y))
+	if currentIndex > 0 {
+		currentTileLocation, currentTileOffset = mw.hw.Mb.Lcd.FindTileLocation(uint16(currentIndex)+bgAddressingMode, tileAddressingMode, unsigned)
+	}
 
 	tileData := mw.hw.Mb.Memory.TileData()
 	tileMap := mw.hw.Mb.Memory.TileMap(vramTileAddressingMode, vramBgAddressingMode)
@@ -120,10 +165,14 @@ func (mw *VramViewWindow) Update() error {
 	updatePicture(vramTilePictureHeight, vramTilePictureWidth, vramTileHeight, vramTileWidth, &tileData, mw.tileCanvas)
 	updatePicture(vramTileMapPictureHeight, vramTileMapPictureWidth, vramTileHeight, vramTileWidth, &tileMap, mw.tileMapCanvas)
 
+	// update tile preview with select Tile
+	// updatePicture(vramTilePreviewPictureHeight, vramTilePreviewPictureWidth, vramTileHeight, vramTileWidth, &tileData[currentTileLocation:currentTileLocation+16], mw.tilePreviewCanvas)
+
 	return nil
 }
 
 func drawVramArea(win *pixelgl.Window, canvas *pixel.PictureData, scale float64, YOffset float64, XOffset float64) {
+
 	spr2 := pixel.NewSprite(canvas, canvas.Bounds())
 
 	spw := (spr2.Frame().W() / 2 * scale) + (XOffset * scale)
@@ -155,20 +204,15 @@ func drawVramArea(win *pixelgl.Window, canvas *pixel.PictureData, scale float64,
 
 func (mw *VramViewWindow) Draw() {
 	mw.Window.Clear(colornames.Black)
+	vramConsoleTxt.Clear()
 
+	fmt.Fprintf(vramConsoleTxt, "Index: %d ($%02x)\n", currentIndex, currentIndex)
+	fmt.Fprintf(vramConsoleTxt, "TileIndex: %d ($%04x)\n", currentTileOffset, currentTileOffset)
+	fmt.Fprintf(vramConsoleTxt, "\t@ VRAM 00:%04X\n", int32(currentIndex)+int32(bgAddressingMode))
+	vramConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(vramConsoleTxt.Orig, 1.25))
 	drawVramArea(mw.Window, mw.tileMapCanvas, vramTileMapScale, 0, 0)
 	drawVramArea(mw.Window, mw.tileCanvas, vramTileScale, (mw.tileCanvas.Rect.H()*vramTileMapScale)+100, 0)
 
-	if vramShowHelp {
-		// TODO: not displaying...
-		vramConsoleTxt.Clear()
-		fmt.Fprintf(vramConsoleTxt, "VRAM View Help\n")
-		fmt.Fprintf(vramConsoleTxt, "T: Toggle Tile Addressing Mode\n")
-		fmt.Fprintf(vramConsoleTxt, "G: Toggle Grid\n")
-		fmt.Fprintf(vramConsoleTxt, "H: Show this menu\n")
-		vramConsoleTxt.Draw(mw.Window, pixel.IM.Moved(vramConsoleTxt.Orig).Scaled(vramConsoleTxt.Orig, 1.25))
-
-	}
 	mw.Window.Update()
 
 }

@@ -48,7 +48,7 @@ type MainGameWindow struct {
 
 func (mw *MainGameWindow) SetUp() {
 	mw.Window.SetBounds(pixel.R(0, 0, mw.gameTrueWidth, mw.gameTrueHeight))
-	internalConsoleTxt = text.New(pixel.V(mw.Window.Bounds().Center().X/2, mw.Window.Bounds().Max.Y-20), text.NewAtlas(basicfont.Face7x13, text.ASCII))
+	internalConsoleTxt = text.New(pixel.V(mw.Window.Bounds().Center().X/2, mw.Window.Bounds().Center().Y/2), text.NewAtlas(basicfont.Face7x13, text.ASCII))
 	internalConsoleTxt.Color = colornames.Red
 }
 
