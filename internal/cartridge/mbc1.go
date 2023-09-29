@@ -7,6 +7,10 @@ type Mbc1Cartridge struct {
 	mode          bool
 }
 
+func (c *Mbc1Cartridge) Init() {
+
+}
+
 func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
 	switch {
 	case addr < 0x2000:

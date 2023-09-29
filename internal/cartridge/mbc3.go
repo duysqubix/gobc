@@ -9,6 +9,9 @@ type Mbc3Cartridge struct {
 	hasRTC     bool
 }
 
+func (c *Mbc3Cartridge) Init() {
+}
+
 func (c *Mbc3Cartridge) SetItem(addr uint16, value uint8) {
 	switch {
 	case addr < 0x2000:

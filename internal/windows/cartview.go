@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	cartScreenWidth  = 800
-	cartScreenHeight = 450
+	cartScreenWidth  = 670
+	cartScreenHeight = 1000
 	cartScale        = 1
 	cartTrueWidth    = float64(cartScreenWidth * cartScale)
 	cartTrueHeight   = float64(cartScreenHeight * cartScale)
@@ -54,7 +54,7 @@ func NewCartViewWindow(gobc *GoBoyColor) *CartViewWindow {
 	/// create memory window
 	memWin, err := pixelgl.NewWindow(pixelgl.WindowConfig{
 		Title:       "gobc v0.1 | Cart Memory View",
-		Bounds:      pixel.R(0, 0, 670, 1000),
+		Bounds:      pixel.R(0, 0, cartTrueWidth, cartScreenHeight),
 		VSync:       true,
 		AlwaysOnTop: true,
 		Resizable:   true,
@@ -77,7 +77,7 @@ func (mw *CartViewWindow) Win() *pixelgl.Window {
 func (mw *CartViewWindow) SetUp() {
 	mw.Window.SetBounds(pixel.R(0, 0, cartTrueWidth, cartTrueHeight))
 	cartConsoleTxt = text.New(
-		pixel.V(10, mw.Window.Bounds().Max.Y-20),
+		pixel.V(10, 5),
 		text.NewAtlas(cartDefaultFont, text.ASCII),
 		// text.NewAtlas(inconsolata.Regular8x16, text.ASCII),
 	)

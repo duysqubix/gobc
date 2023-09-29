@@ -4,6 +4,9 @@ type RomOnlyCartridge struct {
 	parent *Cartridge
 }
 
+func (c *RomOnlyCartridge) Init() {
+}
+
 func (c *RomOnlyCartridge) SetItem(addr uint16, value uint8) {
 	// do nothing
 	// can't write to ROM and RAM doesn't exist on these carts

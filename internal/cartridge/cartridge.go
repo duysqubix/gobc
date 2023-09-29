@@ -24,6 +24,7 @@ import (
 type CartridgeType interface {
 	SetItem(uint16, uint8)
 	GetItem(uint16) uint8
+	Init()
 }
 
 // var CARTRIDGE_TABLE = map[uint8]CartridgeType{
@@ -97,6 +98,13 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 			hasRTC:     false,
 		}
 
+	},
+
+	// MBC5
+	0x19: func(c *Cartridge) CartridgeType {
+		return &Mbc5Cartridge{
+			parent: c,
+		}
 	},
 	// MBC5+RAM+BATTERY
 	0x1b: func(c *Cartridge) CartridgeType {
@@ -280,6 +288,7 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 		os.Exit(0)
 	}
 	cart.CartType = cartTypeConstructor(&cart)
+	cart.CartType.Init()
 
 	calc_checksum, valid := cart.ValidateChecksum()
 	if !valid {
