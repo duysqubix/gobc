@@ -94,10 +94,9 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	if mb.Cgb {
 		mb.CpuFreq = internal.CGB_CLOCK_SPEED
 	}
-
 	mb.Input = NewInput(mb)
 	mb.Cpu = NewCpu(mb)
-	mb.Memory = NewInternalRAM(mb.Cgb, params.Randomize)
+	mb.Memory = NewInternalRAM(mb, params.Randomize)
 	mb.Lcd = NewLCD(mb)
 	mb.BootRom = NewBootRom(mb.Cgb)
 	mb.BootRom.Enable()
@@ -178,32 +177,28 @@ func (m *Motherboard) ButtonEvent(key Key) {
 func (m *Motherboard) performNewDMATransfer(length uint16) {
 
 	// load the source and destination from RAM
-	source := (uint16(m.Memory.IO[IO_HDMA1-IO_START_ADDR])<<8 | uint16(m.Memory.IO[IO_HDMA2-IO_START_ADDR])) & 0xFFF0
-	destination := (uint16(m.Memory.IO[IO_HDMA3-IO_START_ADDR])<<8 | uint16(m.Memory.IO[IO_HDMA4-IO_START_ADDR])) & 0x1FF0
-	destination |= 0x8000
 
-	srcH := uint16(m.Memory.IO[IO_HDMA1-IO_START_ADDR]) << 8
-	srcL := uint16(m.Memory.IO[IO_HDMA2-IO_START_ADDR]) & 0xF0
-	dstH := (uint16(m.Memory.IO[IO_HDMA3-IO_START_ADDR]) << 8) & 0x1F00
-	dstL := uint16(m.Memory.IO[IO_HDMA4-IO_START_ADDR]) & 0xF0
+	srcH := uint16(m.Memory.GetIO(IO_HDMA1)) << 8
+	srcL := uint16(m.Memory.GetIO(IO_HDMA2)) & 0xF0
+	dstH := (uint16(m.Memory.GetIO(IO_HDMA3)) << 8) & 0x1F00
+	dstL := uint16(m.Memory.GetIO(IO_HDMA4)) & 0xF0
 
-	source = srcH | srcL
-	destination = dstH | dstL
+	source := srcH | srcL
+	destination := dstH | dstL | 0x8000
 
 	// copy the data
 	for i := uint16(0); i < length; i++ {
-		// m.SetItem(destination, uint16(m.GetItem(source)))
-		// srcData :=
-		m.Memory.Vram[m.Memory.ActiveVramBank()][destination] = m.GetItem(source)
+		bank := m.Memory.GetIO(IO_VBK) & 0x01
+		m.Memory.SetVram(bank, destination, m.GetItem(source))
 		source++
 		destination++
 	}
 
 	// update the source and destination in RAM
-	m.Memory.IO[IO_HDMA1-IO_START_ADDR] = uint8(source >> 8)
-	m.Memory.IO[IO_HDMA2-IO_START_ADDR] = uint8(source & 0xFF)
-	m.Memory.IO[IO_HDMA3-IO_START_ADDR] = uint8(destination >> 8)
-	m.Memory.IO[IO_HDMA4-IO_START_ADDR] = uint8(destination & 0xF0)
+	m.Memory.SetIO(IO_HDMA1, uint8(source>>8))
+	m.Memory.SetIO(IO_HDMA2, uint8(source&0xFF))
+	m.Memory.SetIO(IO_HDMA3, uint8(destination>>8))
+	m.Memory.SetIO(IO_HDMA4, uint8(destination&0xF0))
 }
 
 // Perform a DMA transfer.
@@ -218,13 +213,10 @@ func (m *Motherboard) doDMATransfer(value byte) {
 
 // Start a CGB DMA transfer.
 func (m *Motherboard) doNewDMATransfer(value byte) {
-	// if m.HdmaActive && bits.Val(value, 7) == 0 {
-
 	if m.HdmaActive && !internal.IsBitSet(value, 7) {
 		// Abort a HDMA transfer
 		m.HdmaActive = false
-		// m.Memory.Hram[0x55] |= 0x80 // Set bit 7
-		m.Memory.IO[IO_HDMA5-IO_START_ADDR] |= 0x80
+		m.Memory.SetIO(IO_HDMA5, m.Memory.GetIO(IO_HDMA5)|0x80)
 
 		return
 	}
@@ -234,11 +226,9 @@ func (m *Motherboard) doNewDMATransfer(value byte) {
 	if !internal.IsBitSet(value, 7) {
 		// Mode 0, general purpose DMA
 		m.performNewDMATransfer(length)
-		// m.Memory.Hram[0x55] = 0xFF
-		m.Memory.IO[IO_HDMA5-IO_START_ADDR] = 0xFF
+		m.Memory.SetIO(IO_HDMA5, 0xFF)
 	} else {
 		// Mode 1, H-Blank DMA
-		// logger.Debugf("Starting HDMA transfer of %d bytes", length)
 		internal.ResetBit(&value, 7)
 		m.HdmaLength = uint8(value)
 		m.HdmaActive = true
@@ -252,9 +242,9 @@ func (m *Motherboard) DoHDMATransfer() {
 	m.performNewDMATransfer(0x10)
 	if m.HdmaLength > 0 {
 		m.HdmaLength--
-		m.Memory.IO[IO_HDMA5-IO_START_ADDR] = m.HdmaLength
+		m.Memory.SetIO(IO_HDMA5, m.HdmaLength)
 	} else {
 		m.HdmaActive = false
-		m.Memory.IO[IO_HDMA5-IO_START_ADDR] = 0xFF
+		m.Memory.SetIO(IO_HDMA5, 0xFF)
 	}
 }

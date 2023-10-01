@@ -31,12 +31,12 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 	 */
 	case 0x8000 <= addr && addr < 0xA000: // 8K Video RAM
 		if m.Cgb {
-			activeBank := m.Memory.ActiveVramBank()
-			// return m.Memory.GetItemVRAM(activeBank, addr-0x8000)
-			return m.Memory.Vram[activeBank][addr-0x8000]
+			bank := m.Memory.GetIO(IO_VBK) & 0x01
+			return m.Memory.GetVram(bank, addr)
 		}
 
-		return m.Memory.Vram[0][addr-0x8000]
+		// return m.Memory.Vram[0][addr-0x8000]
+		return m.Memory.GetVram(0, addr)
 
 	/*
 	*
@@ -108,7 +108,7 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 		switch addr {
 
 		case 0xFF00: /* P1 */
-			return m.Memory.IO[IO_P1_JOYP-IO_START_ADDR]
+			return m.Memory.GetIO(IO_P1_JOYP)
 
 		case 0xFF04: /* DIV */
 			return uint8(m.Timer.DIV)
@@ -126,13 +126,13 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 			return m.Cpu.Interrupts.IF | 0xE0
 
 		case 0xFF40: /* LCDC */
-			return m.Memory.IO[IO_LCDC-IO_START_ADDR]
+			return m.Memory.GetIO(IO_LCDC)
 
 		case 0xFF41: /* STAT */
-			return m.Memory.IO[IO_STAT-IO_START_ADDR]
+			return m.Memory.GetIO(IO_STAT)
 
 		case 0xFF44: /* LY */
-			return m.Memory.IO[IO_LY-IO_START_ADDR]
+			return m.Memory.GetIO(IO_LY)
 
 		case 0xFF46: /* DMA */
 			return 0x00
@@ -142,7 +142,8 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 			return 0xFF
 		case 0xFF4F: /* VBK */
 			if m.Cgb {
-				return m.Memory.IO[IO_VBK-IO_START_ADDR] | 0xFE
+				return m.Memory.GetIO(IO_VBK) | 0xFE
+
 			}
 			return 0xFF
 
@@ -173,7 +174,7 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 			return 0x00
 
 		default:
-			return m.Memory.IO[addr-IO_START_ADDR]
+			return m.Memory.GetIO(addr)
 		}
 
 	/*

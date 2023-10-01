@@ -49,11 +49,11 @@ var OPCODES = OpCodeMap{
 	// STOP 0 - Stop CPU & LCD display until button pressed (16)
 	0x10: func(mb *Motherboard, value uint16) OpCycles {
 		if mb.Cgb {
-			bit0 := internal.IsBitSet(mb.Memory.IO[IO_KEY1-IO_START_ADDR], 0)
+			bit0 := internal.IsBitSet(mb.Memory.GetIO(IO_KEY1), 0)
 			if bit0 {
 				mb.doubleSpeed = !mb.doubleSpeed
 				// TODO: set LCD double speed here.
-				mb.Memory.IO[IO_KEY1-IO_START_ADDR] ^= 0x81
+				mb.Memory.SetIO(IO_KEY1, mb.Memory.GetIO(IO_KEY1)^0x81)
 			}
 			mb.Cpu.Mb.Timer.DIV = 0x00
 
@@ -586,10 +586,6 @@ var OPCODES = OpCodeMap{
 		e := uint16(mb.Cpu.Registers.E)
 		mb.SetItem(hl, e)
 		mb.Cpu.Registers.PC += 1
-
-		// if hl == 0x9A20 && e == 0x03 {
-		// 	logger.Infof("HL: %#x, E: %#x, PC: %#x, VBK: %#x, BANK0: %#x, BANK1: %#x", hl, e, mb.Cpu.Registers.PC, mb.Memory.IO[IO_VBK-IO_START_ADDR], mb.Memory.Vram[0][0x9A20-0x8000], mb.Memory.Vram[1][0x9A20-0x8000])
-		// }
 		return 8
 	},
 

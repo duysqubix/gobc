@@ -85,13 +85,14 @@ func initOam(ram *OAM, random bool) {
 }
 
 type Memory struct {
-	Wram      WRAM // 8 banks of 4KB each -- [0,1] are always available, [2,3,4,5,6,7] are switchable in CGB Mode
-	IO        IO   // 128 bytes of IO
-	Hram      HRAM // 127 bytes of High RAM
-	Vram      VRAM // 2 banks of 8KB each -- [0] is always available, [1] is switchable in CGB Mode
-	Oam       OAM  // 160 bytes of OAM
-	Randomize bool // Randomize RAM on startup
-	Cgb       bool // CGB Mode
+	Wram      WRAM         // 8 banks of 4KB each -- [0,1] are always available, [2,3,4,5,6,7] are switchable in CGB Mode
+	IO        IO           // 128 bytes of IO
+	Hram      HRAM         // 127 bytes of High RAM
+	Vram      VRAM         // 2 banks of 8KB each -- [0] is always available, [1] is switchable in CGB Mode
+	Oam       OAM          // 160 bytes of OAM
+	Randomize bool         // Randomize RAM on startup
+	Cgb       bool         // CGB Mode
+	Mb        *Motherboard // Motherboard
 }
 
 type IO [0x80]uint8
@@ -103,13 +104,14 @@ type VRAM [0x2][0x2000]uint8
 
 // type VRAM [0x4000]uint8
 
-func NewInternalRAM(cgb bool, randomize bool) *Memory {
+func NewInternalRAM(mb *Motherboard, randomize bool) *Memory {
 	ram := &Memory{
 		Randomize: randomize,
-		Cgb:       cgb,
+		Cgb:       mb.Cgb,
+		Mb:        mb,
 	}
 	initWram(&ram.Wram, randomize)
-	initIo(&ram.IO, cgb)
+	initIo(&ram.IO, mb.Cgb)
 	initHram(&ram.Hram, randomize)
 	initVram(&ram.Vram, randomize)
 	initOam(&ram.Oam, randomize)
@@ -125,10 +127,29 @@ func (r *Memory) Reset() {
 	initOam(&r.Oam, r.Randomize)
 }
 
+// //////// IO //////////
+// var setVbktrace uint8 = 0
+// var getVbktrace uint8 = 0
+
+func (r *Memory) SetIO(addr uint16, value uint8) {
+	// if addr == IO_VBK && setVbktrace != value {
+	// 	setVbktrace = value
+
+	// }
+	r.IO[addr-IO_START_ADDR] = value
+}
+
+func (r *Memory) GetIO(addr uint16) uint8 {
+	// if addr == IO_VBK && getVbktrace != r.IO[IO_VBK-IO_START_ADDR] {
+	// 	getVbktrace = r.IO[IO_VBK-IO_START_ADDR]
+	// }
+	return r.IO[addr-IO_START_ADDR]
+}
+
 // //////// VRAM //////////
 
-func (r *Memory) TileData() []uint8 {
-	return r.Vram[r.ActiveVramBank()][:0x17ff]
+func (r *Memory) TileData(bank uint8) []uint8 {
+	return r.Vram[bank][:0x17ff]
 }
 
 // TileMap returns a
@@ -174,6 +195,14 @@ func (r *Memory) ActiveVramBank() uint8 {
 		return r.IO[IO_VBK-IO_START_ADDR] & 0x1
 	}
 	return 0
+}
+
+func (r *Memory) SetVram(bank uint8, addr uint16, value uint8) {
+	r.Vram[bank][addr-0x8000] = value
+}
+
+func (r *Memory) GetVram(bank uint8, addr uint16) uint8 {
+	return r.Vram[bank][addr-0x8000]
 }
 
 ////////// WRAM //////////

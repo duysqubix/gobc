@@ -56,7 +56,7 @@ func (l *LCD) Tick(cycles OpCycles) {
 
 func (l *LCD) ReportOnSTAT(bit uint8) []string {
 	var bitOff = "OFF"
-	if internal.IsBitSet(l.Mb.Memory.IO[IO_STAT-IO_START_ADDR], bit) {
+	if internal.IsBitSet(l.Mb.Memory.GetIO(IO_STAT), bit) {
 		bitOff = "ON"
 	}
 	return []string{
@@ -67,7 +67,7 @@ func (l *LCD) ReportOnSTAT(bit uint8) []string {
 
 func (l *LCD) ReportOnLCDC(bit uint8, on, off string) []string {
 	var bitOff = off
-	if internal.IsBitSet(l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], bit) {
+	if internal.IsBitSet(l.Mb.Memory.GetIO(IO_LCDC), bit) {
 		bitOff = on
 	}
 	return []string{
@@ -86,17 +86,17 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 	l.setLCDStatus()
 	if l.scanlineCounter <= 0 {
 		l.Mb.Memory.IO[IO_LY-IO_START_ADDR]++ // directly change for optimized performance
-		if l.Mb.Memory.IO[IO_LY-IO_START_ADDR] > 153 {
+		if l.Mb.Memory.GetIO(IO_LY) > 153 {
 			// l.PreparedData = ScreenData{}
 			// l.screenData = ScreenData{}
 			// l.clearScreen()
 			l.bgPriority = ScreenPriority{}
-			l.Mb.Memory.IO[IO_LY-IO_START_ADDR] = 0
+			l.Mb.Memory.SetIO(IO_LY, 0)
 		}
 
 		l.scanlineCounter += (456 * 1) // change 1 to 2 for double speed
 
-		if l.Mb.Memory.IO[IO_LY-IO_START_ADDR] == internal.GB_SCREEN_HEIGHT {
+		if l.Mb.Memory.GetIO(IO_LY) == internal.GB_SCREEN_HEIGHT {
 			l.Mb.Cpu.SetInterruptFlag(INTR_VBLANK)
 		}
 	}
@@ -104,13 +104,13 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 
 func (l *LCD) setLCDStatus() {
 
-	status := l.Mb.Memory.IO[IO_STAT-IO_START_ADDR]
+	status := l.Mb.Memory.GetIO(IO_STAT)
 	if !l.isLCDEnabled() {
 		// clear the screen
 		l.clearScreen()
 		l.scanlineCounter = 456 // total cycles per scanline
 
-		l.Mb.Memory.IO[IO_LY-IO_START_ADDR] = 0
+		l.Mb.Memory.SetIO(IO_LY, 0)
 
 		// reset status
 		status &= 252
@@ -118,13 +118,13 @@ func (l *LCD) setLCDStatus() {
 		internal.ResetBit(&status, 1)
 
 		// write status to memory
-		l.Mb.Memory.IO[IO_STAT-IO_START_ADDR] = status
+		l.Mb.Memory.SetIO(IO_STAT, status)
 		return
 	}
 
 	l.screenCleared = false
 
-	l.CurrentScanline = l.Mb.Memory.IO[IO_LY-IO_START_ADDR]
+	l.CurrentScanline = l.Mb.Memory.GetIO(IO_LY)
 	currentMode := status & 0b11
 
 	var mode uint8
@@ -170,7 +170,7 @@ func (l *LCD) setLCDStatus() {
 	}
 
 	// // check if LYC == LY (coincedence flag)
-	if l.CurrentScanline == l.Mb.Memory.IO[IO_LYC-IO_START_ADDR] {
+	if l.CurrentScanline == l.Mb.Memory.GetIO(IO_LYC) {
 		internal.SetBit(&status, STAT_LYC)
 		if internal.IsBitSet(status, STAT_LYCINT) && prevLY != l.CurrentScanline {
 			l.Mb.Cpu.SetInterruptFlag(INTR_LCDSTAT)
@@ -182,15 +182,15 @@ func (l *LCD) setLCDStatus() {
 		prevLY = l.CurrentScanline
 	}
 	// write status to memory
-	l.Mb.Memory.IO[IO_STAT-IO_START_ADDR] = status
+	l.Mb.Memory.SetIO(IO_STAT, status)
 }
 
 func (l *LCD) isLCDEnabled() bool {
-	return internal.IsBitSet(l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR], LCDC_ENABLE)
+	return internal.IsBitSet(l.Mb.Memory.GetIO(IO_LCDC), LCDC_ENABLE)
 }
 
 func (l *LCD) drawScanline() {
-	control := l.Mb.Memory.IO[IO_LCDC-IO_START_ADDR]
+	control := l.Mb.Memory.GetIO(IO_LCDC)
 
 	// LCDC bit 0 clears tiles on DMG but controls priority on CBG
 	if l.Mb.Cgb || internal.IsBitSet(control, LCDC_BGEN) {
@@ -219,7 +219,7 @@ func (l *LCD) getTileSettings(lcdControl uint8, windowY uint8) tileSettings {
 
 	if internal.IsBitSet(lcdControl, LCDC_WINEN) {
 		// is current scanline we are drawing within the window?
-		if windowY <= l.Mb.Memory.IO[IO_LY-IO_START_ADDR] {
+		if windowY <= l.Mb.Memory.GetIO(IO_LY) {
 			usingWindow = true
 		}
 	}
@@ -260,10 +260,10 @@ func (l *LCD) FindTileLocation(tileAddress uint16, tileData uint16, unsigned boo
 }
 
 func (l *LCD) renderTiles(lcdControl uint8) {
-	scrollY := l.Mb.Memory.IO[IO_SCY-IO_START_ADDR]
-	scrollX := l.Mb.Memory.IO[IO_SCX-IO_START_ADDR]
-	windowY := l.Mb.Memory.IO[IO_WY-IO_START_ADDR]
-	windowX := l.Mb.Memory.IO[IO_WX-IO_START_ADDR] - 7
+	scrollY := l.Mb.Memory.GetIO(IO_SCY)
+	scrollX := l.Mb.Memory.GetIO(IO_SCX)
+	windowY := l.Mb.Memory.GetIO(IO_WY)
+	windowX := l.Mb.Memory.GetIO(IO_WX) - 7
 
 	ts := l.getTileSettings(lcdControl, windowY)
 
@@ -281,7 +281,7 @@ func (l *LCD) renderTiles(lcdControl uint8) {
 		yPos = l.CurrentScanline - windowY
 	}
 
-	palette := l.Mb.Memory.IO[IO_BGP-IO_START_ADDR]
+	palette := l.Mb.Memory.GetIO(IO_BGP)
 	l.tileScanline = [internal.GB_SCREEN_WIDTH]uint8{}
 
 	for pixel := uint8(0); pixel < internal.GB_SCREEN_WIDTH; pixel++ {
@@ -419,8 +419,8 @@ func (l *LCD) renderSprites(lcdControl uint8) {
 
 	// Load the two palettes which sprites can be drawn in
 
-	var palette1 = l.Mb.Memory.IO[IO_OBP0-IO_START_ADDR]
-	var palette2 = l.Mb.Memory.IO[IO_OBP1-IO_START_ADDR]
+	var palette1 = l.Mb.Memory.GetIO(IO_OBP0)
+	var palette2 = l.Mb.Memory.GetIO(IO_OBP1)
 
 	var minx [internal.GB_SCREEN_WIDTH]int32
 	var lineSprites = 0

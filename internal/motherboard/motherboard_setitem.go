@@ -42,10 +42,12 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	 */
 	case 0x8000 <= addr && addr < 0xA000:
 		if m.Cgb {
-			bank := m.Memory.ActiveVramBank()
-			m.Memory.Vram[bank][addr-0x8000] = v
+			bank := m.Memory.GetIO(IO_VBK) & 0x01
+
+			m.Memory.SetVram(bank, addr, v)
+			return
 		}
-		m.Memory.Vram[0][addr-0x8000] = v
+		m.Memory.SetVram(0, addr, v)
 
 	/*
 	*
@@ -75,7 +77,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 			// check what bank to read from
 			bank := m.Memory.ActiveWramBank()
 			m.Memory.Wram[bank][addr-0xD000] = v
-			break
+			return
 		}
 		m.Memory.Wram[1][addr-0xD000] = v
 
@@ -114,7 +116,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 
 		switch addr {
 		case 0xFF00: /* P1 */
-			m.Memory.IO[IO_P1_JOYP-IO_START_ADDR] = m.Input.Pull(v)
+			m.Memory.SetIO(IO_P1_JOYP, m.Input.Pull(v))
 
 		case 0xFF04: /* DIV */
 			m.Timer.TimaCounter = 0
@@ -145,11 +147,10 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 
 		case 0xFF41: /* STAT */
 			// do not set bits 0-1, they are read_only bits, bit 7 always reads 1
-			stat := (m.Memory.IO[IO_STAT-IO_START_ADDR] & 0x83) | (v & 0xFC)
-			m.Memory.IO[IO_STAT-IO_START_ADDR] = stat
+			m.Memory.SetIO(IO_STAT, (m.Memory.GetIO(IO_STAT)&0x83)|(v&0xFC))
 
 		case 0xFF44: /* LY */
-			m.Memory.IO[IO_LY-IO_START_ADDR] = 0
+			m.Memory.SetIO(IO_LY, 0)
 
 		case 0xFF46: /* DMA */
 			m.doDMATransfer(v)
@@ -159,7 +160,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 
 		case 0xFF4F: /* VBK */
 			if m.Cgb && !m.HdmaActive {
-				m.Memory.IO[IO_VBK-IO_START_ADDR] = v & 0x01
+				m.Memory.SetIO(IO_VBK, v&0x01)
 			}
 
 		case 0xFF50: /* Disable Boot ROM */
@@ -210,16 +211,15 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 
 		case 0xFF70: /* WRAM Bank */
 			if m.Cgb {
-				m.Memory.IO[IO_SVBK-IO_START_ADDR] = v & 0x07
+				m.Memory.SetIO(IO_SVBK, v&0x07)
 			}
 
 		default:
-			m.Memory.IO[addr-IO_START_ADDR] = v
+			m.Memory.SetIO(addr, v)
 		}
 
 		/// prints serial output to terminal ///
 		// if v == 0x81 && addr == IO_SC {
-		// 	fmt.Printf("%c", m.Memory.IO[IO_SB-IO_START_ADDR])
 		// }
 		////////////////////////////////////
 

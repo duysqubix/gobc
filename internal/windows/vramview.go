@@ -42,8 +42,9 @@ var (
 	vramTileAddressingMode uint8 = 0x01 // default 0x8000 mode
 	vramBgAddressingMode   uint8 = 0x01 // default 0x9800 mode
 	vramConsoleTxt         *text.Text
-	vramShowHelp           bool = false
-	vramShowGrid           bool = true
+	vramShowHelp           bool  = false
+	vramShowGrid           bool  = true
+	vramTileDataBank       uint8 = 0x00
 )
 
 func init() {
@@ -136,6 +137,10 @@ func (mw *VramViewWindow) Update() error {
 		vramShowHelp = !vramShowHelp
 	}
 
+	if mw.Window.JustPressed(pixelgl.KeyV) || mw.Window.Repeated(pixelgl.KeyV) {
+		vramTileDataBank = (vramTileDataBank + 1) % 2
+	}
+
 	var unsigned bool = false
 	if vramBgAddressingMode == 0x01 {
 		bgAddressingMode = 0x9800
@@ -159,7 +164,7 @@ func (mw *VramViewWindow) Update() error {
 		currentTileLocation, currentTileOffset = mw.hw.Mb.Lcd.FindTileLocation(uint16(currentIndex)+bgAddressingMode, tileAddressingMode, unsigned)
 	}
 
-	tileData := mw.hw.Mb.Memory.TileData()
+	tileData := mw.hw.Mb.Memory.TileData(vramTileDataBank)
 	tileMap := mw.hw.Mb.Memory.TileMap(vramTileAddressingMode, vramBgAddressingMode)
 
 	updatePicture(vramTilePictureHeight, vramTilePictureWidth, vramTileHeight, vramTileWidth, &tileData, mw.tileCanvas)

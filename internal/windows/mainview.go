@@ -333,13 +333,14 @@ func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
 	gameScreenWidth := internal.GB_SCREEN_WIDTH
 	gameScreenHeight := internal.GB_SCREEN_HEIGHT
 	cyclesFrame := CyclesFrameDMG
+	cyclesFrame = 70224
 
 	if gobc.Mb.Cgb {
 		logger.Infof("Game is CGB, setting cycles per frame to %d", CyclesFrameCBG)
-		cyclesFrame = CyclesFrameCBG
+		// cyclesFrame = CyclesFrameCBG
+		cyclesFrame *= 1
 	}
 
-	cyclesFrame = 70224
 	mgw := &MainGameWindow{
 		hw:             gobc,
 		gameScale:      gameScale,
