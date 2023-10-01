@@ -73,6 +73,7 @@ func gameLoopGUI() {
 
 	for !mainWin.Closed() {
 		mainWin.SetTitle("gobc v0.1 | FPS: " + fmt.Sprintf("%.2f", fps))
+		mainWin.SetTitle(fmt.Sprintf("gobc v0.1 | %s | FPS: %.2f", g.Mb.Cartridge.Filename, fps))
 		elasped = 0
 		start := time.Now()
 

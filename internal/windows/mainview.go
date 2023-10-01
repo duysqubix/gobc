@@ -329,7 +329,7 @@ func (g *GoBoyColor) Reset() {
 }
 
 func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
-	gameScale := 3
+	gameScale := 4
 	gameScreenWidth := internal.GB_SCREEN_WIDTH
 	gameScreenHeight := internal.GB_SCREEN_HEIGHT
 	cyclesFrame := CyclesFrameDMG
@@ -339,6 +339,7 @@ func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
 		cyclesFrame = CyclesFrameCBG
 	}
 
+	cyclesFrame = 70224
 	mgw := &MainGameWindow{
 		hw:             gobc,
 		gameScale:      gameScale,

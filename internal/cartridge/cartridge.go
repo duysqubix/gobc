@@ -13,42 +13,11 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-// CartridgeTable is a table of cartridge types
-// type CartridgeType struct {
-// 	MBC     uint8
-// 	SRAM    bool
-// 	Battery bool
-// 	RTC     bool
-// }
-
 type CartridgeType interface {
 	SetItem(uint16, uint8)
 	GetItem(uint16) uint8
 	Init()
 }
-
-// var CARTRIDGE_TABLE = map[uint8]CartridgeType{
-// 	// #    MBC     SRAM    Battery RTC
-// 	0x00: {ROM_ONLY, false, false, false}, // ROM ONLY
-// 0x01: {MBC1, false, false, false},     // MBC1
-// 0x02: {MBC1, true, false, false},      // MBC1+RAM
-// 0x03: {MBC1, true, true, false},       // MBC1+RAM+BATTERY
-// 0x05: {MBC2, false, false, false},     // MBC2
-// 0x06: {MBC2, false, true, false},      // MBC2+BATTERY
-// 0x08: {ROM_ONLY, true, false, false},  // ROM+RAM
-// 0x09: {ROM_ONLY, true, true, false},   // ROM+RAM+BATTERY
-// 0x0F: {MBC3, false, true, true},       // MBC3+TIMER+BATTERY
-// 0x10: {MBC3, true, true, true},        // MBC3+TIMER+RAM+BATTERY
-// 0x11: {MBC3, false, false, false},     // MBC3
-// 0x12: {MBC3, true, false, false},      // MBC3+RAM
-// 0x13: {MBC3, true, true, false},       // MBC3+RAM+BATTERY
-// 0x19: {MBC5, false, false, false},     // MBC5
-// 0x1A: {MBC5, true, false, false},      // MBC5+RAM
-// 0x1B: {MBC5, true, true, false},       // MBC5+RAM+BATTERY
-// 0x1C: {MBC5, false, false, true},      // MBC5+RUMBLE
-// 0x1D: {MBC5, true, false, true},       // MBC5+RUMBLE+RAM
-// 0x1E: {MBC5, true, true, false},       // MBC5+RUMBLE+RAM+BATTERY
-// }
 
 var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 	// ROM ONLY
@@ -56,6 +25,7 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 		return &RomOnlyCartridge{parent: c}
 	},
 
+	// MBC1
 	0x01: func(c *Cartridge) CartridgeType {
 		return &Mbc1Cartridge{
 			parent:        c,
@@ -79,6 +49,7 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 			parent:        c,
 			romBankSelect: 1,
 			mode:          false,
+			hasBattery:    true,
 		}
 	},
 

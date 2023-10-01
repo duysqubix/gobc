@@ -5,10 +5,13 @@ type Mbc1Cartridge struct {
 	romBankSelect uint16
 	ramBankSelect uint16
 	mode          bool
+	hasBattery    bool
 }
 
 func (c *Mbc1Cartridge) Init() {
-
+	if c.hasBattery {
+		LoadSRAM(c.parent.Filename, &c.parent.RamBanks, c.parent.RamBankCount)
+	}
 }
 
 func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
@@ -16,7 +19,6 @@ func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
 	case addr < 0x2000:
 		if (value & 0x0f) == 0x0a {
 			c.parent.RamBankEnabled = true
-			logger.Debugf("RAM Bank enabled")
 		} else {
 			c.parent.RamBankEnabled = false
 		}
@@ -30,12 +32,12 @@ func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
 
 	case 0x4000 <= addr && addr < 0x6000:
 		c.ramBankSelect = uint16(value) & 0x3
-		logger.Debugf("RAM Bank selected: %d", c.ramBankSelect)
+		// logger.Debugf("RAM Bank selected: %d", c.ramBankSelect)
 
 	case 0x6000 <= addr && addr < 0x8000:
 		c.parent.MemoryModel = value & 0x1
 		c.mode = value&0x1 == 0x1
-		logger.Debugf("Memory model: %d", c.parent.MemoryModel)
+		// logger.Debugf("Memory model: %d", c.parent.MemoryModel)
 
 	case 0xA000 <= addr && addr < 0xC000:
 		if !c.parent.RamBankEnabled {
@@ -47,7 +49,7 @@ func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
 		} else {
 			c.parent.RamBankSelected = 0
 		}
-		logger.Debugf("Writing %#x to %#x on RAM bank %d/%d (%d)\n", value, addr, c.parent.RamBankSelected, c.parent.RamBankCount, c.parent.RamBankSelected%c.parent.RamBankCount)
+		// logger.Debugf("Writing %#x to %#x on RAM bank %d/%d (%d)\n", value, addr, c.parent.RamBankSelected, c.parent.RamBankCount, c.parent.RamBankSelected%c.parent.RamBankCount)
 		c.parent.RamBanks[c.parent.RamBankSelected%c.parent.RamBankCount][addr-0xA000] = value
 	default:
 		logger.Panicf("Memory write error! Can't write %#x to %#x\n", value, addr)
@@ -66,7 +68,6 @@ func (c *Mbc1Cartridge) GetItem(addr uint16) uint8 {
 
 	case 0x4000 <= addr && addr < 0x8000:
 		c.parent.RomBankSelected = (c.ramBankSelect<<5)%c.parent.RomBanksCount | c.romBankSelect
-		// bank := c.parent.RomBankSelected % uint8(len(c.parent.RomBanks))
 		bank := c.parent.RomBankSelected % c.parent.RomBanksCount
 		return c.parent.RomBanks[bank][addr-0x4000]
 
@@ -81,7 +82,6 @@ func (c *Mbc1Cartridge) GetItem(addr uint16) uint8 {
 			c.parent.RamBankSelected = 0
 		}
 
-		// bank := c.parent.RamBankSelected % uint8(c.parent.RamBankCount)
 		bank := c.parent.RamBankSelected % c.parent.RamBankCount
 		return c.parent.RamBanks[bank][addr-0xA000]
 	default:

@@ -7,11 +7,10 @@ type Mbc3Cartridge struct {
 }
 
 func (c *Mbc3Cartridge) Init() {
-	romName := c.parent.Filename
 
 	// load save file if exists
 	if c.hasBattery {
-		LoadSRAM(romName, &c.parent.RamBanks, c.parent.RamBankCount)
+		LoadSRAM(c.parent.Filename, &c.parent.RamBanks, c.parent.RamBankCount)
 	}
 }
 

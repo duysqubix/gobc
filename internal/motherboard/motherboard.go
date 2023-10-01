@@ -239,6 +239,7 @@ func (m *Motherboard) doNewDMATransfer(value byte) {
 	} else {
 		// Mode 1, H-Blank DMA
 		// logger.Debugf("Starting HDMA transfer of %d bytes", length)
+		internal.ResetBit(&value, 7)
 		m.HdmaLength = uint8(value)
 		m.HdmaActive = true
 	}
