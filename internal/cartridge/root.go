@@ -2,6 +2,8 @@ package cartridge
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/duysqubix/gobc/internal"
 )
@@ -436,43 +438,44 @@ var OldLicenseeCodeMap = map[uint8]string{
 	0xFF: "LJN",
 }
 
-var initialCartRam initCartRamMap = initCartRamMap{
-	0x03: { // MBC3+RAM+BATTERY
-		0x00: [16]uint8{
-			0xbd, 0x7f, 0x05, 0x2e, 0x21, 0xc7, 0xa6, 0x88,
-			0x0e, 0xda, 0x05, 0x3a, 0x82, 0x19, 0x73, 0x71,
-		},
-		0x01: [16]uint8{
-			0x81, 0xdc, 0x07, 0x35, 0x9c, 0x4f, 0x48, 0x11,
-			0x34, 0xf9, 0x47, 0x5e, 0x8a, 0x53, 0x80, 0xa1,
-		},
-		0x02: [16]uint8{
-			0xd7, 0x8d, 0x55, 0x7b, 0xb8, 0xd3, 0x81, 0x70,
-			0xec, 0xd6, 0x23, 0x6a, 0x84, 0x87, 0x7b, 0x49,
-		},
-		0x03: [16]uint8{
-			0x6e, 0x16, 0x1a, 0x58, 0x79, 0x0b, 0x19, 0x75,
-			0xe2, 0x14, 0x2b, 0x3f, 0x4e, 0x37, 0xc4, 0xe4,
-		},
-	},
+func LoadSRAM(romName string, rambanks *[16][RAM_BANK_SIZE]uint8, ramBankCount uint16) {
+	saveName := romName + ".sav"
+	file, err := os.Open(saveName)
+	if err != nil {
+		logger.Info("No save file found")
+		return
+	}
+	defer file.Close()
+
+	for i := uint16(0); i < ramBankCount; i++ {
+		if _, err := file.Read(rambanks[i][:]); err != nil {
+			logger.Errorf("Error reading save file: %v", err)
+		}
+	}
+	absPath, err := filepath.Abs(file.Name())
+	if err != nil {
+		logger.Errorf("Error getting absolute path: %v", err)
+	}
+	logger.Infof("Loaded %d bytes from %s", ramBankCount*RAM_BANK_SIZE, absPath)
 }
 
-type initCartRamMap map[uint8]map[uint8][16]uint8
+func SaveSRAM(romName string, rambanks *[16][RAM_BANK_SIZE]uint8, ramBankCount uint16) {
+	saveName := romName + ".sav"
+	file, err := os.Create(saveName)
+	if err != nil {
+		logger.Errorf("Error creating save file: %v", err)
+	}
+	defer file.Close()
 
-func (m initCartRamMap) get(ctype uint8, bank uint8) [16]uint8 {
-	if _, ok := m[ctype]; !ok {
-		logger.Errorf("Cartridge Ram Init type %#x not found", ctype)
-		return [16]uint8{}
+	for i := uint16(0); i < ramBankCount; i++ {
+		if _, err := file.Write(rambanks[i][:]); err != nil {
+			logger.Errorf("Error writing save file: %v", err)
+		}
+	}
+	absPath, err := filepath.Abs(file.Name())
+	if err != nil {
+		logger.Errorf("Error getting absolute path: %v", err)
 	}
 
-	return m[ctype][bank]
-}
-
-func (m initCartRamMap) numberOfBanks(ctype uint8) uint8 {
-	if _, ok := m[ctype]; !ok {
-		logger.Errorf("Cartridge Ram Init type %#x not found", ctype)
-		return 0
-	}
-
-	return uint8(len(m[ctype]))
+	logger.Infof("Saved %d bytes to %s", ramBankCount*RAM_BANK_SIZE, absPath)
 }

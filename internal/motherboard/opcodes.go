@@ -582,11 +582,14 @@ var OPCODES = OpCodeMap{
 
 	// LD (HL), E - Save E at address pointed to by HL (115)
 	0x73: func(mb *Motherboard, value uint16) OpCycles {
-
 		hl := mb.Cpu.HL()
 		e := uint16(mb.Cpu.Registers.E)
 		mb.SetItem(hl, e)
 		mb.Cpu.Registers.PC += 1
+
+		// if hl == 0x9A20 && e == 0x03 {
+		// 	logger.Infof("HL: %#x, E: %#x, PC: %#x, VBK: %#x, BANK0: %#x, BANK1: %#x", hl, e, mb.Cpu.Registers.PC, mb.Memory.IO[IO_VBK-IO_START_ADDR], mb.Memory.Vram[0][0x9A20-0x8000], mb.Memory.Vram[1][0x9A20-0x8000])
+		// }
 		return 8
 	},
 

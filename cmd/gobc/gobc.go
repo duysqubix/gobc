@@ -12,6 +12,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/duysqubix/gobc/internal"
+	"github.com/duysqubix/gobc/internal/cartridge"
 	"github.com/duysqubix/gobc/internal/windows"
 )
 
@@ -56,10 +57,10 @@ func gameLoopGUI() {
 	if DEBUG_WINDOWS {
 		wins = append(wins,
 			windows.NewVramViewWindow(g),
-			// windows.NewMemoryViewWindow(g),
+			windows.NewMemoryViewWindow(g),
 			// windows.NewCartViewWindow(g),
-			// windows.NewCpuViewWindow(g),
-			// windows.NewIoViewWindow(g),
+			windows.NewCpuViewWindow(g),
+			windows.NewIoViewWindow(g),
 		)
 	}
 
@@ -168,6 +169,8 @@ func mainAction(ctx *cli.Context) error {
 		gameLoop()
 	}
 
+	// save SRAM state
+	cartridge.SaveSRAM(romfile, &g.Mb.Cartridge.RamBanks, g.Mb.Cartridge.RamBankCount)
 	return cli.Exit("", 0)
 
 }

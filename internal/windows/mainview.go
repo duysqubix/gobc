@@ -7,6 +7,7 @@ import (
 
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
+	"github.com/duysqubix/gobc/internal/cartridge"
 	"github.com/duysqubix/gobc/internal/motherboard"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
@@ -44,6 +45,10 @@ type MainGameWindow struct {
 	gameTrueHeight float64
 	gameMapCanvas  *pixel.PictureData
 	cyclesFrame    int
+}
+
+func (mw *MainGameWindow) Hw() *GoBoyColor {
+	return mw.hw
 }
 
 func (mw *MainGameWindow) SetUp() {
@@ -94,6 +99,10 @@ func (mw *MainGameWindow) _handleDebugInput() {
 
 	if mw.Window.JustPressed(pixelgl.KeyF3) || mw.Window.Repeated(pixelgl.KeyF3) {
 		motherboard.ChangePallete()
+	}
+
+	if mw.Window.JustPressed(pixelgl.KeyF4) || mw.Window.Repeated(pixelgl.KeyF4) {
+		cartridge.SaveSRAM(mw.hw.Mb.Cartridge.Filename, &mw.hw.Mb.Cartridge.RamBanks, mw.hw.Mb.Cartridge.RamBankCount)
 	}
 
 }

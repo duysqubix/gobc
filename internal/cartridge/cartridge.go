@@ -116,7 +116,7 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 }
 
 type Cartridge struct {
-	filename  string        // filename of the ROM
+	Filename  string        // Filename of the ROM
 	CartType  CartridgeType // type of cartridge
 	Randomize bool          // whether to randomize RAM banks on startup
 
@@ -203,16 +203,16 @@ func LoadRomBanksV2(rom_data []byte, dummy_data bool) [128][MEMORY_BANK_SIZE]uin
 	return rom_banks
 }
 
-func NewCartridge(filename *pathlib.Path) *Cartridge {
+func NewCartridge(Filename *pathlib.Path) *Cartridge {
 	var rom_data []byte
 	var err error
 	// var rom_banks [128][MEMORY_BANK_SIZE]uint8
 	var rom_banks [][]uint8
 	var fname string
 
-	if filename != nil {
-		rom_data, err = filename.ReadFile()
-		fname = filename.Name()
+	if Filename != nil {
+		rom_data, err = Filename.ReadFile()
+		fname = Filename.Name()
 		if err != nil {
 			internal.Logger.Panicf("Error reading ROM file: %s", err)
 		}
@@ -271,7 +271,7 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 
 	cart := Cartridge{
 		RomBanks:        rom_banks,
-		filename:        fname,
+		Filename:        fname,
 		RomBanksCount:   romBankCount,
 		RomBankSelected: 1,
 		RamBankSelected: 0,
@@ -300,7 +300,7 @@ func NewCartridge(filename *pathlib.Path) *Cartridge {
 
 	logger.Info("Cartridge RAM Initialized")
 	cart.Dump(os.Stdout)
-	logger.Infof("ROM file loaded successfully: %s", filename)
+	logger.Infof("ROM file loaded successfully: %s", Filename)
 	logger.Infof("Cartridge Initialized: %s", reflect.TypeOf(cart.CartType))
 	logger.Infof("ROM Banks: %d, Size: %dKb", cart.RomBanksCount, cart.RomBanksCount*16)
 	logger.Infof("RAM Banks: %d, Size: %dKb", cart.RamBankCount, cart.RamBankCount*8)
@@ -353,7 +353,7 @@ func (c *Cartridge) Dump(writer io.Writer) {
 
 	_, valid := c.ValidateChecksum()
 	report := [][]string{
-		{"Filename", c.filename},
+		{"Filename", c.Filename},
 		{"Title", string(title)},
 		{"CBG Mode", cgb_mode_desc},
 		{"SBG Mode", sbg_mode_enabled},

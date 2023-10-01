@@ -32,7 +32,7 @@ const (
 
 	vramTilePreviewPictureWidth  = vramTileWidth
 	vramTilePreviewPictureHeight = vramTileHeight
-	vramTilePreviewScale         = 2
+	vramTilePreviewScale         = 20
 
 	gridSize    = 16
 	gridSizeMax = 32
@@ -97,7 +97,7 @@ func (mw *VramViewWindow) SetUp() {
 		pixel.V(520, 520),
 		text.NewAtlas(basicfont.Face7x13, text.ASCII),
 	)
-	vramConsoleTxt.Color = colornames.Red
+	vramConsoleTxt.Color = colornames.Green
 }
 
 func calculateVramIndex(x, y int) int {
@@ -166,8 +166,10 @@ func (mw *VramViewWindow) Update() error {
 	updatePicture(vramTileMapPictureHeight, vramTileMapPictureWidth, vramTileHeight, vramTileWidth, &tileMap, mw.tileMapCanvas)
 
 	// update tile preview with select Tile
-	// updatePicture(vramTilePreviewPictureHeight, vramTilePreviewPictureWidth, vramTileHeight, vramTileWidth, &tileData[currentTileLocation:currentTileLocation+16], mw.tilePreviewCanvas)
-
+	if currentTileLocation > 0 {
+		tilePreview := tileData[currentTileLocation-0x8000 : currentTileLocation+16-0x8000]
+		updatePicture(vramTilePreviewPictureHeight, vramTilePreviewPictureWidth, vramTileHeight, vramTileWidth, &tilePreview, mw.tilePreviewCanvas)
+	}
 	return nil
 }
 
@@ -209,9 +211,18 @@ func (mw *VramViewWindow) Draw() {
 	fmt.Fprintf(vramConsoleTxt, "Index: %d ($%02x)\n", currentIndex, currentIndex)
 	fmt.Fprintf(vramConsoleTxt, "TileIndex: %d ($%04x)\n", currentTileOffset, currentTileOffset)
 	fmt.Fprintf(vramConsoleTxt, "\t@ VRAM 00:%04X\n", int32(currentIndex)+int32(bgAddressingMode))
-	vramConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(vramConsoleTxt.Orig, 1.25))
+	vramConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(vramConsoleTxt.Orig, 1.5))
+
 	drawVramArea(mw.Window, mw.tileMapCanvas, vramTileMapScale, 0, 0)
 	drawVramArea(mw.Window, mw.tileCanvas, vramTileScale, (mw.tileCanvas.Rect.H()*vramTileMapScale)+100, 0)
+
+	spr2 := pixel.NewSprite(mw.tilePreviewCanvas, mw.tilePreviewCanvas.Bounds())
+
+	v := pixel.V(
+		(mw.tileMapCanvas.Rect.W()*vramTileMapScale)+((mw.tileMapCanvas.Rect.W()*vramTileMapScale)/3)-80,
+		mw.tileMapCanvas.Rect.H()*vramTileMapScale+150,
+	)
+	spr2.Draw(mw.Window, pixel.IM.Scaled(pixel.ZV, vramTilePreviewScale).Moved(v))
 
 	mw.Window.Update()
 

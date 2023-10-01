@@ -317,8 +317,9 @@ func (l *LCD) renderTiles(lcdControl uint8) {
 		//    Bit 6    Vertical Flip              (0=Normal, 1=Mirror vertically)
 		//    Bit 7    BG-to-OAM Priority         (0=Use OAM priority bit, 1=BG Priority)
 		//
-		bank := 0
 		tileAttr := l.Mb.Memory.Vram[1][tileAddress-0x8000]
+
+		bank := 0
 		if l.Mb.Cgb && internal.IsBitSet(tileAttr, 3) {
 			bank = 1
 		}

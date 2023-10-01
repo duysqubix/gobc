@@ -238,7 +238,7 @@ func (m *Motherboard) doNewDMATransfer(value byte) {
 		m.Memory.IO[IO_HDMA5-IO_START_ADDR] = 0xFF
 	} else {
 		// Mode 1, H-Blank DMA
-		logger.Debugf("Starting HDMA transfer of %d bytes", length)
+		// logger.Debugf("Starting HDMA transfer of %d bytes", length)
 		m.HdmaLength = uint8(value)
 		m.HdmaActive = true
 	}

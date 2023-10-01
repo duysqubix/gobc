@@ -135,6 +135,7 @@ func (mw *MemoryViewWindow) Update() error {
 		end_addr = 0xffff
 	}
 
+	// logger.Debugf("0x9A20. Bank0: %#x, Bank1: %#x", mw.hw.Mb.Memory.Vram[0][0x9A20-0x8000], mw.hw.Mb.Memory.Vram[1][0x9A20-0x8000])
 	return nil
 }
 
@@ -159,6 +160,8 @@ func (mw *MemoryViewWindow) Draw() {
 		} else if 0xA000 <= row_addr_start && row_addr_start < 0xC000 {
 			ramSelect = mw.hw.Mb.Cartridge.RamBankSelected
 			row_addr = fmt.Sprintf("%#x:0x%04x", ramSelect, row_addr_start)
+		} else if 0x8000 <= row_addr_start && row_addr_start < 0xA000 {
+			row_addr = fmt.Sprintf("%#x:0x%04x", mw.hw.Mb.GetItem(0xFF4F)&0x1, row_addr_start)
 		}
 
 		for j := 0; j < 16; j++ {

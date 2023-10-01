@@ -1,15 +1,18 @@
 package cartridge
 
 type Mbc3Cartridge struct {
-	parent *Cartridge
-	// romBankSelect  uint32
-	// ramBankSelect  uint32
-	// ramBankEnabled bool
+	parent     *Cartridge
 	hasBattery bool
 	hasRTC     bool
 }
 
 func (c *Mbc3Cartridge) Init() {
+	romName := c.parent.Filename
+
+	// load save file if exists
+	if c.hasBattery {
+		LoadSRAM(romName, &c.parent.RamBanks, c.parent.RamBankCount)
+	}
 }
 
 func (c *Mbc3Cartridge) SetItem(addr uint16, value uint8) {
