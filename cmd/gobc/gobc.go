@@ -7,7 +7,7 @@ import (
 	"time"
 
 	// putils "github.com/dusk125/pixelutils"
-	"github.com/faiface/pixel/pixelgl"
+	"github.com/duysqubix/pixel2/pixelgl"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 

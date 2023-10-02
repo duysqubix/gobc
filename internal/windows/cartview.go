@@ -5,9 +5,9 @@ import (
 
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/cartridge"
-	"github.com/faiface/pixel"
-	"github.com/faiface/pixel/pixelgl"
-	"github.com/faiface/pixel/text"
+	"github.com/duysqubix/pixel2"
+	"github.com/duysqubix/pixel2/pixelgl"
+	"github.com/duysqubix/pixel2/text"
 	"github.com/olekukonko/tablewriter"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"

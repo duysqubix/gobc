@@ -4,7 +4,7 @@ import (
 	"image/color"
 
 	"github.com/duysqubix/gobc/internal/motherboard"
-	"github.com/faiface/pixel"
+	"github.com/duysqubix/pixel2"
 )
 
 func updatePicture(pictureHeight int, pictureWidth int, tileHeight int, tileWidth int, tileData *[]uint8, canvas *pixel.PictureData) {

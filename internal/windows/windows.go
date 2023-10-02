@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/faiface/pixel/pixelgl"
+	"github.com/duysqubix/pixel2/pixelgl"
 	"github.com/urfave/cli/v2"
 )
 
