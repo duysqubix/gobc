@@ -84,7 +84,12 @@ List is in no particular order and is subject to change. Take a stab at any of t
 - [ ] Sound
 - [ ] Use real Cartridges (via Arduino)
 - [ ] Implement all MBCs
+
+Known Issues
+==================
 - [ ] Fix Links Awakening DMG (Menu is broken)
+- [ ] Pokemon Crystal - Battle Scenes Not animating
+- [ ] Pokemon Crystal - Character is split upon battle entry
 
 
 
