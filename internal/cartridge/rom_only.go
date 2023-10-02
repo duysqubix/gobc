@@ -1,10 +1,21 @@
 package cartridge
 
+import "bytes"
+
 type RomOnlyCartridge struct {
 	parent *Cartridge
 }
 
 func (c *RomOnlyCartridge) Init() {
+}
+
+func (c *RomOnlyCartridge) Serialize() *bytes.Buffer {
+	buf := new(bytes.Buffer)
+	return buf
+}
+
+func (c *RomOnlyCartridge) Deserialize(data *bytes.Buffer) error {
+	return nil
 }
 
 func (c *RomOnlyCartridge) SetItem(addr uint16, value uint8) {

@@ -1,6 +1,11 @@
 package motherboard
 
-import "github.com/duysqubix/gobc/internal"
+import (
+	"bytes"
+	"encoding/binary"
+
+	"github.com/duysqubix/gobc/internal"
+)
 
 const (
 	P10 uint8 = iota
@@ -34,6 +39,25 @@ type Input struct {
 	directional uint8
 	standard    uint8
 	Mb          *Motherboard
+}
+
+func (i *Input) Serialize() *bytes.Buffer {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, i.directional)
+	binary.Write(buf, binary.LittleEndian, i.standard)
+	return buf
+}
+
+func (i *Input) Deserialize(data *bytes.Buffer) error {
+	// Read the data from the buffer
+	if err := binary.Read(data, binary.LittleEndian, &i.directional); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &i.standard); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewInput(mb *Motherboard) *Input {

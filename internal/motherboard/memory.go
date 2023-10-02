@@ -1,6 +1,8 @@
 package motherboard
 
 import (
+	"bytes"
+	"encoding/binary"
 	"io"
 	"math/rand"
 )
@@ -102,7 +104,38 @@ type OAM [0xa0]uint8
 
 type VRAM [0x2][0x2000]uint8
 
-// type VRAM [0x4000]uint8
+func (r *Memory) Serialize() *bytes.Buffer {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, r.Wram) // WRAM
+	binary.Write(buf, binary.LittleEndian, r.Vram) // VRAM
+	binary.Write(buf, binary.LittleEndian, r.Oam)  // OAM
+	binary.Write(buf, binary.LittleEndian, r.IO)   // IO
+	binary.Write(buf, binary.LittleEndian, r.Hram) // HRAM
+
+	logger.Debug("Serialized memory state")
+	return buf
+}
+
+func (r *Memory) Deserialize(data *bytes.Buffer) error {
+	// Read the data from the buffer
+	if err := binary.Read(data, binary.LittleEndian, &r.Wram); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &r.Vram); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &r.Oam); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &r.IO); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &r.Hram); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func NewInternalRAM(mb *Motherboard, randomize bool) *Memory {
 	ram := &Memory{

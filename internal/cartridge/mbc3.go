@@ -1,5 +1,10 @@
 package cartridge
 
+import (
+	"bytes"
+	"encoding/binary"
+)
+
 type Mbc3Cartridge struct {
 	parent     *Cartridge
 	hasBattery bool
@@ -12,6 +17,26 @@ func (c *Mbc3Cartridge) Init() {
 	if c.hasBattery {
 		LoadSRAM(c.parent.Filename, &c.parent.RamBanks, c.parent.RamBankCount)
 	}
+}
+
+func (c *Mbc3Cartridge) Serialize() *bytes.Buffer {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, c.hasBattery) // Has Battery
+	binary.Write(buf, binary.LittleEndian, c.hasRTC)     // Has RTC
+	logger.Debug("Serialized MBC3 state")
+	return buf
+}
+
+func (c *Mbc3Cartridge) Deserialize(data *bytes.Buffer) error {
+	if err := binary.Read(data, binary.LittleEndian, &c.hasBattery); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.hasRTC); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Mbc3Cartridge) SetItem(addr uint16, value uint8) {

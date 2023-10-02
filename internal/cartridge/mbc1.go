@@ -1,11 +1,46 @@
 package cartridge
 
+import (
+	"bytes"
+	"encoding/binary"
+)
+
 type Mbc1Cartridge struct {
 	parent        *Cartridge
 	romBankSelect uint16
 	ramBankSelect uint16
 	mode          bool
 	hasBattery    bool
+}
+
+func (c *Mbc1Cartridge) Serialize() *bytes.Buffer {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, c.romBankSelect) // ROM Bank Select
+	binary.Write(buf, binary.LittleEndian, c.ramBankSelect) // RAM Bank Select
+	binary.Write(buf, binary.LittleEndian, c.mode)          // Mode
+	binary.Write(buf, binary.LittleEndian, c.hasBattery)    // Has Battery
+	logger.Debug("Serialized MBC1 state")
+	return buf
+}
+
+func (c *Mbc1Cartridge) Deserialize(data *bytes.Buffer) error {
+	if err := binary.Read(data, binary.LittleEndian, &c.romBankSelect); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.ramBankSelect); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.mode); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.hasBattery); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Mbc1Cartridge) Init() {

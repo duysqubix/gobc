@@ -1,6 +1,8 @@
 package motherboard
 
-import "github.com/duysqubix/gobc/internal"
+import (
+	"github.com/duysqubix/gobc/internal"
+)
 
 const (
 	// IO Addresses

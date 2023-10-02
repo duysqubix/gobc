@@ -3,6 +3,8 @@
 package cartridge
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
@@ -17,6 +19,8 @@ type CartridgeType interface {
 	SetItem(uint16, uint8)
 	GetItem(uint16) uint8
 	Init()
+	Serialize() *bytes.Buffer
+	Deserialize(*bytes.Buffer) error
 }
 
 var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
@@ -108,6 +112,64 @@ type Cartridge struct {
 	RtcEnabled bool // whether RTC is enabled
 
 	MemoryModel uint8 // 0 = 16/8, 1 = 4/32
+}
+
+func (c *Cartridge) Serialize() *bytes.Buffer {
+	buf := new(bytes.Buffer)
+
+	// ROM
+	// for _, bank := range c.RomBanks {
+	// 	binary.Write(buf, binary.LittleEndian, bank)
+	// }
+
+	binary.Write(buf, binary.LittleEndian, c.RomBanksCount)   // ROM Bank Count
+	binary.Write(buf, binary.LittleEndian, c.RomBankSelected) // ROM Bank Selected
+
+	binary.Write(buf, binary.LittleEndian, c.RamBanks)        // RAM
+	binary.Write(buf, binary.LittleEndian, c.RamBankCount)    // RAM Bank Count
+	binary.Write(buf, binary.LittleEndian, c.RamBankSelected) // RAM Bank Selected
+	binary.Write(buf, binary.LittleEndian, c.RamBankEnabled)  // RAM Bank Enabled
+	binary.Write(buf, binary.LittleEndian, c.MemoryModel)     // Memory Model
+	logger.Debug("Serialized cartridge state")
+
+	// seralize MBC State
+	binary.Write(buf, binary.LittleEndian, c.CartType.Serialize().Bytes())
+	return buf
+}
+
+func (c *Cartridge) Deserialize(data *bytes.Buffer) error {
+	// Read the data from the buffer
+
+	if err := binary.Read(data, binary.LittleEndian, &c.RomBanksCount); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.RomBankSelected); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.RamBanks); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.RamBankCount); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.RamBankSelected); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.RamBankEnabled); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.MemoryModel); err != nil {
+		return err
+	}
+
+	// deserialize MBC state
+	return c.CartType.Deserialize(data)
 }
 
 func LoadRomBanks(rom_data []byte, dummy_data bool) [][]uint8 {

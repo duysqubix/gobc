@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"bytes"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -202,4 +204,49 @@ func (s *Set) Sort() []int {
 
 func NewSet() *Set {
 	return &Set{make(map[int]bool)}
+}
+
+type EntityState interface {
+	Serialize() *bytes.Buffer
+	Deserialize(*bytes.Buffer) error
+}
+
+func StateToFile(romName string, state EntityState) {
+	statename := romName + ".state"
+
+	// create a file for writing
+	file, err := os.Create(statename)
+	if err != nil {
+		Logger.Panicf("Failed to create file: %s", err)
+	}
+	defer file.Close()
+
+	buf := state.Serialize().Bytes()
+	// Save to File
+	if _, err := file.Write(buf); err != nil {
+		Logger.Errorf("Failed to write to file: %s", err)
+	}
+
+	absPath, err := filepath.Abs(file.Name())
+	if err != nil {
+		Logger.Errorf("Error getting absolute path: %v", err)
+	}
+
+	Logger.Infof("Saved state (%.02f KB) to %s", float64(len(buf))/1024.0, absPath)
+}
+
+func LoadState(romName string, state EntityState) {
+	statename := romName + ".state"
+
+	// create a file for writing
+	data, err := os.ReadFile(statename)
+	if err != nil {
+		Logger.Panicf("Failed to read file: %s", err)
+	}
+
+	buf := bytes.NewBuffer(data)
+
+	state.Deserialize(buf)
+	Logger.Debugf("Loaded state (%.02f KB) from %s", float64(len(data))/1024.0, statename)
+
 }

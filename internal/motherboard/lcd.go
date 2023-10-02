@@ -1,6 +1,9 @@
 package motherboard
 
 import (
+	"bytes"
+	"encoding/binary"
+
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -33,6 +36,50 @@ type LCD struct {
 	CurrentPixelPosition uint8 // current pixel position in the scanline
 	CurrentScanline      uint8 // current scanline being rendered
 	WindowLY             uint8 // current window scanline being rendered
+}
+
+func (l *LCD) Serialize() *bytes.Buffer {
+
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, l.PreparedData)         // PreparedData
+	binary.Write(buf, binary.LittleEndian, l.scanlineCounter)      // scanlineCounter
+	binary.Write(buf, binary.LittleEndian, l.bgPriority)           // screenCleared
+	binary.Write(buf, binary.LittleEndian, l.screenCleared)        // screenCleared
+	binary.Write(buf, binary.LittleEndian, l.WindowLY)             // WindowLY
+	binary.Write(buf, binary.LittleEndian, l.CurrentScanline)      // CurrentScanline
+	binary.Write(buf, binary.LittleEndian, l.CurrentPixelPosition) // CurrentPixelPosition
+
+	logger.Debug("Serialized LCD state")
+	return buf
+}
+
+func (l *LCD) Deserialize(data *bytes.Buffer) error {
+	// Read the data from the buffer
+	if err := binary.Read(data, binary.LittleEndian, &l.PreparedData); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &l.scanlineCounter); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &l.bgPriority); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &l.screenCleared); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &l.WindowLY); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &l.CurrentScanline); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &l.CurrentPixelPosition); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewLCD(mb *Motherboard) *LCD {

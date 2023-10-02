@@ -1,6 +1,8 @@
 package motherboard
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/chigopher/pathlib"
@@ -39,6 +41,63 @@ type Motherboard struct {
 	Breakpoints  *Breakpoints // Breakpoints
 	PanicOnStuck bool         // Panic when CPU is stuck
 	GuiPause     bool         // Pause GUI
+}
+
+func (m *Motherboard) Serialize() *bytes.Buffer {
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, m.HdmaActive)                        // HDMA active
+	binary.Write(buf, binary.LittleEndian, m.HdmaLength)                        // HDMA length
+	binary.Write(buf, binary.LittleEndian, m.doubleSpeed)                       // Double speed mode
+	binary.Write(buf, binary.LittleEndian, m.Cpu.Serialize().Bytes())           // CPU
+	binary.Write(buf, binary.LittleEndian, m.Memory.Serialize().Bytes())        // Memory
+	binary.Write(buf, binary.LittleEndian, m.Lcd.Serialize().Bytes())           // LCD
+	binary.Write(buf, binary.LittleEndian, m.Input.Serialize().Bytes())         // Input
+	binary.Write(buf, binary.LittleEndian, m.Timer.Serialize().Bytes())         // Timer
+	binary.Write(buf, binary.LittleEndian, m.BGPalette.Serialize().Bytes())     // BG Palette
+	binary.Write(buf, binary.LittleEndian, m.SpritePalette.Serialize().Bytes()) // Sprite Palette
+	binary.Write(buf, binary.LittleEndian, m.Cartridge.Serialize().Bytes())     // Cartridge
+
+	return buf
+}
+
+func (m *Motherboard) Deserialize(data *bytes.Buffer) error {
+	// Read the data from the buffer
+	if err := binary.Read(data, binary.LittleEndian, &m.HdmaActive); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &m.HdmaLength); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &m.doubleSpeed); err != nil {
+		return err
+	}
+	if err := m.Cpu.Deserialize(data); err != nil {
+		return err
+	}
+	if err := m.Memory.Deserialize(data); err != nil {
+		return err
+	}
+	if err := m.Lcd.Deserialize(data); err != nil {
+		return err
+	}
+	if err := m.Input.Deserialize(data); err != nil {
+		return err
+	}
+	if err := m.Timer.Deserialize(data); err != nil {
+		return err
+	}
+	if err := m.BGPalette.Deserialize(data); err != nil {
+		return err
+	}
+	if err := m.SpritePalette.Deserialize(data); err != nil {
+		return err
+	}
+	if err := m.Cartridge.Deserialize(data); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type MotherboardParams struct {

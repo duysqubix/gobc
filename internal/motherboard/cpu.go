@@ -2,7 +2,9 @@ package motherboard
 
 import (
 	"bufio"
+	"bytes"
 	"container/list"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"math/rand"
@@ -41,6 +43,73 @@ type CPU struct {
 	IsStuck    bool         // CPU is stuck
 	Stopped    bool         // CPU is stopped
 	PcHist     *list.List   // records last 16 PC values
+}
+
+func (c *CPU) Serialize() *bytes.Buffer {
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, c.Registers.A)
+	binary.Write(buf, binary.LittleEndian, c.Registers.B)
+	binary.Write(buf, binary.LittleEndian, c.Registers.C)
+	binary.Write(buf, binary.LittleEndian, c.Registers.D)
+	binary.Write(buf, binary.LittleEndian, c.Registers.E)
+	binary.Write(buf, binary.LittleEndian, c.Registers.F)
+	binary.Write(buf, binary.LittleEndian, c.Registers.H)
+	binary.Write(buf, binary.LittleEndian, c.Registers.L)
+	binary.Write(buf, binary.LittleEndian, c.Registers.SP)
+	binary.Write(buf, binary.LittleEndian, c.Registers.PC)
+	binary.Write(buf, binary.LittleEndian, c.Interrupts.InterruptsEnabling)
+	binary.Write(buf, binary.LittleEndian, c.Interrupts.InterruptsOn)
+	binary.Write(buf, binary.LittleEndian, c.Interrupts.IE)
+	binary.Write(buf, binary.LittleEndian, c.Interrupts.IF)
+	logger.Debug("Serializing CPU state")
+	return buf
+}
+
+func (c *CPU) Deserialize(data *bytes.Buffer) error {
+	if err := binary.Read(data, binary.LittleEndian, &c.Registers.A); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Registers.B); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Registers.C); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Registers.D); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Registers.E); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Registers.F); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Registers.H); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Registers.L); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Registers.SP); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Registers.PC); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Interrupts.InterruptsEnabling); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Interrupts.InterruptsOn); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Interrupts.IE); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &c.Interrupts.IF); err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewCpu(mb *Motherboard) *CPU {

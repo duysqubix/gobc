@@ -1,6 +1,9 @@
 package motherboard
 
 import (
+	"bytes"
+	"encoding/binary"
+
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -99,6 +102,31 @@ type cgbPalette struct {
 	Index byte
 	// If to auto increment on write.
 	Inc bool
+}
+
+func (pal *cgbPalette) Serialize() *bytes.Buffer {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, pal.Palette) // Palette
+	binary.Write(buf, binary.LittleEndian, pal.Index)   // Index
+	binary.Write(buf, binary.LittleEndian, pal.Inc)     // Inc
+	logger.Debug("Serialized palette state")
+	return buf
+}
+
+func (pal *cgbPalette) Deserialize(data *bytes.Buffer) error {
+	// Read the data from the buffer
+	if err := binary.Read(data, binary.LittleEndian, &pal.Palette); err != nil {
+		return err
+	}
+	if err := binary.Read(data, binary.LittleEndian, &pal.Index); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &pal.Inc); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Update the index the palette is indexing and set

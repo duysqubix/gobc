@@ -4,6 +4,11 @@
 
 package motherboard
 
+import (
+	"bytes"
+	"encoding/binary"
+)
+
 type Timer struct {
 	DivCounter  OpCycles // Divider counter
 	TimaCounter OpCycles // Timer counter
@@ -11,6 +16,46 @@ type Timer struct {
 	TIMA        uint32   // Timer counter (0xFF05)
 	TMA         uint32   // Timer modulo (0xFF06)
 	TAC         uint32   // Timer control (0xFF07)
+}
+
+func (t *Timer) Serialize() *bytes.Buffer {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, t.DivCounter)  // Divider counter
+	binary.Write(buf, binary.LittleEndian, t.TimaCounter) // Timer counter
+	binary.Write(buf, binary.LittleEndian, t.DIV)         // Divider register (0xFF04)
+	binary.Write(buf, binary.LittleEndian, t.TIMA)        // Timer counter (0xFF05)
+	binary.Write(buf, binary.LittleEndian, t.TMA)         // Timer modulo (0xFF06)
+	binary.Write(buf, binary.LittleEndian, t.TAC)         // Timer control (0xFF07)
+	logger.Debug("Serialized timer state")
+	return buf
+}
+
+func (t *Timer) Deserialize(data *bytes.Buffer) error {
+	if err := binary.Read(data, binary.LittleEndian, &t.DivCounter); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &t.TimaCounter); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &t.DIV); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &t.TIMA); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &t.TMA); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &t.TAC); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewTimer() *Timer {

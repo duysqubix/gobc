@@ -1,5 +1,10 @@
 package cartridge
 
+import (
+	"bytes"
+	"encoding/binary"
+)
+
 type Mbc5Cartridge struct {
 	parent     *Cartridge
 	hasBattery bool
@@ -13,6 +18,36 @@ func (c *Mbc5Cartridge) Init() {
 	c.hasRumble = false
 	c.romBankLow = 1
 	c.romBankHi = 0
+}
+
+func (c *Mbc5Cartridge) Serialize() *bytes.Buffer {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, c.hasBattery) // Has Battery
+	binary.Write(buf, binary.LittleEndian, c.hasRumble)  // Has Rumble
+	binary.Write(buf, binary.LittleEndian, c.romBankLow) // ROM Bank Low
+	binary.Write(buf, binary.LittleEndian, c.romBankHi)  // ROM Bank Hi
+	return buf
+
+}
+
+func (c *Mbc5Cartridge) Deserialize(data *bytes.Buffer) error {
+	if err := binary.Read(data, binary.LittleEndian, &c.hasBattery); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.hasRumble); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.romBankLow); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.romBankHi); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Mbc5Cartridge) GetRomBank() uint16 {
