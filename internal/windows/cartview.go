@@ -5,7 +5,7 @@ import (
 
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/cartridge"
-	"github.com/duysqubix/pixel2"
+	pixel "github.com/duysqubix/pixel2"
 	"github.com/duysqubix/pixel2/pixelgl"
 	"github.com/duysqubix/pixel2/text"
 	"github.com/olekukonko/tablewriter"
@@ -91,6 +91,10 @@ func (mw *CartViewWindow) SetUp() {
 	cartTableWriter.SetHeader([]string{"RAM Bank", "Addr", "Cart Data"})
 }
 
+func (mw *CartViewWindow) Finalize() {
+	mw.Window.Update()
+}
+
 func (mw *CartViewWindow) Update() error {
 	maxYOffset := float64(int(cartridge.RAM_BANK_SIZE-1)-(cartMaxRows-cartAddrOffset-1)*0x10) / float64(0x10)
 
@@ -170,5 +174,4 @@ func (mw *CartViewWindow) Draw() {
 	// fmt.Fprintf(cartConsoleTxt, "YOffset: %f\n", mw.YOffset)
 	cartConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(cartConsoleTxt.Orig, 1.25))
 
-	mw.Window.Update()
 }

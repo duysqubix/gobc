@@ -5,7 +5,7 @@ import (
 
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
-	"github.com/duysqubix/pixel2"
+	pixel "github.com/duysqubix/pixel2"
 	"github.com/duysqubix/pixel2/pixelgl"
 	"github.com/duysqubix/pixel2/text"
 	"github.com/olekukonko/tablewriter"
@@ -79,6 +79,10 @@ func (mw *CpuViewWindow) SetUp() {
 	cpuTableWriter.SetAlignment(tablewriter.ALIGN_LEFT)
 	cpuTableWriter.SetBorder(true)
 	cpuTableWriter.SetHeader([]string{"HR", "HV", "LV", "LR"})
+}
+
+func (mw *CpuViewWindow) Finalize() {
+	mw.Window.Update()
 }
 
 func (mw *CpuViewWindow) Update() error {
@@ -159,6 +163,4 @@ func (mw *CpuViewWindow) Draw() {
 	}
 
 	cpuConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(cpuConsoleTxt.Orig, 1.5))
-
-	mw.Window.Update()
 }

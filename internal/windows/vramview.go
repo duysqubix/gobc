@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/duysqubix/gobc/internal"
-	"github.com/duysqubix/pixel2"
+	pixel "github.com/duysqubix/pixel2"
 	"github.com/duysqubix/pixel2/imdraw"
 	"github.com/duysqubix/pixel2/pixelgl"
 	"github.com/duysqubix/pixel2/text"
@@ -99,6 +99,10 @@ func (mw *VramViewWindow) SetUp() {
 		text.NewAtlas(basicfont.Face7x13, text.ASCII),
 	)
 	vramConsoleTxt.Color = colornames.Green
+}
+
+func (mw *VramViewWindow) Finalize() {
+	mw.Window.Update()
 }
 
 func calculateVramIndex(x, y int) int {
@@ -228,7 +232,4 @@ func (mw *VramViewWindow) Draw() {
 		mw.tileMapCanvas.Rect.H()*vramTileMapScale+150,
 	)
 	spr2.Draw(mw.Window, pixel.IM.Scaled(pixel.ZV, vramTilePreviewScale).Moved(v))
-
-	mw.Window.Update()
-
 }

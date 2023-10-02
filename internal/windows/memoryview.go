@@ -5,7 +5,7 @@ import (
 
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
-	"github.com/duysqubix/pixel2"
+	pixel "github.com/duysqubix/pixel2"
 	"github.com/duysqubix/pixel2/pixelgl"
 	"github.com/duysqubix/pixel2/text"
 	"github.com/olekukonko/tablewriter"
@@ -98,6 +98,10 @@ func (mw *MemoryViewWindow) SetUp() {
 	memTableWriter.SetHeader([]string{"Addr", "Memory Data", "Section"})
 }
 
+func (mw *MemoryViewWindow) Finalize() {
+	mw.Window.Update()
+}
+
 func (mw *MemoryViewWindow) Update() error {
 	max_rows = int(mw.Window.Bounds().Max.Y) / 14
 
@@ -181,6 +185,4 @@ func (mw *MemoryViewWindow) Draw() {
 	}
 	memTableWriter.Render()
 	consoleTxt.Draw(mw.Window, pixel.IM.Scaled(consoleTxt.Orig, 1.25))
-
-	mw.Window.Update()
 }

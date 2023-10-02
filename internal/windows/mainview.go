@@ -7,7 +7,7 @@ import (
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
-	"github.com/duysqubix/pixel2"
+	pixel "github.com/duysqubix/pixel2"
 	"github.com/duysqubix/pixel2/imdraw"
 	"github.com/duysqubix/pixel2/pixelgl"
 	"github.com/duysqubix/pixel2/text"
@@ -156,6 +156,9 @@ func (mw *MainGameWindow) Draw() {
 	}
 	internalConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(internalConsoleTxt.Orig, 2))
 
+}
+
+func (mw *MainGameWindow) Finalize() {
 	mw.Window.Update()
 }
 

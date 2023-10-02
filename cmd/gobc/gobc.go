@@ -81,6 +81,11 @@ func gameLoopGUI() {
 			w.Draw()
 		}
 
+		// update internal GLFW events
+		for _, w := range wins {
+			w.Finalize()
+		}
+
 		if frameTick != nil {
 			<-frameTick.C
 		}

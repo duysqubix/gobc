@@ -81,6 +81,10 @@ func (mw *IoViewWindow) SetUp() {
 	ioTableWriter.SetBorder(false)
 }
 
+func (mw *IoViewWindow) Finalize() {
+	mw.Window.Update()
+}
+
 func (mw *IoViewWindow) Update() error {
 
 	return nil
@@ -156,6 +160,4 @@ func (mw *IoViewWindow) Draw() {
 	// append(append([]string{"STAT Flags:", "", "", ""}, mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_OBJEN, "ON", "OFF")...), mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_BGEN, "ON", "OFF")...),
 	ioTableWriter.Render()
 	ioConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(ioConsoleTxt.Orig, 1.5))
-
-	mw.Window.Update()
 }
