@@ -122,7 +122,7 @@ func (c *Cartridge) Serialize() *bytes.Buffer {
 	// 	binary.Write(buf, binary.LittleEndian, bank)
 	// }
 
-	binary.Write(buf, binary.LittleEndian, c.RomBanksCount)   // ROM Bank Count
+	// binary.Write(buf, binary.LittleEndian, c.RomBanksCount)   // ROM Bank Count
 	binary.Write(buf, binary.LittleEndian, c.RomBankSelected) // ROM Bank Selected
 
 	binary.Write(buf, binary.LittleEndian, c.RamBanks)        // RAM
@@ -140,9 +140,9 @@ func (c *Cartridge) Serialize() *bytes.Buffer {
 func (c *Cartridge) Deserialize(data *bytes.Buffer) error {
 	// Read the data from the buffer
 
-	if err := binary.Read(data, binary.LittleEndian, &c.RomBanksCount); err != nil {
-		return err
-	}
+	// if err := binary.Read(data, binary.LittleEndian, &c.RomBanksCount); err != nil {
+	// 	return err
+	// }
 
 	if err := binary.Read(data, binary.LittleEndian, &c.RomBankSelected); err != nil {
 		return err

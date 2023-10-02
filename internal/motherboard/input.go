@@ -2,7 +2,6 @@ package motherboard
 
 import (
 	"bytes"
-	"encoding/binary"
 
 	"github.com/duysqubix/gobc/internal"
 )
@@ -43,19 +42,19 @@ type Input struct {
 
 func (i *Input) Serialize() *bytes.Buffer {
 	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.LittleEndian, i.directional)
-	binary.Write(buf, binary.LittleEndian, i.standard)
+	// binary.Write(buf, binary.LittleEndian, i.directional)
+	// binary.Write(buf, binary.LittleEndian, i.standard)
 	return buf
 }
 
 func (i *Input) Deserialize(data *bytes.Buffer) error {
 	// Read the data from the buffer
-	if err := binary.Read(data, binary.LittleEndian, &i.directional); err != nil {
-		return err
-	}
-	if err := binary.Read(data, binary.LittleEndian, &i.standard); err != nil {
-		return err
-	}
+	// if err := binary.Read(data, binary.LittleEndian, &i.directional); err != nil {
+	// 	return err
+	// }
+	// if err := binary.Read(data, binary.LittleEndian, &i.standard); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
