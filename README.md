@@ -5,7 +5,7 @@
 __If you have any questions, or just want to chat, [join us on Discord](https://discord.gg/eZg8bEYy).__
 
 
-Standing on the shoulders of giants, this is a fun project to create, _yet another_, GameBoy emulator in Golang. 
+Standing on the shoulders of giants, this is a fun project to create, _yet another_, GameBoy emulator. 
 
 <!---
 Generate GIF with the layout and captions
