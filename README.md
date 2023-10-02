@@ -5,7 +5,7 @@
 __If you have any questions, or just want to chat, [join us on Discord](https://discord.gg/eZg8bEYy).__
 
 
-Standing on the shoulders of giants, this is a fun project to create, _yet another_, GameBoy emulator in Golang. 
+Standing on the shoulders of giants, this is a fun project to create, _yet another_, GameBoy emulator. 
 
 <!---
 Generate GIF with the layout and captions
@@ -84,7 +84,12 @@ List is in no particular order and is subject to change. Take a stab at any of t
 - [ ] Sound
 - [ ] Use real Cartridges (via Arduino)
 - [ ] Implement all MBCs
+
+Known Issues
+==================
 - [ ] Fix Links Awakening DMG (Menu is broken)
+- [ ] Pokemon Crystal - Battle Scenes Not animating
+- [ ] Pokemon Crystal - Character is split upon battle entry
 
 
 
