@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
@@ -43,7 +44,7 @@ type IoViewWindow struct {
 func NewIoViewWindow(gobc *GoBoyColor) *IoViewWindow {
 	/// create memory window
 	memWin, err := pixelgl.NewWindow(pixelgl.WindowConfig{
-		Title:       "gobc v0.1 | IO View",
+		Title:       fmt.Sprintf("gobc v%s | IO View", internal.VERSION),
 		Bounds:      pixel.R(0, 0, ioScreenWidth, ioTrueHeight),
 		VSync:       true,
 		AlwaysOnTop: true,

@@ -61,7 +61,7 @@ type MemoryViewWindow struct {
 func NewMemoryViewWindow(gobc *GoBoyColor) *MemoryViewWindow {
 	/// create memory window
 	memWin, err := pixelgl.NewWindow(pixelgl.WindowConfig{
-		Title:       "gobc v0.1 | Memory View",
+		Title:       fmt.Sprintf("gobc v%s | Memory View", internal.VERSION),
 		Bounds:      pixel.R(0, 0, memTrueWidth, memTrueHeight),
 		VSync:       true,
 		AlwaysOnTop: true,

@@ -3,6 +3,7 @@ package windows
 import (
 	"fmt"
 
+	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/cartridge"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
@@ -53,7 +54,7 @@ type CartViewWindow struct {
 func NewCartViewWindow(gobc *GoBoyColor) *CartViewWindow {
 	/// create memory window
 	memWin, err := pixelgl.NewWindow(pixelgl.WindowConfig{
-		Title:       "gobc v0.1 | Cart Memory View",
+		Title:       fmt.Sprintf("gobc v%s | Cart Memory View", internal.VERSION),
 		Bounds:      pixel.R(0, 0, cartTrueWidth, cartScreenHeight),
 		VSync:       true,
 		AlwaysOnTop: true,
@@ -79,7 +80,6 @@ func (mw *CartViewWindow) SetUp() {
 	cartConsoleTxt = text.New(
 		pixel.V(10, 5),
 		text.NewAtlas(cartDefaultFont, text.ASCII),
-		// text.NewAtlas(inconsolata.Regular8x16, text.ASCII),
 	)
 
 	cartConsoleTxt.Color = colornames.Yellowgreen

@@ -44,7 +44,7 @@ type CpuViewWindow struct {
 func NewCpuViewWindow(gobc *GoBoyColor) *CpuViewWindow {
 	/// create memory window
 	memWin, err := pixelgl.NewWindow(pixelgl.WindowConfig{
-		Title:       "gobc v0.1 | Cpu View",
+		Title:       fmt.Sprintf("gobc v%s | CPU View", internal.VERSION),
 		Bounds:      pixel.R(0, 0, cpuTrueWidth, cpuTrueHeight),
 		VSync:       true,
 		AlwaysOnTop: true,

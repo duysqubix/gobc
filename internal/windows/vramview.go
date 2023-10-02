@@ -63,7 +63,7 @@ type VramViewWindow struct {
 func NewVramViewWindow(gobc *GoBoyColor) *VramViewWindow {
 	/// create memory window
 	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
-		Title:       "gobc v0.1 | VRAM View",
+		Title:       fmt.Sprintf("gobc v%s | VRAM View", internal.VERSION),
 		Bounds:      pixel.R(0, 0, vramTrueWidth, vramTrueHeight),
 		VSync:       true,
 		AlwaysOnTop: true,
