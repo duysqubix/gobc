@@ -171,7 +171,6 @@ func (mw *CartViewWindow) Draw() {
 		cartTableWriter.Append(d)
 	}
 	cartTableWriter.Render()
-	// fmt.Fprintf(cartConsoleTxt, "YOffset: %f\n", mw.YOffset)
 	cartConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(cartConsoleTxt.Orig, 1.25))
 
 }
