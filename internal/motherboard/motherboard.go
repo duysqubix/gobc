@@ -7,6 +7,7 @@ import (
 
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
+	"github.com/duysqubix/gobc/internal/bootrom"
 	"github.com/duysqubix/gobc/internal/cartridge"
 )
 
@@ -22,7 +23,7 @@ type Motherboard struct {
 	Cpu           *CPU                 // CPU
 	Cartridge     *cartridge.Cartridge // Cartridge
 	Memory        *Memory              // Internal RAM
-	BootRom       *BootRom             // Boot ROM
+	BootRom       *bootrom.BootRom     // Boot ROM
 	Timer         *Timer               // Timer
 	Lcd           *LCD                 // LCD
 	Input         *Input               // Input
@@ -157,7 +158,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	mb.Cpu = NewCpu(mb)
 	mb.Memory = NewInternalRAM(mb, params.Randomize)
 	mb.Lcd = NewLCD(mb)
-	mb.BootRom = NewBootRom(mb.Cgb)
+	mb.BootRom = bootrom.NewBootRom(mb.Cgb)
 	mb.BootRom.Enable()
 	// mb.BootRom.Disable()
 
