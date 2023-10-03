@@ -219,10 +219,10 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 	if !m.Cpu.Halted {
 		cycles = m.Cpu.Tick()
 	}
+	m.Cartridge.Tick(uint64(cycles))
 
 	m.Cpu.Mb.Timer.Tick(cycles, m.Cpu)
 	m.Lcd.Tick(cycles)
-
 	cycles += m.Cpu.handleInterrupts()
 	return true, cycles
 }

@@ -92,17 +92,15 @@ func (t *Timer) getClockFreqCount() OpCycles {
 	default:
 		return OpCycles(256)
 	}
-
-	// idx := t.TAC & 0b11
-	// return t.Dividers[idx]
 }
 
 func (t *Timer) updateDividerRegister(cycles OpCycles) {
 	t.DivCounter += cycles
 
 	if t.DivCounter >= 255 {
-		t.DivCounter -= 255
+		t.DivCounter %= 255
 		t.DIV++
+		t.DIV %= 255
 	}
 }
 
@@ -111,15 +109,14 @@ func (t *Timer) Tick(cycles OpCycles, c *CPU) {
 	t.updateDividerRegister(cycles)
 
 	if t.Enabled() {
-
 		t.TimaCounter += cycles
 		freq := t.getClockFreqCount()
 		for t.TimaCounter >= freq {
 			t.TimaCounter -= freq
-			// tima := t.TIMA
 			if t.TIMA == 0xFF {
 				t.TIMA = t.TMA
 				c.SetInterruptFlag(INTR_TIMER)
+				break
 			} else {
 				t.TIMA++
 			}

@@ -43,6 +43,7 @@ type CPU struct {
 	IsStuck    bool         // CPU is stuck
 	Stopped    bool         // CPU is stopped
 	PcHist     *list.List   // records last 16 PC values
+	lastOpCode OpCode       // last opcode executed
 }
 
 func (c *CPU) Serialize() *bytes.Buffer {
@@ -259,6 +260,7 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 			reader.ReadString('\n')
 		}
 	}
+	c.lastOpCode = opcode
 	return executeOpcode(opcode, c.Mb, value)
 }
 

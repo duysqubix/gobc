@@ -9,7 +9,6 @@ type Mbc3Cartridge struct {
 	parent     *Cartridge
 	hasBattery bool
 	hasRTC     bool
-	rtc        *RTC
 	latchGate1 bool
 	latchGate2 bool
 }
@@ -22,7 +21,7 @@ func (c *Mbc3Cartridge) Init() {
 	}
 
 	if c.hasRTC {
-		c.rtc = NewRTC()
+		c.parent.RtcEnabled = true
 	}
 }
 
@@ -30,6 +29,10 @@ func (c *Mbc3Cartridge) Serialize() *bytes.Buffer {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, c.hasBattery) // Has Battery
 	binary.Write(buf, binary.LittleEndian, c.hasRTC)     // Has RTC
+	binary.Write(buf, binary.LittleEndian, c.latchGate1) // Latch Gate 1
+	binary.Write(buf, binary.LittleEndian, c.latchGate2) // Latch Gate 2
+	binary.Write(buf, binary.LittleEndian, Grtc.Serialize().Bytes())
+
 	logger.Debug("Serialized MBC3 state")
 	return buf
 }
@@ -40,6 +43,18 @@ func (c *Mbc3Cartridge) Deserialize(data *bytes.Buffer) error {
 	}
 
 	if err := binary.Read(data, binary.LittleEndian, &c.hasRTC); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.latchGate1); err != nil {
+		return err
+	}
+
+	if err := binary.Read(data, binary.LittleEndian, &c.latchGate2); err != nil {
+		return err
+	}
+
+	if err := Grtc.Deserialize(data); err != nil {
 		return err
 	}
 
@@ -73,13 +88,22 @@ func (c *Mbc3Cartridge) SetItem(addr uint16, value uint8) {
 		if c.hasRTC {
 			if (!c.latchGate1 && value == 0) && !c.latchGate2 {
 				c.latchGate1 = true
+				c.latchGate2 = false
+				return
 			} else if (!c.latchGate2 && value == 1) && c.latchGate1 {
 				c.latchGate2 = true
+				c.latchGate1 = true
+				return
 			} else if c.latchGate1 && c.latchGate2 {
-				c.rtc.IsLatched = true
+				// logger.Debugf("Latching RTC")
+				Grtc.Latch()
+				c.latchGate1 = false
+				c.latchGate2 = false
+				return
 			} else {
 				c.latchGate1 = false
 				c.latchGate2 = false
+				return
 			}
 
 		} else {
@@ -92,7 +116,7 @@ func (c *Mbc3Cartridge) SetItem(addr uint16, value uint8) {
 			if c.parent.RamBankSelected <= 0x07 {
 				c.parent.RamBanks[c.parent.RamBankSelected%c.parent.RamBankCount][addr-0xA000] = value
 			} else if 0x08 <= c.parent.RamBankSelected && c.parent.RamBankSelected <= 0x0C {
-				// rtc set register}
+				Grtc.SetItem(c.parent.RamBankSelected, value)
 			} else {
 				logger.Errorf("Invalid RAM bank selected: %#x", c.parent.RamBankSelected)
 
@@ -117,9 +141,8 @@ func (c *Mbc3Cartridge) GetItem(addr uint16) uint8 {
 			return 0xFF
 		}
 
-		if c.hasRTC && 0x08 <= c.parent.RamBankSelected && c.parent.RamBankSelected <= 0x0C {
-			// rtc get register
-			return 0xFF
+		if c.hasRTC && (0x08 <= c.parent.RamBankSelected && c.parent.RamBankSelected <= 0x0C) {
+			return Grtc.GetItem(c.parent.RamBankSelected)
 		} else {
 			return c.parent.RamBanks[c.parent.RamBankSelected%c.parent.RamBankCount][addr-0xA000]
 		}

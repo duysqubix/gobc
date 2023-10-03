@@ -22,6 +22,8 @@ var g *windows.GoBoyColor
 
 var frameRateMicro int64 = 16670
 
+// var frameRateMicro int64 = 16000
+
 func init() {
 	runtime.LockOSThread()
 }

@@ -57,6 +57,15 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 		}
 	},
 
+	// MBC3+TIMER+BATTERY
+	0x0F: func(c *Cartridge) CartridgeType {
+		return &Mbc3Cartridge{
+			parent:     c,
+			hasBattery: true,
+			hasRTC:     true,
+		}
+	},
+
 	// MBC3+TIMER+RAM+BATTERY
 	0x10: func(c *Cartridge) CartridgeType {
 		return &Mbc3Cartridge{
@@ -90,6 +99,9 @@ var CARTRIDGE_TABLE = map[uint8]func(*Cartridge) CartridgeType{
 	},
 }
 
+// global real-time clock
+var Grtc *RTC = NewRTC()
+
 type Cartridge struct {
 	Filename  string        // Filename of the ROM
 	CartType  CartridgeType // type of cartridge
@@ -112,6 +124,15 @@ type Cartridge struct {
 	RtcEnabled bool // whether RTC is enabled
 
 	MemoryModel uint8 // 0 = 16/8, 1 = 4/32
+}
+
+func (c *Cartridge) Tick(cycles uint64) {
+	if c.RtcEnabled {
+		Grtc.Tick(cycles)
+
+		// print RTC values
+		// logger.Debugf("RTC: %02d:%02d:%02d, %02d/%02d", Grtc.H, Grtc.M, Grtc.S, Grtc.DH, Grtc.DL)
+	}
 }
 
 func (c *Cartridge) Serialize() *bytes.Buffer {
@@ -337,6 +358,7 @@ func NewCartridge(Filename *pathlib.Path) *Cartridge {
 	logger.Infof("Cartridge Initialized: %s", reflect.TypeOf(cart.CartType))
 	logger.Infof("ROM Banks: %d, Size: %dKb", cart.RomBanksCount, cart.RomBanksCount*16)
 	logger.Infof("RAM Banks: %d, Size: %dKb", cart.RamBankCount, cart.RamBankCount*8)
+	logger.Infof("RTC Support: %t", cart.RtcEnabled)
 	return &cart
 }
 
