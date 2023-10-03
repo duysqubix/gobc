@@ -20,6 +20,8 @@ var logger = internal.Logger
 var frameTick *time.Ticker
 var g *windows.GoBoyColor
 
+var frameRateMicro int64 = 16670
+
 func init() {
 	runtime.LockOSThread()
 }
@@ -38,8 +40,6 @@ func setFPS(fps int) {
 var DEBUG_WINDOWS bool = false
 var SHOW_GUI bool = true
 
-// var ticker = putils.NewTicker(internal.FRAMES_PER_SECOND)
-
 func gameLoopGUI() {
 	setFPS(internal.FRAMES_PER_SECOND)
 
@@ -48,7 +48,7 @@ func gameLoopGUI() {
 	}
 
 	var fps float64
-	var elasped float64 = 0
+	var elasped int64 = 0
 
 	var wins []windows.Window = []windows.Window{
 		windows.NewMainGameWindow(g),
@@ -86,14 +86,13 @@ func gameLoopGUI() {
 			w.Finalize()
 		}
 
-		if frameTick != nil {
-			<-frameTick.C
+		elasped += time.Since(start).Microseconds()
+
+		if elasped < frameRateMicro {
+			time.Sleep(time.Duration(frameRateMicro-elasped) * time.Microsecond)
 		}
 
-		elasped += float64(time.Since(start).Milliseconds())
-
-		fps = 1000.0 / elasped
-
+		fps = 1000000.0 / float64(time.Since(start).Microseconds())
 	}
 }
 
@@ -176,6 +175,9 @@ func mainAction(ctx *cli.Context) error {
 
 	// save SRAM state
 	cartridge.SaveSRAM(romfile, &g.Mb.Cartridge.RamBanks, g.Mb.Cartridge.RamBankCount)
+
+	// default save state
+	// internal.StateToFile(g.Mb.Cartridge.Filename, g.Mb)
 	return cli.Exit("", 0)
 
 }

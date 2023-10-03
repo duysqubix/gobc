@@ -80,9 +80,6 @@ func (mw *MainGameWindow) Update() error {
 		if !mw.hw.UpdateInternalGameState(mw.cyclesFrame) {
 			return nil
 		}
-
-		// tileMap := mw.hw.Mb.Memory.TileMap()
-		// updatePicture(256, 256, 8, 8, &tileMap, mw.gameMapCanvas)
 	}
 
 	for y := 0; y < internal.GB_SCREEN_HEIGHT; y++ {
