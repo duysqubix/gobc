@@ -9,6 +9,9 @@ type Mbc3Cartridge struct {
 	parent     *Cartridge
 	hasBattery bool
 	hasRTC     bool
+	rtc        *RTC
+	latchGate1 bool
+	latchGate2 bool
 }
 
 func (c *Mbc3Cartridge) Init() {
@@ -16,6 +19,10 @@ func (c *Mbc3Cartridge) Init() {
 	// load save file if exists
 	if c.hasBattery {
 		LoadSRAM(c.parent.Filename, &c.parent.RamBanks, c.parent.RamBankCount)
+	}
+
+	if c.hasRTC {
+		c.rtc = NewRTC()
 	}
 }
 
@@ -64,9 +71,20 @@ func (c *Mbc3Cartridge) SetItem(addr uint16, value uint8) {
 
 	case 0x6000 <= addr && addr < 0x8000:
 		if c.hasRTC {
+			if (!c.latchGate1 && value == 0) && !c.latchGate2 {
+				c.latchGate1 = true
+			} else if (!c.latchGate2 && value == 1) && c.latchGate1 {
+				c.latchGate2 = true
+			} else if c.latchGate1 && c.latchGate2 {
+				c.rtc.IsLatched = true
+			} else {
+				c.latchGate1 = false
+				c.latchGate2 = false
+			}
 
 		} else {
 			logger.Debugf("RTC not present. Game attempted to write to RTC register %#x: %#x", addr, value)
+
 		}
 
 	case 0xA000 <= addr && addr < 0xC000:
