@@ -139,6 +139,7 @@ func (r *RTC) SetItem(id uint16, value uint8) {
 	case 0x8:
 		r.s = value & 0b00111111
 		r.S = value & 0b00111111
+		logger.Debugf("Resetting RTC")
 		r.internalCycleCounter = 0 // reset internal cycle counter
 
 	case 0x9:
@@ -153,6 +154,11 @@ func (r *RTC) SetItem(id uint16, value uint8) {
 	case 0xC:
 		r.dh = value & 0b11000001
 		r.DH = value & 0b11000001
+		// if internal.IsBitSet(r.dh, TIMER_HALT_BIT) {
+		// 	logger.Debugf("Timer Halted")
+		// } else {
+		// 	logger.Debugf("Timer Resumed")
+		// }
 		// logger.Debugf("Timer Status: %08b", r.dh)
 
 	}
@@ -160,6 +166,7 @@ func (r *RTC) SetItem(id uint16, value uint8) {
 
 func (r *RTC) Tick(cycles uint64) {
 	if internal.IsBitSet(r.dh, TIMER_HALT_BIT) {
+		logger.Debugf("Timer Halted")
 		return
 	}
 
@@ -200,8 +207,7 @@ func (r *RTC) Tick(cycles uint64) {
 		// logger.Debugf("TICK: %d", r.internalCycleCounter)
 		r.internalCycleCounter %= RTCCycles
 		// RTC Status
-		// logger.Debugf("RTC: %02d:%02d:%02d %02d", r.h, r.m, r.s, r.dl)
-		// logger.Debugf("RTC: %02d:%02d:%02d %02d", r.H, r.M, r.S, r.DL)
-
+		logger.Debugf("internal RTC: %02d:%02d:%02d %02d", r.h, r.m, r.s, r.dl)
+		logger.Debugf("Latched RTC: %02d:%02d:%02d %02d", r.H, r.M, r.S, r.DL)
 	}
 }

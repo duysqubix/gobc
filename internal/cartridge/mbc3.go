@@ -10,7 +10,6 @@ type Mbc3Cartridge struct {
 	hasBattery bool
 	hasRTC     bool
 	latchGate1 bool
-	latchGate2 bool
 }
 
 func (c *Mbc3Cartridge) Init() {
@@ -30,7 +29,6 @@ func (c *Mbc3Cartridge) Serialize() *bytes.Buffer {
 	binary.Write(buf, binary.LittleEndian, c.hasBattery) // Has Battery
 	binary.Write(buf, binary.LittleEndian, c.hasRTC)     // Has RTC
 	binary.Write(buf, binary.LittleEndian, c.latchGate1) // Latch Gate 1
-	binary.Write(buf, binary.LittleEndian, c.latchGate2) // Latch Gate 2
 	binary.Write(buf, binary.LittleEndian, Grtc.Serialize().Bytes())
 
 	logger.Debug("Serialized MBC3 state")
@@ -47,10 +45,6 @@ func (c *Mbc3Cartridge) Deserialize(data *bytes.Buffer) error {
 	}
 
 	if err := binary.Read(data, binary.LittleEndian, &c.latchGate1); err != nil {
-		return err
-	}
-
-	if err := binary.Read(data, binary.LittleEndian, &c.latchGate2); err != nil {
 		return err
 	}
 
@@ -86,24 +80,15 @@ func (c *Mbc3Cartridge) SetItem(addr uint16, value uint8) {
 
 	case 0x6000 <= addr && addr < 0x8000:
 		if c.hasRTC {
-			if (!c.latchGate1 && value == 0) && !c.latchGate2 {
-				c.latchGate1 = true
-				c.latchGate2 = false
-				return
-			} else if (!c.latchGate2 && value == 1) && c.latchGate1 {
-				c.latchGate2 = true
-				c.latchGate1 = true
-				return
-			} else if c.latchGate1 && c.latchGate2 {
-				// logger.Debugf("Latching RTC")
-				Grtc.Latch()
+			if value == 0 {
 				c.latchGate1 = false
-				c.latchGate2 = false
-				return
+			} else if value == 1 {
+				if !c.latchGate1 {
+					Grtc.Latch()
+				}
+				c.latchGate1 = true
 			} else {
-				c.latchGate1 = false
-				c.latchGate2 = false
-				return
+				logger.Errorf("Invalid latch value: %#x", value)
 			}
 
 		} else {
