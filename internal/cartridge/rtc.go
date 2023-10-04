@@ -119,48 +119,67 @@ func (r *RTC) GetItem(id uint16) uint8 {
 	if r.latchSet {
 		switch id {
 		case 0x8:
-			return r.S | 0b11000000
+			return r.S | OrS
 		case 0x9:
-			return r.M | 0b11000000
+			return r.M | OrM
 		case 0xA:
-			return r.H | 0b11100000
+			return r.H | OrH
 		case 0xB:
-			return r.DL | 0b11111111
+			return r.DL | OrDL
 		case 0xC:
-			return r.DH | 0b00111110
+			return r.DH | OrDH
 		}
 	}
 	return 0xFF
 }
 
+const (
+	MaskS  = 0b00111111
+	MaskM  = 0b00111111
+	MaskH  = 0b00011111
+	MaskDL = 0b11111111
+	MaskDH = 0b11000001
+
+	// OrS  = 0b11000000
+	// OrM  = 0b11000000
+	// OrH  = 0b11100000
+	// OrDL = 0b00000000
+	// OrDH = 0b00111110
+	OrS  = 0b00000000
+	OrM  = 0b00000000
+	OrH  = 0b00000000
+	OrDL = 0b00000000
+	OrDH = 0b00000000
+
+	MAX_SECONDS = 60 | OrS
+	MAX_MINUTES = 60 | OrM
+	MAX_HOURS   = 24 | OrH
+)
+
 func (r *RTC) SetItem(id uint16, value uint8) {
 	// logger.Debugf("Setting RTC item %#x to %#x", id, value)
-	switch id {
-	case 0x8:
-		r.s = value & 0b00111111
-		r.S = value & 0b00111111
-		logger.Debugf("Resetting RTC")
-		r.internalCycleCounter = 0 // reset internal cycle counter
 
-	case 0x9:
-		r.m = value & 0b00111111
-		r.M = value & 0b00111111
-	case 0xA:
-		r.h = value & 0b00011111
-		r.H = value & 0b00011111
-	case 0xB:
-		r.dl = value & 0b11111111
-		r.DL = value & 0b11111111
-	case 0xC:
-		r.dh = value & 0b11000001
-		r.DH = value & 0b11000001
-		// if internal.IsBitSet(r.dh, TIMER_HALT_BIT) {
-		// 	logger.Debugf("Timer Halted")
-		// } else {
-		// 	logger.Debugf("Timer Resumed")
-		// }
-		// logger.Debugf("Timer Status: %08b", r.dh)
+	if internal.IsBitSet(r.dh, TIMER_HALT_BIT) {
+		switch id {
+		case 0x8:
+			r.s = value & MaskS
+			// r.S = value & MaskS
+			// logger.Debugf("Resetting RTC")
+			r.internalCycleCounter = 0 // reset internal cycle counter
 
+		case 0x9:
+			r.m = value & MaskM
+			// r.M = value & MaskM
+		case 0xA:
+			r.h = value & MaskH
+			// r.H = value & MaskH
+		case 0xB:
+			r.dl = value & MaskDL
+			// r.DL = value & MaskDL
+		case 0xC:
+			r.dh = value & MaskDH
+			// r.DH = value & MaskDH
+		}
 	}
 }
 
@@ -174,23 +193,23 @@ func (r *RTC) Tick(cycles uint64) {
 
 	if r.internalCycleCounter > RTCCycles {
 		r.s++
-		if r.s > 60 {
+		if r.s > MAX_SECONDS {
 			r.s = 0
-		} else if r.s == 60 {
+		} else if r.s == MAX_SECONDS {
 			r.s = 0
 			r.m++
-			if r.m > 60 {
+			if r.m > MAX_MINUTES {
 				r.m = 0
-			} else if r.m == 60 {
+			} else if r.m == MAX_MINUTES {
 				r.m = 0
 				r.h++
-				if r.h > 24 {
+				if r.h > MAX_HOURS {
 					r.h = 0
-				} else if r.h == 24 {
+				} else if r.h == MAX_HOURS {
 					r.h = 0
 					r.dl++
 					if r.dl == 0 {
-						r.dh |= 1 << 7
+						internal.SetBit(&r.dh, TIMER_CARRY_BIT)
 					}
 				}
 			}
@@ -207,7 +226,5 @@ func (r *RTC) Tick(cycles uint64) {
 		// logger.Debugf("TICK: %d", r.internalCycleCounter)
 		r.internalCycleCounter %= RTCCycles
 		// RTC Status
-		logger.Debugf("internal RTC: %02d:%02d:%02d %02d", r.h, r.m, r.s, r.dl)
-		logger.Debugf("Latched RTC: %02d:%02d:%02d %02d", r.H, r.M, r.S, r.DL)
 	}
 }

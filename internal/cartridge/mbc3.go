@@ -127,7 +127,9 @@ func (c *Mbc3Cartridge) GetItem(addr uint16) uint8 {
 		}
 
 		if c.hasRTC && (0x08 <= c.parent.RamBankSelected && c.parent.RamBankSelected <= 0x0C) {
-			return Grtc.GetItem(c.parent.RamBankSelected)
+			value := Grtc.GetItem(c.parent.RamBankSelected)
+			// logger.Debugf("Reading from RTC register %#x: %d", c.parent.RamBankSelected, value)
+			return value
 		} else {
 			return c.parent.RamBanks[c.parent.RamBankSelected%c.parent.RamBankCount][addr-0xA000]
 		}
