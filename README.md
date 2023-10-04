@@ -2,7 +2,7 @@
 <img src="docs/gobc_logo.png" width="480">
 </p>
 
-__If you have any questions, or just want to chat, [join us on Discord](https://discord.gg/eZg8bEYy).__
+__If you have any questions, or just want to chat, [join us on Discrod](https://discord.gg/EVCX5X3A)
 
 
 Standing on the shoulders of giants, this is a fun project to create, _yet another_, GameBoy emulator. 
