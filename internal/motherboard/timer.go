@@ -7,6 +7,8 @@ package motherboard
 import (
 	"bytes"
 	"encoding/binary"
+
+	"github.com/duysqubix/gobc/internal"
 )
 
 type Timer struct {
@@ -94,19 +96,28 @@ func (t *Timer) getClockFreqCount() OpCycles {
 	}
 }
 
-func (t *Timer) updateDividerRegister(cycles OpCycles) {
+func (t *Timer) updateDividerRegister(cycles OpCycles, doubleSpeedMode bool) {
+	ds := 1
+	if doubleSpeedMode {
+		ds = 2
+	}
+	maxDivCycles := OpCycles(internal.DMG_CLOCK_SPEED / internal.GB_TIMER_FREQ * ds) // (TODO: or 2 if in double speed mode)
+
 	t.DivCounter += cycles
 
-	if t.DivCounter >= 255 {
-		t.DivCounter %= 255
+	if t.DivCounter >= maxDivCycles {
+		t.DivCounter -= maxDivCycles
 		t.DIV++
-		t.DIV %= 255
+
+		if t.DIV > 0xff {
+			t.DIV = 0
+		}
 	}
 }
 
 func (t *Timer) Tick(cycles OpCycles, c *CPU) {
 
-	t.updateDividerRegister(cycles)
+	t.updateDividerRegister(cycles, c.Mb.doubleSpeed)
 
 	if t.Enabled() {
 		t.TimaCounter += cycles

@@ -119,15 +119,15 @@ func (r *RTC) GetItem(id uint16) uint8 {
 	if r.latchSet {
 		switch id {
 		case 0x8:
-			return r.S | OrS
+			return r.S
 		case 0x9:
-			return r.M | OrM
+			return r.M
 		case 0xA:
-			return r.H | OrH
+			return r.H
 		case 0xB:
-			return r.DL | OrDL
+			return r.DL
 		case 0xC:
-			return r.DH | OrDH
+			return r.DH
 		}
 	}
 	return 0xFF
@@ -140,91 +140,135 @@ const (
 	MaskDL = 0b11111111
 	MaskDH = 0b11000001
 
-	// OrS  = 0b11000000
-	// OrM  = 0b11000000
-	// OrH  = 0b11100000
-	// OrDL = 0b00000000
-	// OrDH = 0b00111110
-	OrS  = 0b00000000
-	OrM  = 0b00000000
-	OrH  = 0b00000000
-	OrDL = 0b00000000
-	OrDH = 0b00000000
-
-	MAX_SECONDS = 60 | OrS
-	MAX_MINUTES = 60 | OrM
-	MAX_HOURS   = 24 | OrH
+	MAX_SECONDS = 60
+	MAX_MINUTES = 60
+	MAX_HOURS   = 24
+	MAX_DL      = 255
+	MAX_DH      = 1
 )
 
 func (r *RTC) SetItem(id uint16, value uint8) {
 	// logger.Debugf("Setting RTC item %#x to %#x", id, value)
 
-	if internal.IsBitSet(r.dh, TIMER_HALT_BIT) {
-		switch id {
-		case 0x8:
-			r.s = value & MaskS
-			// r.S = value & MaskS
-			// logger.Debugf("Resetting RTC")
-			r.internalCycleCounter = 0 // reset internal cycle counter
+	switch id {
+	case 0x8:
+		r.s = value & MaskS
+		r.S = value & MaskS
+		// logger.Debugf("Resetting RTC")
+		r.internalCycleCounter = 0 // reset internal cycle counter
+		logger.Debugf("S: %d", r.s)
 
-		case 0x9:
-			r.m = value & MaskM
-			// r.M = value & MaskM
-		case 0xA:
-			r.h = value & MaskH
-			// r.H = value & MaskH
-		case 0xB:
-			r.dl = value & MaskDL
-			// r.DL = value & MaskDL
-		case 0xC:
-			r.dh = value & MaskDH
-			// r.DH = value & MaskDH
-		}
+	case 0x9:
+		r.m = value & MaskM
+		r.M = value & MaskM
+		logger.Debugf("M: %d", r.m)
+	case 0xA:
+		r.h = value & MaskH
+		r.H = value & MaskH
+		logger.Debugf("H: %d", r.h)
+	case 0xB:
+		r.dl = value & MaskDL
+		r.DL = value & MaskDL
+		logger.Debugf("DL: %d", r.dl)
+	case 0xC:
+		r.dh = value & MaskDH
+		r.DH = value & MaskDH
+		logger.Debugf("DH: %d", r.dh%0x1)
 	}
 }
 
+func (r *RTC) internalDayCounter() uint16 {
+	return uint16(r.dh&0x1)<<8 | uint16(r.dl)
+}
+
+func (r *RTC) latchedDayCounter() uint16 {
+	return uint16(r.DH&0x1)<<8 | uint16(r.DL)
+}
+
+func (r *RTC) isDayCounterOverflow() bool {
+	return r.internalDayCounter() > 0x1FF
+}
+
+const (
+	SEC = iota
+	MIN
+	HOUR
+	DAY
+)
+
 func (r *RTC) Tick(cycles uint64) {
 	if internal.IsBitSet(r.dh, TIMER_HALT_BIT) {
-		logger.Debugf("Timer Halted")
 		return
 	}
 
 	r.internalCycleCounter += cycles
 
-	if r.internalCycleCounter > RTCCycles {
+	if r.internalCycleCounter >= RTCCycles {
+		logger.Debugf("-----------------TICK------------------")
+		logger.Debugf("PRE: D: %d (%d:%d) H: %d M: %d S: %d", r.internalDayCounter(), r.dh, r.dl, r.h, r.m, r.s)
+
+		// check for overflow first
+		// if r.s > MAX_SECONDS {
+		// 	r.s = 0
+		// }
+		// if r.m > MAX_MINUTES {
+		// 	r.m = 0
+		// }
+		// if r.h > MAX_HOURS {
+		// 	r.h = 0
+		// }
+		var overflow uint8 = 0 // bit 0: seconds, bit 1: minutes, bit 2: hours, bit 3: day counter
+
 		r.s++
-		if r.s > MAX_SECONDS {
+		if r.s == MAX_SECONDS {
 			r.s = 0
-		} else if r.s == MAX_SECONDS {
-			r.s = 0
+			internal.SetBit(&overflow, SEC)
+		}
+
+		if internal.IsBitSet(overflow, SEC) {
 			r.m++
-			if r.m > MAX_MINUTES {
+			if r.m == MAX_MINUTES {
 				r.m = 0
-			} else if r.m == MAX_MINUTES {
-				r.m = 0
+				internal.SetBit(&overflow, MIN)
+			} else {
+				r.m++
+			}
+		}
+
+		if internal.IsBitSet(overflow, MIN) {
+			r.h++
+			if r.h == MAX_HOURS {
+				r.h = 0
+				internal.SetBit(&overflow, HOUR)
+			} else {
 				r.h++
-				if r.h > MAX_HOURS {
-					r.h = 0
-				} else if r.h == MAX_HOURS {
-					r.h = 0
-					r.dl++
-					if r.dl == 0 {
-						internal.SetBit(&r.dh, TIMER_CARRY_BIT)
-					}
+			}
+		}
+
+		if internal.IsBitSet(overflow, HOUR) {
+			if r.dl < MAX_DL {
+				r.dl++
+			} else {
+				if r.dl == MAX_DL && internal.IsBitSet(r.dh, 0) {
+					r.dl = 0
+					internal.ResetBit(&r.dh, 0)
+					internal.SetBit(&r.dh, TIMER_CARRY_BIT)
+				} else {
+					r.dl++ // force overflow to 0
+					r.dh |= 0x1
 				}
 			}
 		}
 
+		logger.Debugf("POST: D: %d (%d:%d) H: %d M: %d S: %d", r.internalDayCounter(), r.dh, r.dl, r.h, r.m, r.s)
+
 		// set day carry flag if day counter overflows
-		if uint16(r.dh&0x1)<<8|uint16(r.dl) >= 0x200 {
+		if r.isDayCounterOverflow() {
 			internal.SetBit(&r.dh, TIMER_CARRY_BIT)
 			r.dl = 0
 			r.dh = 0
 
 		}
-
-		// logger.Debugf("TICK: %d", r.internalCycleCounter)
-		r.internalCycleCounter %= RTCCycles
-		// RTC Status
+		r.internalCycleCounter -= RTCCycles
 	}
 }

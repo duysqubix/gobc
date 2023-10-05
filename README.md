@@ -30,23 +30,8 @@ Generate GIF with the layout and captions
             <td align="center">
         <img src="docs/bgb.gif" width="200">
       </td>
-      <td align="center">
-        <img src="docs/instr_timing.png" width="200">
-      </td>
     </tr>
     <tr>
-    </tr>
-    <tr>
-      <td align="center">
-        <img src="docs/dmg-acid2.png" width="200">
-      </td>
-      <td align="center">
-        <img src="docs/cgb-acid2.png" width="200">
-      </td>
-      </td>
-            <td align="center">
-        <img src="docs/cpu_instrs.png" width="200">
-      </td>
     </tr>
   </tbody>
 </table>
