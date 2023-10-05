@@ -12,6 +12,25 @@ const (
 
 	TIMER_HALT_BIT  = 6
 	TIMER_CARRY_BIT = 7
+
+	MaskS  = 0b00111111
+	MaskM  = 0b00111111
+	MaskH  = 0b00011111
+	MaskDL = 0b11111111
+	MaskDH = 0b11000001
+
+	MAX_SECONDS = 60
+	MAX_MINUTES = 60
+	MAX_HOURS   = 24
+	MAX_DL      = 255
+	MAX_DH      = 1
+)
+
+const (
+	SEC = iota
+	MIN
+	HOUR
+	DAY
 )
 
 type RTC struct {
@@ -133,20 +152,6 @@ func (r *RTC) GetItem(id uint16) uint8 {
 	return 0xFF
 }
 
-const (
-	MaskS  = 0b00111111
-	MaskM  = 0b00111111
-	MaskH  = 0b00011111
-	MaskDL = 0b11111111
-	MaskDH = 0b11000001
-
-	MAX_SECONDS = 60
-	MAX_MINUTES = 60
-	MAX_HOURS   = 24
-	MAX_DL      = 255
-	MAX_DH      = 1
-)
-
 func (r *RTC) SetItem(id uint16, value uint8) {
 	// logger.Debugf("Setting RTC item %#x to %#x", id, value)
 
@@ -156,24 +161,19 @@ func (r *RTC) SetItem(id uint16, value uint8) {
 		r.S = value & MaskS
 		// logger.Debugf("Resetting RTC")
 		r.internalCycleCounter = 0 // reset internal cycle counter
-		logger.Debugf("S: %d", r.s)
 
 	case 0x9:
 		r.m = value & MaskM
 		r.M = value & MaskM
-		logger.Debugf("M: %d", r.m)
 	case 0xA:
 		r.h = value & MaskH
 		r.H = value & MaskH
-		logger.Debugf("H: %d", r.h)
 	case 0xB:
 		r.dl = value & MaskDL
 		r.DL = value & MaskDL
-		logger.Debugf("DL: %d", r.dl)
 	case 0xC:
 		r.dh = value & MaskDH
 		r.DH = value & MaskDH
-		logger.Debugf("DH: %d", r.dh%0x1)
 	}
 }
 
@@ -181,20 +181,9 @@ func (r *RTC) internalDayCounter() uint16 {
 	return uint16(r.dh&0x1)<<8 | uint16(r.dl)
 }
 
-func (r *RTC) latchedDayCounter() uint16 {
-	return uint16(r.DH&0x1)<<8 | uint16(r.DL)
-}
-
 func (r *RTC) isDayCounterOverflow() bool {
 	return r.internalDayCounter() > 0x1FF
 }
-
-const (
-	SEC = iota
-	MIN
-	HOUR
-	DAY
-)
 
 func (r *RTC) Tick(cycles uint64) {
 	if internal.IsBitSet(r.dh, TIMER_HALT_BIT) {
@@ -204,19 +193,7 @@ func (r *RTC) Tick(cycles uint64) {
 	r.internalCycleCounter += cycles
 
 	if r.internalCycleCounter >= RTCCycles {
-		logger.Debugf("-----------------TICK------------------")
-		logger.Debugf("PRE: D: %d (%d:%d) H: %d M: %d S: %d", r.internalDayCounter(), r.dh, r.dl, r.h, r.m, r.s)
 
-		// check for overflow first
-		// if r.s > MAX_SECONDS {
-		// 	r.s = 0
-		// }
-		// if r.m > MAX_MINUTES {
-		// 	r.m = 0
-		// }
-		// if r.h > MAX_HOURS {
-		// 	r.h = 0
-		// }
 		var overflow uint8 = 0 // bit 0: seconds, bit 1: minutes, bit 2: hours, bit 3: day counter
 
 		r.s++
@@ -230,8 +207,6 @@ func (r *RTC) Tick(cycles uint64) {
 			if r.m == MAX_MINUTES {
 				r.m = 0
 				internal.SetBit(&overflow, MIN)
-			} else {
-				r.m++
 			}
 		}
 
@@ -240,8 +215,6 @@ func (r *RTC) Tick(cycles uint64) {
 			if r.h == MAX_HOURS {
 				r.h = 0
 				internal.SetBit(&overflow, HOUR)
-			} else {
-				r.h++
 			}
 		}
 
@@ -260,7 +233,9 @@ func (r *RTC) Tick(cycles uint64) {
 			}
 		}
 
-		logger.Debugf("POST: D: %d (%d:%d) H: %d M: %d S: %d", r.internalDayCounter(), r.dh, r.dl, r.h, r.m, r.s)
+		r.s &= MaskS
+		r.m &= MaskM
+		r.h &= MaskH
 
 		// set day carry flag if day counter overflows
 		if r.isDayCounterOverflow() {
