@@ -40,7 +40,6 @@ Generate GIF with the layout and captions
 Supported Features
 ==================
 - [x] CPU
-  - [ ] Double Speed Mode
 - [ ] Sound
 - [x] Interrupts
 - [x] Joypad
@@ -50,6 +49,7 @@ Supported Features
     - [x] Cartridge MBC1
     - [ ] Cartridge MBC2
     - [x] Cartridge MBC3
+      - [x] RTC   
     - [ ] Cartridge MBC5
     - [ ] Cartridge HuC1
     - [ ] Cartridge HuC3
@@ -59,9 +59,17 @@ Supported Features
     - [ ] Cartridge Hudson HuC-1
     - [ ] Cartridge Hudson HuC-3
 - [x] Graphics 
-  - [ ] FIFO
 - [x] Timers
 - [x] CGB Mode
+- [x] Save States
+- [x] Load States
+- [ ] Debugger
+  - [x] VRAM
+  - [x] Disassembler
+  - [x] IO
+  - [x] TileMaps
+  - [x] Tile Data
+- [ ] Shaders
 
 Future Features
 ==================
@@ -211,3 +219,11 @@ Contribute
 Any contribution is appreciated. The currently known problems are tracked in the Issues tab. Feel free to take a swing at any one of them.
 
 If you want to implement something which is not on the list, feel free to do so anyway. If you want to merge it into our repo, then just send a pull request and we will have a look at it.
+
+Resources and References
+========
+[Pan Docs](https://gbdev.io/pandocs/About.html)
+[GBEDG](https://hacktix.github.io/GBEDG/)
+[Instruction Set](https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html)
+[PyBoy](https://github.com/Baekalfen/PyBoy/tree/master) <-- Huge Inspiration
+[Test Roms Archive](https://gbdev.gg8.se/wiki/articles/Test_ROMs)
