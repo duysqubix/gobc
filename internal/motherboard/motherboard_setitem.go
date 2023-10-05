@@ -150,7 +150,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 			m.Memory.SetIO(IO_STAT, (m.Memory.GetIO(IO_STAT)&0x83)|(v&0xFC))
 
 		case 0xFF44: /* LY */
-			m.Memory.SetIO(IO_LY, 0)
+			// m.Memory.SetIO(IO_LY, 0)
 
 		case 0xFF46: /* DMA */
 			m.doDMATransfer(v)
