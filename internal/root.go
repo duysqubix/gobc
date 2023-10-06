@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -202,6 +203,12 @@ func (s *Set) Sort() []int {
 	keys := s.ToSlice()
 	sort.Ints(keys)
 	return keys
+}
+
+func (s *Set) Print() string {
+	keys := s.Sort()
+
+	return fmt.Sprintf("%v", keys)
 }
 
 func NewSet() *Set {

@@ -160,7 +160,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	mb.Lcd = NewLCD(mb)
 	mb.BootRom = bootrom.NewBootRom(mb.Cgb)
 	mb.BootRom.Enable()
-	// mb.BootRom.Disable()
+	mb.BootRom.Disable()
 
 	if !mb.BootRomEnabled() {
 		logger.Info("Boot ROM not enabled. Jumping to 0x100")

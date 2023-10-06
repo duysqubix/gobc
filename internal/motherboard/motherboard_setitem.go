@@ -1,6 +1,10 @@
 package motherboard
 
-import "github.com/duysqubix/gobc/internal"
+import (
+	"os"
+
+	"github.com/duysqubix/gobc/internal"
+)
 
 func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	if value >= 0x100 {
@@ -25,6 +29,14 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 			return
 		}
 
+		if 0x2000 <= addr && addr < 0x3000 {
+			logger.Debugf("Writing to ROM bank low: %#x, PC: %#x", v, m.Cpu.Registers.PC)
+			os.Exit(0)
+		}
+
+		// if 0x3000 <= addr && addr < 0x4000 {
+		// 	logger.Debugf("Writing to ROM bank high: %#x, addr: %#x", v, addr)
+		// }
 		m.Cartridge.CartType.SetItem(addr, v)
 
 	/*
