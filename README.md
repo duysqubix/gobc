@@ -222,8 +222,13 @@ If you want to implement something which is not on the list, feel free to do so 
 
 Resources and References
 ========
+
 [Pan Docs](https://gbdev.io/pandocs/About.html)
+
 [GBEDG](https://hacktix.github.io/GBEDG/)
+
 [Instruction Set](https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html)
+
 [PyBoy](https://github.com/Baekalfen/PyBoy/tree/master) <-- Huge Inspiration
+
 [Test Roms Archive](https://gbdev.gg8.se/wiki/articles/Test_ROMs)
