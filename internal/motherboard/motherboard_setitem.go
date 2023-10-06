@@ -1,8 +1,6 @@
 package motherboard
 
 import (
-	"os"
-
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -25,13 +23,12 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	 */
 	case addr < 0x4000:
 		if m.BootRomEnabled() && (addr < 0x100 || (m.Cgb && 0x200 <= addr && addr < 0x900)) {
-			logger.Errorf("Can't write to ROM bank 0 when boot ROM is enabled")
+			// logger.Errorf("Can't write to ROM bank 0 when boot ROM is enabled")
 			return
 		}
 
 		if 0x2000 <= addr && addr < 0x3000 {
-			logger.Debugf("Writing to ROM bank low: %#x, PC: %#x", v, m.Cpu.Registers.PC)
-			os.Exit(0)
+			// logger.Debugf("Writing to ROM bank low: %#x, PC: %#x", v, m.Cpu.Registers.PC)
 		}
 
 		// if 0x3000 <= addr && addr < 0x4000 {

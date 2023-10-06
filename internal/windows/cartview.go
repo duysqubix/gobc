@@ -153,6 +153,15 @@ func (mw *CartViewWindow) Draw() {
 	mw.Window.Clear(colornames.Black)
 	cartTableWriter.ClearRows()
 
+	// update information on cartridge
+	// Title
+	fmt.Fprintf(cartConsoleTxt, "Title: %s\n", mw.hw.Mb.Cartridge.GetTitle())
+	// Type
+	
+	// ROM Bank
+	// SRAM: Enabled/Disabled
+	// SRAM Bank
+
 	var data [][]string
 	// print rows from memory
 	for i := 0; i < (cartMaxRows - cartAddrOffset); i++ {
