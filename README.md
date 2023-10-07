@@ -53,7 +53,7 @@ Supported Features
     - [ ] Cartridge MBC2
     - [x] Cartridge MBC3
       - [x] RTC   
-    - [ ] Cartridge MBC5
+    - [x] Cartridge MBC5
     - [ ] Cartridge HuC1
     - [ ] Cartridge HuC3
     - [ ] Cartridge MMM01
