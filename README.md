@@ -28,8 +28,11 @@ Generate GIF with the layout and captions
       <td align="center">
         <img src="docs/dr_mario.png" width="200">
       </td>
-            <td align="center">
+          <td align="center">
         <img src="docs/bgb.gif" width="200">
+      </td>
+          <td align="center">
+        <img src="docs/loz.gif" width="200">
       </td>
     </tr>
     <tr>

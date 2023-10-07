@@ -15,7 +15,7 @@ import (
 
 const (
 	cartScreenWidth  = 670
-	cartScreenHeight = 1000
+	cartScreenHeight = 600
 	cartScale        = 1
 	cartTrueWidth    = float64(cartScreenWidth * cartScale)
 	cartTrueHeight   = float64(cartScreenHeight * cartScale)
@@ -157,10 +157,13 @@ func (mw *CartViewWindow) Draw() {
 	// Title
 	fmt.Fprintf(cartConsoleTxt, "Title: %s\n", mw.hw.Mb.Cartridge.GetTitle())
 	// Type
-	
+	fmt.Fprintf(cartConsoleTxt, "Type: %s\n", mw.hw.Mb.Cartridge.GetCartType())
 	// ROM Bank
+	fmt.Fprintf(cartConsoleTxt, "ROM Bank: %d\n", mw.hw.Mb.Cartridge.RomBankSelected)
 	// SRAM: Enabled/Disabled
+	fmt.Fprintf(cartConsoleTxt, "SRAM: %t\n", mw.hw.Mb.Cartridge.RamBankEnabled)
 	// SRAM Bank
+	fmt.Fprintf(cartConsoleTxt, "SRAM Bank: %d\n\n", mw.hw.Mb.Cartridge.RamBankSelected)
 
 	var data [][]string
 	// print rows from memory

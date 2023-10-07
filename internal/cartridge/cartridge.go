@@ -261,6 +261,11 @@ func LoadRomBanksV2(rom_data []byte, dummy_data bool) [128][MEMORY_BANK_SIZE]uin
 	return rom_banks
 }
 
+func (c *Cartridge) GetCartType() string {
+	cart_type_addr := c.RomBanks[0][CARTRIDGE_TYPE_ADDR]
+	return CartridgeTypeMap[cart_type_addr]
+}
+
 func NewCartridge(Filename *pathlib.Path) *Cartridge {
 	var rom_data []byte
 	var err error
