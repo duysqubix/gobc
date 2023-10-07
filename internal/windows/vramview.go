@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/duysqubix/gobc/internal"
-	pixel "github.com/duysqubix/pixel2"
-	"github.com/duysqubix/pixel2/imdraw"
-	"github.com/duysqubix/pixel2/pixelgl"
-	"github.com/duysqubix/pixel2/text"
+	pixel "github.com/gopxl/pixel/v2"
+	"github.com/gopxl/pixel/v2/imdraw"
+	"github.com/gopxl/pixel/v2/pixelgl"
+	"github.com/gopxl/pixel/v2/text"
 
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"

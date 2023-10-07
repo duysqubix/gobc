@@ -7,7 +7,7 @@ import (
 	"time"
 
 	// putils "github.com/dusk125/pixelutils"
-	"github.com/duysqubix/pixel2/pixelgl"
+	"github.com/gopxl/pixel/v2/pixelgl"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
@@ -60,7 +60,7 @@ func gameLoopGUI() {
 		wins = append(wins,
 			windows.NewVramViewWindow(g),
 			windows.NewMemoryViewWindow(g),
-			// windows.NewCartViewWindow(g),
+			windows.NewCartViewWindow(g),
 			windows.NewCpuViewWindow(g),
 			windows.NewIoViewWindow(g),
 		)

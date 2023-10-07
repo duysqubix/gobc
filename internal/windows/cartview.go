@@ -5,9 +5,9 @@ import (
 
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/cartridge"
-	pixel "github.com/duysqubix/pixel2"
-	"github.com/duysqubix/pixel2/pixelgl"
-	"github.com/duysqubix/pixel2/text"
+	pixel "github.com/gopxl/pixel/v2"
+	"github.com/gopxl/pixel/v2/pixelgl"
+	"github.com/gopxl/pixel/v2/text"
 	"github.com/olekukonko/tablewriter"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
@@ -152,6 +152,15 @@ func (mw *CartViewWindow) Draw() {
 	cartConsoleTxt.Clear()
 	mw.Window.Clear(colornames.Black)
 	cartTableWriter.ClearRows()
+
+	// update information on cartridge
+	// Title
+	fmt.Fprintf(cartConsoleTxt, "Title: %s\n", mw.hw.Mb.Cartridge.GetTitle())
+	// Type
+	
+	// ROM Bank
+	// SRAM: Enabled/Disabled
+	// SRAM Bank
 
 	var data [][]string
 	// print rows from memory

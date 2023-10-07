@@ -6,7 +6,7 @@ import (
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/cartridge"
 	"github.com/duysqubix/gobc/internal/motherboard"
-	"github.com/duysqubix/pixel2/pixelgl"
+	"github.com/gopxl/pixel/v2/pixelgl"
 )
 
 func (mw *MainGameWindow) _handleDebugInput() {
