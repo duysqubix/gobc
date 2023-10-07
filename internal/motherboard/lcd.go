@@ -392,17 +392,17 @@ func (l *LCD) renderTiles(lcdControl uint8) {
 		colorBit := uint8(int8((xPos%8)-7) * -1)
 		colorNum := (internal.BitValue(data2, colorBit) << 1) | internal.BitValue(data1, colorBit)
 
-		if (l.CurrentScanline == 112) && (pixel == 88) {
-			// Map Address: 0x9945
-			// Tile Address: 0:8090
-			// tileNum: 0x09
-			// logger.Debugf("Map Address: %#x, Tile Address: %#x, tileNum: %#x, unsignedTile: %t, LCDC: %08b", tileAddress, tileLocation, tileNum, ts.Unsigned, lcdControl)
+		// if (l.CurrentScanline == 112) && (pixel == 88) {
+		// Map Address: 0x9945
+		// Tile Address: 0:8090
+		// tileNum: 0x09
+		// logger.Debugf("Map Address: %#x, Tile Address: %#x, tileNum: %#x, unsignedTile: %t, LCDC: %08b", tileAddress, tileLocation, tileNum, ts.Unsigned, lcdControl)
 
-			// logger.Debugf("Y: %d, X: %d, wx: %d, wy: %d, tileNum: %#x, tileLocation: %#x, tileData: %#x, tileAddress: %#x, xPos: %d, yPos: %d, bgMemory: %#x, winMemory: %#x, WindowLY: %d",
-			// 	scanline, pixel, windowX, windowY, tileNum, tileLocation, ts.TileData, tileAddress, xPos, yPos, ts.BgMemory, ts.WinMemory, l.WindowLY)
-			// logger.Debugf("Scanline: %d, Pixel: %d, xPos: %d, yPos: %d, tileNum: %#x, tileLocation: %#x, tileData: %#x,  tileAddress: %#x, tileAttr: %#x, data1: %#x, data2: %#x, LCDC: %08b, STAT: %08b, IE: %08b, IF: %08b: BGMem: %#x, Unsigned: %t\n", scanline, pixel, xPos, yPos, tileNum, tileLocation, ts.TileData, tileAddress, tileAttr, data1, data2, lcdControl, l.Mb.Memory.IO[IO_STAT-IO_START_ADDR], l.Mb.Cpu.Interrupts.IE, l.Mb.Cpu.Interrupts.IF, ts.BgMemory, ts.Unsigned)
-			// logger.Debugf("Cycles: %d)", l.scanlineCounter)
-		}
+		// logger.Debugf("Y: %d, X: %d, wx: %d, wy: %d, tileNum: %#x, tileLocation: %#x, tileData: %#x, tileAddress: %#x, xPos: %d, yPos: %d, bgMemory: %#x, winMemory: %#x, WindowLY: %d",
+		// 	scanline, pixel, windowX, windowY, tileNum, tileLocation, ts.TileData, tileAddress, xPos, yPos, ts.BgMemory, ts.WinMemory, l.WindowLY)
+		// logger.Debugf("Scanline: %d, Pixel: %d, xPos: %d, yPos: %d, tileNum: %#x, tileLocation: %#x, tileData: %#x,  tileAddress: %#x, tileAttr: %#x, data1: %#x, data2: %#x, LCDC: %08b, STAT: %08b, IE: %08b, IF: %08b: BGMem: %#x, Unsigned: %t\n", scanline, pixel, xPos, yPos, tileNum, tileLocation, ts.TileData, tileAddress, tileAttr, data1, data2, lcdControl, l.Mb.Memory.IO[IO_STAT-IO_START_ADDR], l.Mb.Cpu.Interrupts.IE, l.Mb.Cpu.Interrupts.IF, ts.BgMemory, ts.Unsigned)
+		// logger.Debugf("Cycles: %d)", l.scanlineCounter)
+		// }
 
 		// if data1 != 0x00 || data2 != 0x00 {
 		// 	fmt.Printf("-----------------\n"+
