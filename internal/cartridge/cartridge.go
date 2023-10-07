@@ -126,6 +126,10 @@ type Cartridge struct {
 	MemoryModel uint8 // 0 = 16/8, 1 = 4/32
 }
 
+func (c *Cartridge) GetTitle() string {
+	return string(c.RomBanks[0][TITLE_START_ADDR:TITLE_END_ADDR])
+}
+
 func (c *Cartridge) Tick(cycles uint64) {
 	if c.RtcEnabled {
 		Grtc.Tick(cycles)

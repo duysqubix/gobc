@@ -178,7 +178,7 @@ func (m *Motherboard) Reset() {
 	m.Memory.Reset()
 	m.Lcd.Reset()
 	m.BootRom.Enable()
-	// m.BootRom.Disable()
+	m.BootRom.Disable()
 	m.Timer.Reset()
 
 	if !m.BootRomEnabled() {
