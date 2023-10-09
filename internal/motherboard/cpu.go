@@ -114,20 +114,9 @@ func (c *CPU) Deserialize(data *bytes.Buffer) error {
 }
 
 func NewCpu(mb *Motherboard) *CPU {
-	return &CPU{
-		Registers: &Registers{
-			A:  0x1,
-			B:  0x00,
-			C:  0x13,
-			D:  0x00,
-			E:  0xD8,
-			F:  0xB0,
-			H:  0x1,
-			L:  0x4D,
-			SP: 0xFFFE,
-			PC: 0, // skip bootROM implement this again..
-		},
-		Halted: false,
+	cpu := &CPU{
+		Registers: &Registers{},
+		Halted:    false,
 		Interrupts: &Interrupts{
 			InterruptsEnabling: false,
 			InterruptsOn:       false,
@@ -138,19 +127,39 @@ func NewCpu(mb *Motherboard) *CPU {
 		PcHist: list.New(),
 	}
 
+	cpu.initRegisters(mb.Cgb)
+	return cpu
+}
+
+func (c *CPU) initRegisters(cgb bool) {
+	if cgb {
+		c.Registers.A = 0x11
+		c.Registers.F = 0b10000000
+		c.Registers.B = 0x00
+		c.Registers.C = 0x00
+		c.Registers.D = 0xFF
+		c.Registers.E = 0x56
+		c.Registers.H = 0x00
+		c.Registers.L = 0x0D
+		c.Registers.SP = 0xFFFE
+		c.Registers.PC = 0x0100
+	} else { // DMG
+		c.Registers.A = 0x01
+		c.Registers.F = 0b10000000
+		c.Registers.B = 0x00
+		c.Registers.C = 0x13
+		c.Registers.D = 0x00
+		c.Registers.E = 0xD8
+		c.Registers.H = 0x01
+		c.Registers.L = 0x4D
+		c.Registers.SP = 0xFFFE
+		c.Registers.PC = 0x0100
+	}
+
 }
 
 func (c *CPU) Reset() {
-	c.Registers.A = 0x1
-	c.Registers.B = 0x00
-	c.Registers.C = 0x13
-	c.Registers.D = 0x00
-	c.Registers.E = 0xD8
-	c.Registers.F = 0xB0
-	c.Registers.H = 0x1
-	c.Registers.L = 0x4D
-	c.Registers.SP = 0xFFFE
-	c.Registers.PC = 0
+	c.initRegisters(c.Mb.Cgb)
 	c.Halted = false
 	c.Interrupts.InterruptsEnabling = false
 	c.Interrupts.InterruptsOn = false
