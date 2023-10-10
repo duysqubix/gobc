@@ -131,8 +131,8 @@ github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+
 github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+vpHVxEJEs9eg=
 github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5mhpdKc/us6bOk=
 github.com/googleapis/google-cloud-go-testing v0.0.0-20200911160855-bcd43fbb19e8/go.mod h1:dvDLG8qkwmyD9a/MJJN3XJcT3xFxOKAvTZGvuZmac9g=
-github.com/gopxl/pixel/v2 v2.0.0-20231007001711-4ec8dff3009e h1:VSYl8q+KnP5VpK1dGXBJaUPaQoKXcJs37hBrqqQEfQc=
-github.com/gopxl/pixel/v2 v2.0.0-20231007001711-4ec8dff3009e/go.mod h1:puouaRVeB1S5xO1Fl8PHm7SqFRwbuQRfnxme/iXOJy0=
+github.com/gopxl/pixel/v2 v2.0.0-20231009002706-2b64a9e94b34 h1:842yRCDZQffK0JaR+0OSLs2WKXPNy6RgQS8bJniEakM=
+github.com/gopxl/pixel/v2 v2.0.0-20231009002706-2b64a9e94b34/go.mod h1:puouaRVeB1S5xO1Fl8PHm7SqFRwbuQRfnxme/iXOJy0=
 github.com/hashicorp/golang-lru v0.5.0/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=

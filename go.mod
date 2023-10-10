@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/chigopher/pathlib v0.15.0
-	github.com/gopxl/pixel/v2 v2.0.0-20231007001711-4ec8dff3009e
+	github.com/gopxl/pixel/v2 v2.0.0-20231009002706-2b64a9e94b34
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/afero v1.10.0

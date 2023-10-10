@@ -3,8 +3,6 @@ package cartridge
 import (
 	"bytes"
 	"encoding/binary"
-
-	"github.com/duysqubix/gobc/internal"
 )
 
 type Mbc5Cartridge struct {
@@ -75,11 +73,6 @@ func (c *Mbc5Cartridge) SetItem(addr uint16, value uint8) {
 	case 0x4000 <= addr && addr < 0x6000:
 		// RAM Bank Number 4bits
 		c.parent.RamBankSelected = uint16(value & 0x0f)
-		if !ramBanks.Contains(int(value)) {
-			ramBanks.Add(int(value))
-			logger.Debugf(ramBanks.Print())
-		}
-
 	case 0xA000 <= addr && addr < 0xC000:
 		// External RAM
 		if c.parent.RamBankEnabled {
@@ -90,8 +83,6 @@ func (c *Mbc5Cartridge) SetItem(addr uint16, value uint8) {
 
 }
 
-var ramBanks *internal.Set = internal.NewSet()
-
 func (c *Mbc5Cartridge) GetItem(addr uint16) uint8 {
 	switch {
 	case addr < 0x4000:
@@ -100,7 +91,6 @@ func (c *Mbc5Cartridge) GetItem(addr uint16) uint8 {
 	case 0x4000 <= addr && addr < 0x8000:
 		// Switchable ROM Bank
 		romBank := c.GetRomBank() & (c.parent.RomBanksCount - 1)
-
 		// logger.Debugf("Reading from ROM bank %d", bank)
 
 		return c.parent.RomBanks[romBank][addr-0x4000]
