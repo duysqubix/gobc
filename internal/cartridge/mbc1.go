@@ -45,7 +45,7 @@ func (c *Mbc1Cartridge) Deserialize(data *bytes.Buffer) error {
 
 func (c *Mbc1Cartridge) Init() {
 	if c.hasBattery {
-		LoadSRAM(c.parent.Filename, &c.parent.RamBanks, c.parent.RamBankCount)
+		LoadSRAM(c.parent.GetFilename(), &c.parent.RamBanks, c.parent.RamBankCount)
 	}
 }
 

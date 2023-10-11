@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 
 	"github.com/chigopher/pathlib"
@@ -124,6 +125,12 @@ type Cartridge struct {
 	RtcEnabled bool // whether RTC is enabled
 
 	MemoryModel uint8 // 0 = 16/8, 1 = 4/32
+}
+
+func (c *Cartridge) GetFilename() string {
+	filename := filepath.Base(c.Filename)
+	ext := filepath.Ext(c.Filename)
+	return filename[0 : len(filename)-len(ext)]
 }
 
 func (c *Cartridge) GetTitle() string {

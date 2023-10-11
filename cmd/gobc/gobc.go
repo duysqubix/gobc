@@ -176,10 +176,9 @@ func mainAction(ctx *cli.Context) error {
 	}
 
 	// save SRAM state
-	cartridge.SaveSRAM(romfile, &g.Mb.Cartridge.RamBanks, g.Mb.Cartridge.RamBankCount)
+	cartridge.SaveSRAM(g.Mb.Cartridge.GetFilename(), &g.Mb.Cartridge.RamBanks, g.Mb.Cartridge.RamBankCount)
 
 	// default save state
-	// internal.StateToFile(g.Mb.Cartridge.Filename, g.Mb)
 	return cli.Exit("", 0)
 
 }

@@ -54,15 +54,15 @@ func (mw *MainGameWindow) _handleDebugInput() {
 	}
 
 	if mw.Window.JustPressed(pixelgl.KeyF4) || mw.Window.Repeated(pixelgl.KeyF4) {
-		cartridge.SaveSRAM(mw.hw.Mb.Cartridge.Filename, &mw.hw.Mb.Cartridge.RamBanks, mw.hw.Mb.Cartridge.RamBankCount)
+		cartridge.SaveSRAM(mw.hw.Mb.Cartridge.GetFilename(), &mw.hw.Mb.Cartridge.RamBanks, mw.hw.Mb.Cartridge.RamBankCount)
 	}
 
 	if mw.Window.JustPressed(pixelgl.KeyF5) || mw.Window.Repeated(pixelgl.KeyF5) {
-		internal.StateToFile(mw.hw.Mb.Cartridge.Filename, mw.hw.Mb)
+		internal.StateToFile(mw.hw.Mb.Cartridge.GetFilename(), mw.hw.Mb)
 	}
 
 	if mw.Window.JustPressed(pixelgl.KeyF6) || mw.Window.Repeated(pixelgl.KeyF6) {
-		internal.LoadState(mw.hw.Mb.Cartridge.Filename, mw.hw.Mb)
+		internal.LoadState(mw.hw.Mb.Cartridge.GetFilename(), mw.hw.Mb)
 	}
 
 }

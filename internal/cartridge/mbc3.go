@@ -16,7 +16,7 @@ func (c *Mbc3Cartridge) Init() {
 
 	// load save file if exists
 	if c.hasBattery {
-		LoadSRAM(c.parent.Filename, &c.parent.RamBanks, c.parent.RamBankCount)
+		LoadSRAM(c.parent.GetFilename(), &c.parent.RamBanks, c.parent.RamBankCount)
 	}
 
 	if c.hasRTC {
