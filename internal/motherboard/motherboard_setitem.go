@@ -35,6 +35,7 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	*
 	 */
 	case 0x4000 <= addr && addr < 0x8000:
+		// logger.Debugf("Setting Ram Bank: %#x, PC: %#x", v, m.Cpu.Registers.PC)
 		m.Cartridge.CartType.SetItem(addr, v)
 
 	/*

@@ -100,11 +100,10 @@ func (c *Mbc3Cartridge) SetItem(addr uint16, value uint8) {
 		if c.parent.RamBankEnabled {
 			if c.parent.RamBankSelected <= 0x07 {
 				c.parent.RamBanks[c.parent.RamBankSelected%c.parent.RamBankCount][addr-0xA000] = value
-			} else if 0x08 <= c.parent.RamBankSelected && c.parent.RamBankSelected <= 0x0C {
+			} else if c.hasRTC && 0x08 <= c.parent.RamBankSelected && c.parent.RamBankSelected <= 0x0C {
 				Grtc.SetItem(c.parent.RamBankSelected, value)
 			} else {
-				logger.Errorf("Invalid RAM bank selected: %#x", c.parent.RamBankSelected)
-
+				logger.Errorf("Setting invalid RAM bank: %#x", c.parent.RamBankSelected)
 			}
 		}
 	default:
@@ -126,12 +125,15 @@ func (c *Mbc3Cartridge) GetItem(addr uint16) uint8 {
 			return 0xFF
 		}
 
-		if c.hasRTC && (0x08 <= c.parent.RamBankSelected && c.parent.RamBankSelected <= 0x0C) {
+		if c.parent.RamBankSelected <= 0x07 {
+			return c.parent.RamBanks[c.parent.RamBankSelected%c.parent.RamBankCount][addr-0xA000]
+		} else if c.hasRTC && (0x08 <= c.parent.RamBankSelected && c.parent.RamBankSelected <= 0x0C) {
 			value := Grtc.GetItem(c.parent.RamBankSelected)
 			// logger.Debugf("Reading from RTC register %#x: %d", c.parent.RamBankSelected, value)
 			return value
 		} else {
-			return c.parent.RamBanks[c.parent.RamBankSelected%c.parent.RamBankCount][addr-0xA000]
+			logger.Errorf("Reading from invalid RAM bank: %#x", c.parent.RamBankSelected)
+			return 0xFF
 		}
 	default:
 		logger.Errorf("Read error! Can't read from %#x\n", addr)
