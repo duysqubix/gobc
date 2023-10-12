@@ -89,6 +89,8 @@ func (c *CPU) ServiceInterrupt(interrupt uint8) {
 
 	if c.Halted {
 		c.Mb.Cpu.Registers.PC++
+		c.Halted = false
+		return
 	}
 
 	if c.Interrupts.InterruptsOn {
