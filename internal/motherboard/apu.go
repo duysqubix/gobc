@@ -50,116 +50,55 @@ func NewAPU(mb *Motherboard) *APU {
 }
 
 func (a *APU) SetItem(addr uint16, value uint8) {
-	switch addr {
-	case 0xFF10:
-		a.Chan1[0] = value
-	case 0xFF11:
-		a.Chan1[1] = value
-	case 0xFF12:
-		a.Chan1[2] = value
-	case 0xFF13:
-		a.Chan1[3] = value
-	case 0xFF14:
-		a.Chan1[4] = value
-	case 0xFF16:
-		a.Chan2[1] = value
-	case 0xFF17:
-		a.Chan2[2] = value
-	case 0xFF18:
-		a.Chan2[3] = value
-	case 0xFF19:
-		a.Chan2[4] = value
-	case 0xFF1A:
-		a.Chan3[0] = value
-	case 0xFF1B:
-		a.Chan3[1] = value
-	case 0xFF1C:
-		a.Chan3[2] = value
-	case 0xFF1D:
-		a.Chan3[3] = value
-	case 0xFF1E:
-		a.Chan3[4] = value
-	case 0xFF20:
-		a.Chan4[1] = value
-	case 0xFF21:
-		a.Chan4[2] = value
-	case 0xFF22:
-		a.Chan4[3] = value
-	case 0xFF23:
-		a.Chan4[4] = value
-	case 0xFF24:
+	logger.Debugf("Setting APU Item: %#x, %#x", addr, value)
+	switch {
+	case 0xFF10 <= addr && addr < 0xFF15:
+		a.Chan1[addr-0xFF10] = value
+	case 0xFF15 <= addr && addr < 0xFF20:
+		a.Chan2[addr-0xFF15] = value
+	case 0xFF1A <= addr && addr < 0xFF1F:
+		a.Chan3[addr-0xFF1A] = value
+	case 0xFF1F <= addr && addr < 0xFF24:
+		a.Chan4[addr-0xFF1F] = value
+
+	case 0xFF30 <= addr && addr < 0xFF40:
+		a.WaveRam[addr-0xFF30] = value
+
+	case addr == 0xFF24:
 		a.NR50 = value
-	case 0xFF25:
+
+	case addr == 0xFF25:
 		a.NR51 = value
-	case 0xFF26:
+
+	case addr == 0xFF26:
 		a.NR52 = value
-	case 0xFF30:
-		a.WaveRam[0] = value
-	case 0xFF31:
-		a.WaveRam[1] = value
-	case 0xFF32:
-		a.WaveRam[2] = value
-	default:
-		logger.Fatalf("Can't write to %#x\n", addr)
 	}
 }
 
 func (a *APU) GetItem(addr uint16) uint8 {
-	switch addr {
-	case 0xFF10:
-		return a.Chan1[0]
-	case 0xFF11:
-		return a.Chan1[1]
-	case 0xFF12:
-		return a.Chan1[2]
-	case 0xFF13:
-		return a.Chan1[3]
-	case 0xFF14:
-		return a.Chan1[4]
-	case 0xFF16:
-		return a.Chan2[1]
-	case 0xFF17:
-		return a.Chan2[2]
-	case 0xFF18:
-		return a.Chan2[3]
-	case 0xFF19:
-		return a.Chan2[4]
-	case 0xFF1A:
-		return a.Chan3[0]
-	case 0xFF1B:
-		return a.Chan3[1]
-	case 0xFF1C:
-		return a.Chan3[2]
-	case 0xFF1D:
-		return a.Chan3[3]
-	case 0xFF1E:
-		return a.Chan3[4]
-	case 0xFF20:
-		return a.Chan4[1]
-	case 0xFF21:
-		return a.Chan4[2]
-	case 0xFF22:
-		return a.Chan4[3]
-	case 0xFF23:
-		return a.Chan4[4]
-	case 0xFF24:
-		return a.NR50
-	case 0xFF25:
-		return a.NR51
-	case 0xFF26:
-		return 0x80
-		// return a.NR52
-	case 0xFF30:
-		return a.WaveRam[0]
-	case 0xFF31:
-		return a.WaveRam[1]
-	case 0xFF32:
-		return a.WaveRam[2]
+	switch {
+	case 0xFF10 <= addr && addr < 0xFF15:
+		return a.Chan1[addr-0xFF10]
+	case 0xFF15 <= addr && addr < 0xFF20:
+		return a.Chan2[addr-0xFF15]
+	case 0xFF1A <= addr && addr < 0xFF1F:
+		return a.Chan3[addr-0xFF1A]
+	case 0xFF1F <= addr && addr < 0xFF24:
+		return a.Chan4[addr-0xFF1F]
 
-	default:
-		logger.Fatalf("Can't read from %#x\n", addr)
+	case 0xFF30 <= addr && addr < 0xFF40:
+		return a.WaveRam[addr-0xFF30]
+
+	case addr == 0xFF24:
+		return a.NR50
+
+	case addr == 0xFF25:
+		return a.NR51
+
+	case addr == 0xFF26:
+		return a.NR52
 	}
-	return 0
+	return 0xFF
 }
 
 func (a *APU) Serialize() *bytes.Buffer {
