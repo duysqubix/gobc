@@ -27,6 +27,7 @@ type Motherboard struct {
 	Timer         *Timer               // Timer
 	Lcd           *LCD                 // LCD
 	Input         *Input               // Input
+	Sound         *APU                 // Sound
 	Cgb           bool                 // Color Gameboy
 	CpuFreq       uint32               // CPU frequency
 	Randomize     bool                 // Randomize RAM on startup
@@ -58,6 +59,7 @@ func (m *Motherboard) Serialize() *bytes.Buffer {
 	binary.Write(buf, binary.LittleEndian, m.BGPalette.Serialize().Bytes())     // BG Palette
 	binary.Write(buf, binary.LittleEndian, m.SpritePalette.Serialize().Bytes()) // Sprite Palette
 	binary.Write(buf, binary.LittleEndian, m.Cartridge.Serialize().Bytes())     // Cartridge
+	binary.Write(buf, binary.LittleEndian, m.Sound.Serialize().Bytes())         // Sound
 
 	return buf
 }
@@ -95,6 +97,9 @@ func (m *Motherboard) Deserialize(data *bytes.Buffer) error {
 		return err
 	}
 	if err := m.Cartridge.Deserialize(data); err != nil {
+		return err
+	}
+	if err := m.Sound.Deserialize(data); err != nil {
 		return err
 	}
 
@@ -158,6 +163,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	mb.Cpu = NewCpu(mb)
 	mb.Memory = NewInternalRAM(mb, params.Randomize)
 	mb.Lcd = NewLCD(mb)
+	mb.Sound = NewAPU(mb)
 	mb.BootRom = bootrom.NewBootRom(mb.Cgb)
 	mb.BootRom.Enable()
 	// mb.BootRom.Disable()

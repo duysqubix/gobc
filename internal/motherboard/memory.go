@@ -165,17 +165,10 @@ func (r *Memory) Reset() {
 // var getVbktrace uint8 = 0
 
 func (r *Memory) SetIO(addr uint16, value uint8) {
-	// if addr == IO_VBK && setVbktrace != value {
-	// 	setVbktrace = value
-
-	// }
 	r.IO[addr-IO_START_ADDR] = value
 }
 
 func (r *Memory) GetIO(addr uint16) uint8 {
-	// if addr == IO_VBK && getVbktrace != r.IO[IO_VBK-IO_START_ADDR] {
-	// 	getVbktrace = r.IO[IO_VBK-IO_START_ADDR]
-	// }
 	return r.IO[addr-IO_START_ADDR]
 }
 
