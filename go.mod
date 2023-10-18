@@ -4,6 +4,7 @@ go 1.21.0
 
 require (
 	github.com/chigopher/pathlib v0.15.0
+	github.com/gopxl/beep v1.1.0
 	github.com/gopxl/pixel/v2 v2.0.0-20231009002706-2b64a9e94b34
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
@@ -19,10 +20,13 @@ require (
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b // indirect
 	github.com/go-gl/mathgl v1.1.0 // indirect
+	github.com/hajimehoshi/oto v0.7.1 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6 // indirect
+	golang.org/x/mobile v0.0.0-20190719004257-d2bd2a29d028 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 )

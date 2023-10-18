@@ -3,7 +3,21 @@ package motherboard
 import (
 	"bytes"
 	"encoding/binary"
+	"log"
+	"time"
+
+	"github.com/gopxl/beep"
+	"github.com/gopxl/beep/speaker"
 )
+
+const (
+	sampleRate           = 44100
+	maxFrameBufferLength = 5000
+)
+
+func init() {
+	speaker.Init(beep.SampleRate(sampleRate), maxFrameBufferLength)
+}
 
 type soundChannel [5]uint8
 
@@ -33,11 +47,13 @@ type APU struct {
 	Chan2 soundChannel
 	Chan3 soundChannel
 	Chan4 soundChannel
+
+	audioBuffer chan [2]byte
 }
 
 func NewAPU(mb *Motherboard) *APU {
 
-	return &APU{
+	apu := &APU{
 		mb:    mb,
 		NR50:  0x77,
 		NR51:  0xF3,
@@ -47,6 +63,35 @@ func NewAPU(mb *Motherboard) *APU {
 		Chan3: soundChannel{0x7F, 0xFF, 0x9F, 0xFF, 0xBF},
 		Chan4: soundChannel{0x00, 0xFF, 0x00, 0x00, 0xBF},
 	}
+	apu.audioBuffer = make(chan [2]byte, maxFrameBufferLength)
+	return apu
+
+}
+
+func (a *APU) playSound(bufSeconds int) {
+	frameTime := time.Second / time.Duration(bufSeconds)
+	ticker := time.NewTicker(frameTime)
+	targetSamples := sampleRate / bufSeconds
+	go func() {
+		var reading [2]byte
+		var buffer []byte
+		for range ticker.C {
+			fbLen := len(a.audioBuffer)
+			if fbLen >= targetSamples/2 {
+				newBuffer := make([]byte, fbLen*2)
+				for i := 0; i < fbLen*2; i += 2 {
+					reading = <-a.audioBuffer
+					newBuffer[i], newBuffer[i+1] = reading[0], reading[1]
+				}
+				buffer = newBuffer
+			}
+
+			_, err := a.player.Write(buffer)
+			if err != nil {
+				log.Printf("error sampling: %v", err)
+			}
+		}
+	}()
 }
 
 func (a *APU) SetItem(addr uint16, value uint8) {
