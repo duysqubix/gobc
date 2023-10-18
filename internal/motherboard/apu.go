@@ -3,8 +3,6 @@ package motherboard
 import (
 	"bytes"
 	"encoding/binary"
-	"log"
-	"time"
 
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/speaker"
@@ -68,82 +66,24 @@ func NewAPU(mb *Motherboard) *APU {
 
 }
 
-func (a *APU) playSound(bufSeconds int) {
-	frameTime := time.Second / time.Duration(bufSeconds)
-	ticker := time.NewTicker(frameTime)
-	targetSamples := sampleRate / bufSeconds
-	go func() {
-		var reading [2]byte
-		var buffer []byte
-		for range ticker.C {
-			fbLen := len(a.audioBuffer)
-			if fbLen >= targetSamples/2 {
-				newBuffer := make([]byte, fbLen*2)
-				for i := 0; i < fbLen*2; i += 2 {
-					reading = <-a.audioBuffer
-					newBuffer[i], newBuffer[i+1] = reading[0], reading[1]
-				}
-				buffer = newBuffer
-			}
-
-			_, err := a.player.Write(buffer)
-			if err != nil {
-				log.Printf("error sampling: %v", err)
-			}
-		}
-	}()
-}
-
 func (a *APU) SetItem(addr uint16, value uint8) {
-	logger.Debugf("Setting APU Item: %#x, %#x", addr, value)
-	switch {
-	case 0xFF10 <= addr && addr < 0xFF15:
-		a.Chan1[addr-0xFF10] = value
-	case 0xFF15 <= addr && addr < 0xFF20:
-		a.Chan2[addr-0xFF15] = value
-	case 0xFF1A <= addr && addr < 0xFF1F:
-		a.Chan3[addr-0xFF1A] = value
-	case 0xFF1F <= addr && addr < 0xFF24:
-		a.Chan4[addr-0xFF1F] = value
 
-	case 0xFF30 <= addr && addr < 0xFF40:
-		a.WaveRam[addr-0xFF30] = value
+	a.mb.Memory.SetIO(addr, value) // update internal memory
 
-	case addr == 0xFF24:
-		a.NR50 = value
+	// now actually do something with values, in terms of emulation and sound
 
-	case addr == 0xFF25:
-		a.NR51 = value
+	switch addr {
 
-	case addr == 0xFF26:
-		a.NR52 = value
 	}
+
 }
 
 func (a *APU) GetItem(addr uint16) uint8 {
-	switch {
-	case 0xFF10 <= addr && addr < 0xFF15:
-		return a.Chan1[addr-0xFF10]
-	case 0xFF15 <= addr && addr < 0xFF20:
-		return a.Chan2[addr-0xFF15]
-	case 0xFF1A <= addr && addr < 0xFF1F:
-		return a.Chan3[addr-0xFF1A]
-	case 0xFF1F <= addr && addr < 0xFF24:
-		return a.Chan4[addr-0xFF1F]
-
-	case 0xFF30 <= addr && addr < 0xFF40:
-		return a.WaveRam[addr-0xFF30]
-
-	case addr == 0xFF24:
-		return a.NR50
-
-	case addr == 0xFF25:
-		return a.NR51
-
-	case addr == 0xFF26:
-		return a.NR52
+	if addr == 0xFF26 {
+		return 0x80
 	}
-	return 0xFF
+
+	return a.mb.Memory.GetIO(addr)
 }
 
 func (a *APU) Serialize() *bytes.Buffer {
