@@ -1,0 +1,17 @@
+.venv
+main
+.commitmsg
+.gptinput
+*.sum
+*.json
+*.txt
+__pycache__
+scratchpad
+generate_commit_msg.sh 
+**/*/default_rom.*
+*.csv 
+bin/
+default_rom/
+*.bin
+*.sav
+*.state
