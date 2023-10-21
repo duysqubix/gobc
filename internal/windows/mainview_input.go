@@ -64,7 +64,6 @@ func (mw *MainGameWindow) _handleDebugInput() {
 	if mw.Window.JustPressed(pixelgl.KeyF6) || mw.Window.Repeated(pixelgl.KeyF6) {
 		internal.LoadState(mw.hw.Mb.Cartridge.GetFilename(), mw.hw.Mb)
 	}
-
 }
 
 func (mw *MainGameWindow) _handleJoyPadInput() {

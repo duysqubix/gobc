@@ -2,7 +2,7 @@ package motherboard
 
 import (
 	"bytes"
-	"encoding/binary"
+	"math/rand"
 
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/speaker"
@@ -13,56 +13,54 @@ const (
 	maxFrameBufferLength = 5000
 )
 
+var (
+	NoiseBuffer *beep.Buffer
+)
+
 func init() {
 	speaker.Init(beep.SampleRate(sampleRate), maxFrameBufferLength)
+	format := beep.Format{SampleRate: sampleRate, NumChannels: 1, Precision: 1}
+	NoiseBuffer = beep.NewBuffer(format)
+	NoiseBuffer.Append(beep.Take(1000, Noise{}))
+
 }
 
-type soundChannel [5]uint8
+type Noise struct{}
 
-func (s *soundChannel) Serialize() *bytes.Buffer {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.LittleEndian, s)
-	return buf
-}
-
-func (s *soundChannel) Deserialize(data *bytes.Buffer) error {
-	// Read the data from the buffer
-	if err := binary.Read(data, binary.LittleEndian, s); err != nil {
-		return err
+func (no Noise) Stream(samples [][2]float64) (n int, ok bool) {
+	for i := range samples {
+		samples[i][0] = rand.Float64()*2 - 1
+		samples[i][1] = rand.Float64()*2 - 1
 	}
+	return len(samples), true
+}
+
+func (no Noise) Err() error {
 	return nil
 }
 
 type APU struct {
-	mb *Motherboard
-	// master Registers
-	NR50    uint8
-	NR51    uint8
-	NR52    uint8
-	WaveRam [16]uint8
-	// Sound channels
-	Chan1 soundChannel
-	Chan2 soundChannel
-	Chan3 soundChannel
-	Chan4 soundChannel
-
-	audioBuffer chan [2]byte
+	mb          *Motherboard
+	audioBuffer *beep.Buffer
 }
 
 func NewAPU(mb *Motherboard) *APU {
 
-	apu := &APU{
-		mb:    mb,
-		NR50:  0x77,
-		NR51:  0xF3,
-		NR52:  0xF1,
-		Chan1: soundChannel{0x80, 0xBF, 0xF3, 0xFF, 0xBF},
-		Chan2: soundChannel{0x00, 0x3F, 0x00, 0xFF, 0xBF},
-		Chan3: soundChannel{0x7F, 0xFF, 0x9F, 0xFF, 0xBF},
-		Chan4: soundChannel{0x00, 0xFF, 0x00, 0x00, 0xBF},
+	audioFormat := beep.Format{
+		SampleRate:  beep.SampleRate(sampleRate),
+		NumChannels: 1,
+		Precision:   3,
 	}
-	apu.audioBuffer = make(chan [2]byte, maxFrameBufferLength)
+
+	apu := &APU{
+		mb:          mb,
+		audioBuffer: beep.NewBuffer(audioFormat),
+	}
 	return apu
+
+}
+
+func (a *APU) Tick(cycles OpCycles) {
 
 }
 
@@ -88,49 +86,9 @@ func (a *APU) GetItem(addr uint16) uint8 {
 
 func (a *APU) Serialize() *bytes.Buffer {
 	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.LittleEndian, a.NR50)    // NR50
-	binary.Write(buf, binary.LittleEndian, a.NR51)    // NR51
-	binary.Write(buf, binary.LittleEndian, a.NR52)    // NR52
-	binary.Write(buf, binary.LittleEndian, a.WaveRam) // Wave RAM
-	binary.Write(buf, binary.LittleEndian, a.Chan1)   // Channel 1
-	binary.Write(buf, binary.LittleEndian, a.Chan2)   // Channel 2
-	binary.Write(buf, binary.LittleEndian, a.Chan3)   // Channel 3
-	binary.Write(buf, binary.LittleEndian, a.Chan4)   // Channel 4
 	return buf
 }
 
 func (a *APU) Deserialize(data *bytes.Buffer) error {
-
-	if err := binary.Read(data, binary.LittleEndian, &a.NR50); err != nil {
-		return err
-	}
-	if err := binary.Read(data, binary.LittleEndian, &a.NR51); err != nil {
-		return err
-
-	}
-	if err := binary.Read(data, binary.LittleEndian, &a.NR52); err != nil {
-		return err
-
-	}
-	if err := binary.Read(data, binary.LittleEndian, &a.WaveRam); err != nil {
-		return err
-
-	}
-	if err := binary.Read(data, binary.LittleEndian, &a.Chan1); err != nil {
-		return err
-
-	}
-	if err := binary.Read(data, binary.LittleEndian, &a.Chan2); err != nil {
-		return err
-
-	}
-	if err := binary.Read(data, binary.LittleEndian, &a.Chan3); err != nil {
-		return err
-
-	}
-	if err := binary.Read(data, binary.LittleEndian, &a.Chan4); err != nil {
-		return err
-
-	}
 	return nil
 }

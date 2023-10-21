@@ -228,8 +228,10 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 	m.Cartridge.Tick(uint64(cycles))
 
 	m.Cpu.Mb.Timer.Tick(cycles, m.Cpu)
-	m.Lcd.Tick(cycles)
 	cycles += m.Cpu.handleInterrupts()
+	m.Lcd.Tick(cycles)
+
+	m.Sound.Tick(cycles)
 	return true, cycles
 }
 
