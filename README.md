@@ -94,7 +94,7 @@ Installing GoBC
 ============
 You need the following dependencies installed:
 - [Go](https://golang.org/doc/install)
-- [OpenGL](https://github.com/gopxl/pixel/v2#requirements)
+- [OpenGL](https://github.com/gopxl/pixel#requirements)
 
 Building from source
 ```bash 
