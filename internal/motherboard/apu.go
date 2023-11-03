@@ -2,6 +2,7 @@ package motherboard
 
 import (
 	"bytes"
+	"math"
 	"math/rand"
 
 	"github.com/gopxl/beep"
@@ -15,6 +16,8 @@ const (
 
 var (
 	NoiseBuffer *beep.Buffer
+	twoPi       = 2 * math.Pi
+	perSample   = 1.0 / float64(sampleRate)
 )
 
 func init() {
@@ -44,7 +47,7 @@ type APU struct {
 	audioBuffer *beep.Buffer
 }
 
-func NewAPU(mb *Motherboard) *APU {
+func NewAPU(mb *Motherboard, enableSound bool) *APU {
 
 	audioFormat := beep.Format{
 		SampleRate:  beep.SampleRate(sampleRate),

@@ -163,7 +163,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	mb.Cpu = NewCpu(mb)
 	mb.Memory = NewInternalRAM(mb, params.Randomize)
 	mb.Lcd = NewLCD(mb)
-	mb.Sound = NewAPU(mb)
+	mb.Sound = NewAPU(mb, true) // forces enable sound
 	mb.BootRom = bootrom.NewBootRom(mb.Cgb)
 	mb.BootRom.Enable()
 	// mb.BootRom.Disable()
