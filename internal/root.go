@@ -3,12 +3,15 @@ package internal
 import (
 	"bytes"
 	"fmt"
+	"image/color"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/gopxl/pixel/v2"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/image/colornames"
 )
 
 const VERSION string = "1.0"
@@ -21,6 +24,8 @@ const GB_SCREEN_HEIGHT = 144
 const DEFAULT_LOG_LEVEL = log.ErrorLevel
 
 var Logger = log.New()
+
+var MainGameCanvas *pixel.PictureData
 
 func StateDumpFile() *os.File {
 	logfile, err := os.OpenFile("dump.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
@@ -258,4 +263,30 @@ func LoadState(romName string, state EntityState) {
 	state.Deserialize(buf)
 	Logger.Debugf("Loaded state (%.02f KB) from %s", float64(len(data))/1024.0, statename)
 
+}
+
+func DrawToScreen(renderer Renderer, debug bool) {
+	for y := 0; y < GB_SCREEN_HEIGHT; y++ {
+		for x := 0; x < GB_SCREEN_WIDTH; x++ {
+			col := renderer.Data()[x][y]
+			rgb := color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
+
+			if debug {
+				if y == 0 || x == 0 || y == GB_SCREEN_HEIGHT-1 || x == GB_SCREEN_WIDTH-1 {
+					rgb = colornames.Red
+				}
+
+				if y == renderer.CurrentScan() {
+					rgb = colornames.Green
+				}
+			}
+
+			MainGameCanvas.Pix[((GB_SCREEN_HEIGHT-1-y)*GB_SCREEN_WIDTH)+x] = rgb
+		}
+	}
+}
+
+type Renderer interface {
+	Data() [GB_SCREEN_WIDTH][GB_SCREEN_HEIGHT][3]uint8
+	CurrentScan() int
 }

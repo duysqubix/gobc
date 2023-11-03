@@ -82,27 +82,31 @@ func (mw *MainGameWindow) Update() error {
 		}
 	}
 
-	for y := 0; y < internal.GB_SCREEN_HEIGHT; y++ {
-		for x := 0; x < internal.GB_SCREEN_WIDTH; x++ {
-			col := mw.hw.Mb.Lcd.PreparedData[x][y]
-			rgb := color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
+	// if mw.hw.Mb.Lcd.CurrentScanline == 144 {
+	// 	fmt.Println(globalCycles, globalFrames)
+	// }
 
-			if internalShowDebugInfo {
-				if y == 0 || x == 0 || y == internal.GB_SCREEN_HEIGHT-1 || x == internal.GB_SCREEN_WIDTH-1 {
-					rgb = colornames.Red
-				}
+	// for y := 0; y < internal.GB_SCREEN_HEIGHT; y++ {
+	// 	for x := 0; x < internal.GB_SCREEN_WIDTH; x++ {
+	// 		col := mw.hw.Mb.Lcd.PreparedData[x][y]
+	// 		rgb := color.RGBA{R: col[0], G: col[1], B: col[2], A: 0xFF}
 
-				if y == int(mw.hw.Mb.Lcd.CurrentScanline) {
-					rgb = colornames.Green
-					if x == int(mw.hw.Mb.Lcd.CurrentPixelPosition) {
-						rgb = colornames.Blue
-					}
-				}
-			}
+	// 		if internalShowDebugInfo {
+	// 			if y == 0 || x == 0 || y == internal.GB_SCREEN_HEIGHT-1 || x == internal.GB_SCREEN_WIDTH-1 {
+	// 				rgb = colornames.Red
+	// 			}
 
-			mw.gameMapCanvas.Pix[((internal.GB_SCREEN_HEIGHT-1-y)*internal.GB_SCREEN_WIDTH)+x] = rgb
-		}
-	}
+	// 			if y == int(mw.hw.Mb.Lcd.CurrentScanline) {
+	// 				rgb = colornames.Green
+	// 				if x == int(mw.hw.Mb.Lcd.CurrentPixelPosition) {
+	// 					rgb = colornames.Blue
+	// 				}
+	// 			}
+	// 		}
+
+	// 		mw.gameMapCanvas.Pix[((internal.GB_SCREEN_HEIGHT-1-y)*internal.GB_SCREEN_WIDTH)+x] = rgb
+	// 	}
+	// }
 
 	return nil
 }
@@ -198,7 +202,7 @@ func (g *GoBoyColor) Reset() {
 }
 
 func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
-	gameScale := 3
+	gameScale := 5
 	gameScreenWidth := internal.GB_SCREEN_WIDTH
 	gameScreenHeight := internal.GB_SCREEN_HEIGHT
 	cyclesFrame := CyclesFrameDMG
@@ -210,13 +214,16 @@ func NewMainGameWindow(gobc *GoBoyColor) *MainGameWindow {
 		cyclesFrame *= 1
 	}
 
+	internal.MainGameCanvas = pixel.MakePictureData(pixel.R(0, 0, float64(gameScreenWidth), float64(gameScreenHeight)))
+
 	mgw := &MainGameWindow{
 		hw:             gobc,
 		gameScale:      gameScale,
 		gameTrueWidth:  float64(gameScreenWidth * gameScale),
 		gameTrueHeight: float64(gameScreenHeight * gameScale),
-		gameMapCanvas:  pixel.MakePictureData(pixel.R(0, 0, float64(gameScreenWidth), float64(gameScreenHeight))),
-		cyclesFrame:    cyclesFrame,
+		// gameMapCanvas:  pixel.MakePictureData(pixel.R(0, 0, float64(gameScreenWidth), float64(gameScreenHeight))),
+		gameMapCanvas: internal.MainGameCanvas,
+		cyclesFrame:   cyclesFrame,
 	}
 
 	win, err := pixelgl.NewWindow(pixelgl.WindowConfig{
@@ -258,6 +265,11 @@ func (g *GoBoyColor) UpdateInternalGameState(every int) bool {
 			internalStatus, internalCycleReturn = g.Mb.Tick()
 			internalCycleCounter += int(internalCycleReturn)
 			globalCycles += int(internalCycleReturn)
+
+			if g.Mb.Lcd.CurrentMode == 1 {
+				g.Mb.Lcd.CurrentMode = 100
+				break
+			}
 			if !internalStatus {
 				if g.Mb.GuiPause {
 					break

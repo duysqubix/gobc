@@ -36,6 +36,15 @@ type LCD struct {
 	CurrentPixelPosition uint8 // current pixel position in the scanline
 	CurrentScanline      uint8 // current scanline being rendered
 	WindowLY             uint8 // current window scanline being rendered
+	CurrentMode          uint8 // current mode of the LCD
+}
+
+func (l *LCD) Data() [internal.GB_SCREEN_WIDTH][internal.GB_SCREEN_HEIGHT][3]uint8 {
+	return l.PreparedData
+}
+
+func (l *LCD) CurrentScan() int {
+	return int(l.CurrentScanline)
 }
 
 func (l *LCD) Serialize() *bytes.Buffer {
@@ -93,7 +102,7 @@ func (l *LCD) Reset() {
 	l.bgPriority = ScreenPriority{}
 	// l.PreparedData = ScreenData{}
 	l.clearScreen()
-	l.scanlineCounter = 0
+	l.scanlineCounter = 456
 	l.screenCleared = false
 }
 
@@ -134,19 +143,21 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 	if l.scanlineCounter <= 0 {
 		l.Mb.Memory.IO[IO_LY-IO_START_ADDR]++ // directly change for optimized performance
 		if l.Mb.Memory.GetIO(IO_LY) > 153 {
-			// l.PreparedData = ScreenData{}
-			// l.screenData = ScreenData{}
-			// l.clearScreen()
 			l.bgPriority = ScreenPriority{}
 			l.Mb.Memory.SetIO(IO_LY, 0)
 		}
 
 		l.scanlineCounter += (456 * 1) // change 1 to 2 for double speed
+		// l.scanlineCounter = 456
 
 		if l.Mb.Memory.GetIO(IO_LY) == internal.GB_SCREEN_HEIGHT {
 			l.Mb.Cpu.SetInterruptFlag(INTR_VBLANK)
 		}
 	}
+}
+
+func (l *LCD) TimeToRender() bool {
+	return l.CurrentMode == STAT_MODE_VBLANK
 }
 
 func (l *LCD) setLCDStatus() {
@@ -185,6 +196,10 @@ func (l *LCD) setLCDStatus() {
 		internal.ResetBit(&status, STAT_MODE1)
 		rqstInterrupt = internal.IsBitSet(status, STAT_VBLINT)
 		l.WindowLY = 0
+		if mode != currentMode {
+			l.CurrentMode = mode
+			internal.DrawToScreen(l, true)
+		}
 
 	case l.scanlineCounter >= lcdMode2Bounds:
 		mode = STAT_MODE_OAM
@@ -200,6 +215,7 @@ func (l *LCD) setLCDStatus() {
 			// draw scanline when we start mode 3. In the real gameboy
 			// this would be done through mode 3 by readong OAM and VRAM
 			// to generate the picture
+			l.CurrentMode = mode
 			l.drawScanline()
 		}
 	default:
@@ -208,7 +224,9 @@ func (l *LCD) setLCDStatus() {
 		internal.ResetBit(&status, STAT_MODE0)
 		rqstInterrupt = internal.IsBitSet(status, STAT_HBLINT)
 		if mode != currentMode {
+			l.CurrentMode = mode
 			l.Mb.DoHDMATransfer() // do HDMATransfer when we start mode 0
+
 		}
 	}
 

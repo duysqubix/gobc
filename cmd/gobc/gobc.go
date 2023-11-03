@@ -20,7 +20,7 @@ var logger = internal.Logger
 var frameTick *time.Ticker
 var g *windows.GoBoyColor
 
-var frameRateMicro int64 = 16670
+var frameRateMicro int64 = 33333 //16670
 
 // var frameRateMicro int64 = 16000
 
@@ -90,11 +90,11 @@ func gameLoopGUI() {
 
 		elasped += time.Since(start).Microseconds()
 
-		if elasped < frameRateMicro {
-			time.Sleep(time.Duration(frameRateMicro-elasped) * time.Microsecond)
-		}
+		// if elasped < frameRateMicro {
+		// 	time.Sleep(time.Duration(frameRateMicro-elasped) * time.Microsecond)
+		// }
 
-		fps = 1000000.0 / float64(time.Since(start).Microseconds())
+		fps = 1000000.0 / float64(elasped)
 	}
 }
 
