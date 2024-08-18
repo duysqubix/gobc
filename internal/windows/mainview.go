@@ -8,9 +8,9 @@ import (
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
 	pixel "github.com/gopxl/pixel/v2"
-	"github.com/gopxl/pixel/v2/imdraw"
-	"github.com/gopxl/pixel/v2/pixelgl"
-	"github.com/gopxl/pixel/v2/text"
+	"github.com/gopxl/pixel/v2/ext/imdraw"
+	pixelgl "github.com/gopxl/pixel/v2/backends/opengl"
+	"github.com/gopxl/pixel/v2/ext/text"
 	"github.com/spf13/afero"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
@@ -56,7 +56,7 @@ func (mw *MainGameWindow) SetUp() {
 }
 
 func (mw *MainGameWindow) handleInput() {
-	if mw.Window.JustPressed(pixelgl.KeyR) || mw.Window.Repeated(pixelgl.KeyR) {
+	if mw.Window.JustPressed(pixel.KeyR) || mw.Window.Repeated(pixel.KeyR) {
 		mw.hw.Reset()
 	}
 

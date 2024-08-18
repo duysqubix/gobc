@@ -6,8 +6,8 @@ import (
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
 	pixel "github.com/gopxl/pixel/v2"
-	"github.com/gopxl/pixel/v2/pixelgl"
-	"github.com/gopxl/pixel/v2/text"
+	pixelgl "github.com/gopxl/pixel/v2/backends/opengl"
+	"github.com/gopxl/pixel/v2/ext/text"
 	"github.com/olekukonko/tablewriter"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
@@ -107,19 +107,19 @@ func (mw *MemoryViewWindow) Update() error {
 
 	maxYOffset := float64(0xffff-(max_rows-addr_offset-1)*0x10) / float64(0x10)
 
-	if mw.Window.JustPressed(pixelgl.KeyRight) || mw.Window.Repeated(pixelgl.KeyRight) {
+	if mw.Window.JustPressed(pixel.KeyRight) || mw.Window.Repeated(pixel.KeyRight) {
 		mw.YOffset += float64(max_rows) - float64(addr_offset) - 1
 	}
 
-	if mw.Window.JustPressed(pixelgl.KeyUp) || mw.Window.Repeated(pixelgl.KeyUp) {
+	if mw.Window.JustPressed(pixel.KeyUp) || mw.Window.Repeated(pixel.KeyUp) {
 		mw.YOffset -= 1
 	}
 
-	if mw.Window.JustPressed(pixelgl.KeyLeft) || mw.Window.Repeated(pixelgl.KeyLeft) {
+	if mw.Window.JustPressed(pixel.KeyLeft) || mw.Window.Repeated(pixel.KeyLeft) {
 		mw.YOffset -= float64(max_rows) - float64(addr_offset) - 1
 	}
 
-	if mw.Window.JustPressed(pixelgl.KeyDown) || mw.Window.Repeated(pixelgl.KeyDown) {
+	if mw.Window.JustPressed(pixel.KeyDown) || mw.Window.Repeated(pixel.KeyDown) {
 		mw.YOffset += 1
 	}
 
