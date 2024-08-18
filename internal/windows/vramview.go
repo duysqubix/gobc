@@ -5,9 +5,9 @@ import (
 
 	"github.com/duysqubix/gobc/internal"
 	pixel "github.com/gopxl/pixel/v2"
-	"github.com/gopxl/pixel/v2/imdraw"
-	"github.com/gopxl/pixel/v2/pixelgl"
-	"github.com/gopxl/pixel/v2/text"
+	"github.com/gopxl/pixel/v2/ext/imdraw"
+	pixelgl "github.com/gopxl/pixel/v2/backends/opengl"
+	"github.com/gopxl/pixel/v2/ext/text"
 
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
@@ -125,23 +125,23 @@ var tileAddressingMode uint16
 
 func (mw *VramViewWindow) Update() error {
 
-	if mw.Window.JustPressed(pixelgl.KeyT) || mw.Window.Repeated(pixelgl.KeyT) {
+	if mw.Window.JustPressed(pixel.KeyT) || mw.Window.Repeated(pixel.KeyT) {
 		internal.ToggleBit(&vramTileAddressingMode, 0)
 	}
 
-	if mw.Window.JustPressed(pixelgl.KeyB) || mw.Window.Repeated(pixelgl.KeyB) {
+	if mw.Window.JustPressed(pixel.KeyB) || mw.Window.Repeated(pixel.KeyB) {
 		internal.ToggleBit(&vramBgAddressingMode, 0)
 	}
 
-	if mw.Window.JustPressed(pixelgl.KeyG) || mw.Window.Repeated(pixelgl.KeyG) {
+	if mw.Window.JustPressed(pixel.KeyG) || mw.Window.Repeated(pixel.KeyG) {
 		vramShowGrid = !vramShowGrid
 	}
 
-	if mw.Window.JustPressed(pixelgl.KeyH) || mw.Window.Repeated(pixelgl.KeyH) {
+	if mw.Window.JustPressed(pixel.KeyH) || mw.Window.Repeated(pixel.KeyH) {
 		vramShowHelp = !vramShowHelp
 	}
 
-	if mw.Window.JustPressed(pixelgl.KeyV) || mw.Window.Repeated(pixelgl.KeyV) {
+	if mw.Window.JustPressed(pixel.KeyV) || mw.Window.Repeated(pixel.KeyV) {
 		vramTileDataBank = (vramTileDataBank + 1) % 2
 	}
 
