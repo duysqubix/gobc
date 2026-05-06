@@ -1,6 +1,8 @@
 package motherboard
 
 import (
+	"fmt"
+
 	"github.com/duysqubix/gobc/internal"
 )
 
@@ -222,8 +224,9 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 		}
 
 		/// prints serial output to terminal ///
-		// if v == 0x81 && addr == IO_SC {
-		// }
+		if v == 0x81 && addr == IO_SC {
+			fmt.Printf("%c", m.Memory.GetIO(IO_SB))
+		}
 		////////////////////////////////////
 
 	/*
