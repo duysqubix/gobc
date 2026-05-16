@@ -14,6 +14,7 @@ import (
 	"github.com/chigopher/pathlib"
 	"github.com/duysqubix/gobc/internal"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 )
 
 type CartridgeType interface {
@@ -438,24 +439,22 @@ func (c *Cartridge) Dump(writer io.Writer) {
 		{"Global Checksum", fmt.Sprintf("$%02X", c.RomBanks[0][GLOBAL_CHECKSUM_START_ADDR])},
 	}
 
-	table := tablewriter.NewWriter(writer)
-	table.SetHeader([]string{"Attribute", "Value"})
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table := tablewriter.NewTable(writer, tablewriter.WithRowAlignment(tw.AlignLeft))
+	table.Header([]string{"Attribute", "Value"})
 
 	for _, v := range report {
-		table.Append(v)
+		_ = table.Append(v)
 	}
 
-	table.Render()
+	_ = table.Render()
 }
 
 // writes the ROM into a file that is human readle
 // [bank#]/[addr]: [opcode] [value] [description]
 func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
 
-	table := tablewriter.NewWriter(writer)
-	table.SetHeader([]string{"Bank", "Address", "Opcode", "Value", "Description", "Notes"})
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table := tablewriter.NewTable(writer, tablewriter.WithRowAlignment(tw.AlignLeft))
+	table.Header([]string{"Bank", "Address", "Opcode", "Value", "Description", "Notes"})
 
 	// var str string
 	var data [][]string
@@ -528,15 +527,14 @@ func (c *Cartridge) DumpInstructionSet(writer io.Writer, include_nop bool) {
 	}
 
 	for _, row := range data {
-		table.Append(row)
+		_ = table.Append(row)
 	}
-	table.Render()
+	_ = table.Render()
 }
 
 func (c *Cartridge) RawHeaderDump() {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Address", "Value", "Description"})
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table := tablewriter.NewTable(os.Stdout, tablewriter.WithRowAlignment(tw.AlignLeft))
+	table.Header([]string{"Address", "Value", "Description"})
 
 	for _i, v := range c.RomBanks[0][HEADER_START_ADDR : HEADER_END_ADDR+1] {
 		var desc string
@@ -576,8 +574,8 @@ func (c *Cartridge) RawHeaderDump() {
 			desc = "Unkown"
 		}
 
-		table.Append([]string{fmt.Sprintf("$%04X", i), fmt.Sprintf("$%02X", v), desc})
+		_ = table.Append([]string{fmt.Sprintf("$%04X", i), fmt.Sprintf("$%02X", v), desc})
 	}
 
-	table.Render()
+	_ = table.Render()
 }

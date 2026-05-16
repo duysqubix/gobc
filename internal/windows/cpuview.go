@@ -9,6 +9,7 @@ import (
 	pixelgl "github.com/gopxl/pixel/v2/backends/opengl"
 	"github.com/gopxl/pixel/v2/ext/text"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
 )
@@ -74,11 +75,13 @@ func (mw *CpuViewWindow) SetUp() {
 	)
 	cpuConsoleTxt.Color = colornames.Red
 
-	cpuTableWriter = tablewriter.NewWriter(cpuConsoleTxt)
-	cpuTableWriter.SetAutoWrapText(false)
-	cpuTableWriter.SetAlignment(tablewriter.ALIGN_LEFT)
-	cpuTableWriter.SetBorder(true)
-	cpuTableWriter.SetHeader([]string{"HR", "HV", "LV", "LR"})
+	cpuTableWriter = tablewriter.NewTable(cpuConsoleTxt,
+		tablewriter.WithRowAlignment(tw.AlignLeft),
+		tablewriter.WithHeaderAutoWrap(tw.WrapNone),
+		tablewriter.WithRowAutoWrap(tw.WrapNone),
+		tablewriter.WithFooterAutoWrap(tw.WrapNone),
+	)
+	cpuTableWriter.Header([]string{"HR", "HV", "LV", "LR"})
 }
 
 func (mw *CpuViewWindow) Finalize() {

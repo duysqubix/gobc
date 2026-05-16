@@ -9,6 +9,7 @@ import (
 	pixelgl "github.com/gopxl/pixel/v2/backends/opengl"
 	"github.com/gopxl/pixel/v2/ext/text"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
 )
@@ -91,11 +92,13 @@ func (mw *MemoryViewWindow) SetUp() {
 	)
 	consoleTxt.Color = colornames.Green
 
-	memTableWriter = tablewriter.NewWriter(consoleTxt)
-	memTableWriter.SetAutoWrapText(false)
-	memTableWriter.SetAlignment(tablewriter.ALIGN_LEFT)
-	memTableWriter.SetBorder(true)
-	memTableWriter.SetHeader([]string{"Addr", "Memory Data", "Section"})
+	memTableWriter = tablewriter.NewTable(consoleTxt,
+		tablewriter.WithRowAlignment(tw.AlignLeft),
+		tablewriter.WithHeaderAutoWrap(tw.WrapNone),
+		tablewriter.WithRowAutoWrap(tw.WrapNone),
+		tablewriter.WithFooterAutoWrap(tw.WrapNone),
+	)
+	memTableWriter.Header([]string{"Addr", "Memory Data", "Section"})
 }
 
 func (mw *MemoryViewWindow) Finalize() {
@@ -146,7 +149,8 @@ func (mw *MemoryViewWindow) Update() error {
 func (mw *MemoryViewWindow) Draw() {
 	consoleTxt.Clear()
 	mw.Window.Clear(colornames.Black)
-	memTableWriter.ClearRows()
+	memTableWriter.Reset()
+	memTableWriter.Header([]string{"Addr", "Memory Data", "Section"})
 
 	var data [][]string
 	var ramSelect, romSelect uint16
@@ -181,8 +185,8 @@ func (mw *MemoryViewWindow) Draw() {
 
 	for _, d := range data {
 		// fmt.Println(d)
-		memTableWriter.Append(d)
+		_ = memTableWriter.Append(d)
 	}
-	memTableWriter.Render()
+	_ = memTableWriter.Render()
 	consoleTxt.Draw(mw.Window, pixel.IM.Scaled(consoleTxt.Orig, 1.25))
 }

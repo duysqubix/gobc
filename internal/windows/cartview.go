@@ -9,6 +9,7 @@ import (
 	pixelgl "github.com/gopxl/pixel/v2/backends/opengl"
 	"github.com/gopxl/pixel/v2/ext/text"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
 )
@@ -84,11 +85,13 @@ func (mw *CartViewWindow) SetUp() {
 
 	cartConsoleTxt.Color = colornames.Yellowgreen
 
-	cartTableWriter = tablewriter.NewWriter(cartConsoleTxt)
-	cartTableWriter.SetAutoWrapText(false)
-	cartTableWriter.SetAlignment(tablewriter.ALIGN_LEFT)
-	cartTableWriter.SetBorder(true)
-	cartTableWriter.SetHeader([]string{"RAM Bank", "Addr", "Cart Data"})
+	cartTableWriter = tablewriter.NewTable(cartConsoleTxt,
+		tablewriter.WithRowAlignment(tw.AlignLeft),
+		tablewriter.WithHeaderAutoWrap(tw.WrapNone),
+		tablewriter.WithRowAutoWrap(tw.WrapNone),
+		tablewriter.WithFooterAutoWrap(tw.WrapNone),
+	)
+	cartTableWriter.Header([]string{"RAM Bank", "Addr", "Cart Data"})
 }
 
 func (mw *CartViewWindow) Finalize() {
@@ -151,7 +154,8 @@ func (mw *CartViewWindow) Update() error {
 func (mw *CartViewWindow) Draw() {
 	cartConsoleTxt.Clear()
 	mw.Window.Clear(colornames.Black)
-	cartTableWriter.ClearRows()
+	cartTableWriter.Reset()
+	cartTableWriter.Header([]string{"RAM Bank", "Addr", "Cart Data"})
 
 	// update information on cartridge
 	// Title
@@ -180,9 +184,9 @@ func (mw *CartViewWindow) Draw() {
 
 	for _, d := range data {
 		// fmt.Println(d)
-		cartTableWriter.Append(d)
+		_ = cartTableWriter.Append(d)
 	}
-	cartTableWriter.Render()
+	_ = cartTableWriter.Render()
 	cartConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(cartConsoleTxt.Orig, 1.25))
 
 }

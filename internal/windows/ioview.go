@@ -10,6 +10,8 @@ import (
 	pixelgl "github.com/gopxl/pixel/v2/backends/opengl"
 	"github.com/gopxl/pixel/v2/ext/text"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
 )
@@ -74,11 +76,15 @@ func (mw *IoViewWindow) SetUp() {
 	)
 	ioConsoleTxt.Color = colornames.Cyan
 
-	ioTableWriter = tablewriter.NewWriter(ioConsoleTxt)
-	ioTableWriter.SetAutoWrapText(false)
-	ioTableWriter.SetAlignment(tablewriter.ALIGN_LEFT)
-	ioTableWriter.SetRowSeparator("-")
-	ioTableWriter.SetBorder(false)
+	ioTableWriter = tablewriter.NewTable(ioConsoleTxt,
+		tablewriter.WithRowAlignment(tw.AlignLeft),
+		tablewriter.WithHeaderAutoWrap(tw.WrapNone),
+		tablewriter.WithRowAutoWrap(tw.WrapNone),
+		tablewriter.WithFooterAutoWrap(tw.WrapNone),
+		tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
+			Borders: tw.Border{Left: tw.Off, Right: tw.Off, Top: tw.Off, Bottom: tw.Off},
+		})),
+	)
 }
 
 func (mw *IoViewWindow) Finalize() {
@@ -101,7 +107,7 @@ func formatBitValue(value uint8) string {
 func (mw *IoViewWindow) Draw() {
 	ioConsoleTxt.Clear()
 	mw.Window.Clear(colornames.Black)
-	ioTableWriter.ClearRows()
+	ioTableWriter.Reset()
 
 	statIO := mw.hw.Mb.Memory.IO[0x41] & 0x3
 	var statMode string
@@ -116,7 +122,7 @@ func (mw *IoViewWindow) Draw() {
 		statMode = "Transfer"
 	}
 
-	ioTableWriter.AppendBulk(
+	_ = ioTableWriter.Bulk(
 		[][]string{
 			{"INTERRUPTS:", "IME:", fmt.Sprintf("%t", mw.hw.Mb.Cpu.Interrupts.InterruptsOn), "", "LCD:"},
 			//IE
@@ -158,6 +164,6 @@ func (mw *IoViewWindow) Draw() {
 	// append(append([]string{"$FF56", "RP", fmt.Sprintf("$%02x", mw.hw.Mb.Memory.IO[0x56]), formatBitValue(mw.hw.Mb.Memory.IO[0x56])}, mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_WINEN, "ON", "OFF")...), mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_BGMAP, "$8000", "$8800")...),
 	// append(append([]string{"", "", "", ""}, mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_BGWIN, "$9C00", "$9800")...), mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_OBJSZ, "8x8", "8x16")...),
 	// append(append([]string{"STAT Flags:", "", "", ""}, mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_OBJEN, "ON", "OFF")...), mw.hw.Mb.Lcd.ReportOnLCDC(motherboard.LCDC_BGEN, "ON", "OFF")...),
-	ioTableWriter.Render()
+	_ = ioTableWriter.Render()
 	ioConsoleTxt.Draw(mw.Window, pixel.IM.Scaled(ioConsoleTxt.Orig, 1.5))
 }

@@ -12,6 +12,7 @@ import (
 
 	"github.com/duysqubix/gobc/internal"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -421,13 +422,12 @@ func (cpu *CPU) DumpState(writer io.Writer) {
 		{"Cgb", fmt.Sprintf("%t", cpu.Mb.Cgb)},
 	}
 
-	table := tablewriter.NewWriter(writer)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table := tablewriter.NewTable(writer, tablewriter.WithRowAlignment(tw.AlignLeft))
 	for _, v := range report {
-		table.Append(v)
+		_ = table.Append(v)
 	}
 
-	table.Render()
+	_ = table.Render()
 }
 
 func (c *CPU) CpSetFlags(a uint8, b uint8) {
