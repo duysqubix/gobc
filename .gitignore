@@ -1,0 +1,22 @@
+# Build artifacts
+bin/
+/gobc
+
+# Coverage / test artifacts
+coverage.out
+coverage.html
+*.test
+*.prof
+cartdump.txt
+
+# Runtime artifacts at repo root (personal smoke-test ROMs + saves; NOT default_rom/)
+/default_rom.sav
+/crystal.gbc
+/crystal.sav
+/crystal.state
+/Pokemon*.gbc
+/Pokemon*.sav
+/Pokemon*.zip
+
+# OpenCode/Sisyphus session state
+.sisyphus/
