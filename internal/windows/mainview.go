@@ -8,8 +8,8 @@ import (
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/motherboard"
 	pixel "github.com/gopxl/pixel/v2"
-	"github.com/gopxl/pixel/v2/ext/imdraw"
 	pixelgl "github.com/gopxl/pixel/v2/backends/opengl"
+	"github.com/gopxl/pixel/v2/ext/imdraw"
 	"github.com/gopxl/pixel/v2/ext/text"
 	"github.com/spf13/afero"
 	"golang.org/x/image/colornames"
@@ -34,6 +34,9 @@ var (
 	internalDebugCycleScaler   int  = 1
 	internalShowDebugInfo      bool = false
 )
+
+func IsDebugInfo() bool   { return internalShowDebugInfo }
+func SetDebugInfo(v bool) { internalShowDebugInfo = v }
 
 type MainGameWindow struct {
 	hw             *GoBoyColor
@@ -178,7 +181,7 @@ func NewGoBoyColor(romfile string, breakpoints []uint16, forceCgb bool, forceDmg
 
 	gobc := &GoBoyColor{
 		Mb: motherboard.NewMotherboard(&motherboard.MotherboardParams{
-			Filename:     pathlib.NewPathAfero(romfile, afero.NewOsFs()),
+			Filename:     pathlib.NewPath(romfile, pathlib.PathWithAfero(afero.NewOsFs())),
 			Randomize:    randomize,
 			Breakpoints:  breakpoints,
 			ForceCgb:     forceCgb,

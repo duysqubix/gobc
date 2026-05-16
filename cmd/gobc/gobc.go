@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"time"
 
-	// putils "github.com/dusk125/pixelutils"
+	"github.com/chigopher/pathlib"
 	pixelgl "github.com/gopxl/pixel/v2/backends/opengl"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -39,8 +40,17 @@ func setFPS(fps int) {
 	}
 }
 
-var DEBUG_WINDOWS bool = false
 var SHOW_GUI bool = true
+
+func openDebugWindows() []windows.Window {
+	return []windows.Window{
+		windows.NewVramViewWindow(g),
+		windows.NewMemoryViewWindow(g),
+		windows.NewCartViewWindow(g),
+		windows.NewCpuViewWindow(g),
+		windows.NewIoViewWindow(g),
+	}
+}
 
 func gameLoopGUI() {
 	setFPS(internal.FRAMES_PER_SECOND)
@@ -56,24 +66,29 @@ func gameLoopGUI() {
 		windows.NewMainGameWindow(g),
 	}
 
-	if DEBUG_WINDOWS {
-		wins = append(wins,
-			windows.NewVramViewWindow(g),
-			windows.NewMemoryViewWindow(g),
-			windows.NewCartViewWindow(g),
-			windows.NewCpuViewWindow(g),
-			windows.NewIoViewWindow(g),
-		)
+	debugWinsCreated := false
+	if windows.IsDebugInfo() {
+		extra := openDebugWindows()
+		wins = append(wins, extra...)
+		debugWinsCreated = true
 	}
 
 	mainWin := wins[0].Win()
 
-	// run layout once
 	for _, w := range wins {
 		w.SetUp()
 	}
 
 	for !mainWin.Closed() {
+		if windows.IsDebugInfo() && !debugWinsCreated {
+			extra := openDebugWindows()
+			for _, w := range extra {
+				w.SetUp()
+			}
+			wins = append(wins, extra...)
+			debugWinsCreated = true
+		}
+
 		mainWin.SetTitle(fmt.Sprintf("gobc v%s | %s | FPS: %.2f", internal.VERSION, g.Mb.Cartridge.Filename, fps))
 		elasped = 0
 		start := time.Now()
@@ -83,7 +98,6 @@ func gameLoopGUI() {
 			w.Draw()
 		}
 
-		// update internal GLFW events
 		for _, w := range wins {
 			w.Finalize()
 		}
@@ -125,7 +139,7 @@ func gameLoop() {
 	}
 }
 
-func mainAction(ctx *cli.Context) error {
+func runAction(ctx *cli.Context) error {
 	var force_cgb bool = false
 	var panicOnStuck bool = false
 	var randomize bool = false
@@ -140,7 +154,7 @@ func mainAction(ctx *cli.Context) error {
 	}
 
 	if !ctx.Args().Present() {
-		cli.ShowAppHelpAndExit(ctx, 1)
+		cli.ShowAppHelpAndExit(ctx, 0)
 	}
 
 	if ctx.Bool("panic-on-stuck") {
@@ -161,8 +175,7 @@ func mainAction(ctx *cli.Context) error {
 	g = windows.NewGoBoyColor(romfile, breakpoints, force_cgb, force_dmg, panicOnStuck, randomize)
 
 	if ctx.Bool("debug") {
-		// logger.SetLevel(log.DebugLevel)
-		DEBUG_WINDOWS = true
+		windows.SetDebugInfo(true)
 	}
 
 	if ctx.Bool("no-gui") {
@@ -183,85 +196,206 @@ func mainAction(ctx *cli.Context) error {
 
 }
 
+func cartdumpAction(ctx *cli.Context) error {
+	if !ctx.Args().Present() {
+		return cli.Exit("error: ROM file required. Usage: gobc cartdump ROM_File [options]", 1)
+	}
+
+	filename := ctx.Args().First()
+	obj := pathlib.NewPath(filename)
+
+	isFile, err := obj.IsFile()
+	if err != nil {
+		return cli.Exit(fmt.Sprintf("error reading %q: %v", filename, err), 1)
+	}
+	if !isFile {
+		return cli.Exit(fmt.Sprintf("error: %q is not a regular file", filename), 1)
+	}
+
+	supportedRoms := []string{".gbc", ".gb"}
+	ext := filepath.Ext(filename)
+	if !internal.IsInStrArray(ext, supportedRoms) {
+		return cli.Exit(fmt.Sprintf("error: unsupported ROM extension %q (want .gb or .gbc)", ext), 1)
+	}
+
+	fmt.Println("Reading ROM file:", filename)
+	cart := cartridge.NewCartridge(obj)
+
+	if ctx.Bool("raw") {
+		cart.RawHeaderDump()
+		return nil
+	}
+
+	output := ctx.String("output")
+	if output == "" {
+		output = "cartdump.txt"
+	}
+
+	file, err := os.Create(output)
+	if err != nil {
+		return cli.Exit(fmt.Sprintf("error: failed to create output file %q: %v", output, err), 1)
+	}
+	defer file.Close()
+
+	cart.Dump(file)
+	if ctx.Bool("instruction-set") {
+		cart.DumpInstructionSet(file, ctx.Bool("include-nop"))
+	}
+
+	fmt.Printf("Dumped cartridge metadata to %s\n", output)
+	return nil
+}
+
+// Must stay in sync with internal/windows/*.go input handlers.
+const keybindingsHelp = `KEYBINDINGS:
+
+   Main Game Window (always available):
+     Up / Down / Left / Right      D-Pad
+     S                             A button
+     A                             B button
+     Enter                         Start
+     Right Shift                   Select
+     R                             Reset emulator
+     F1                            Toggle Grid overlay
+     F2                            Toggle Debug Information (opens debug windows)
+     F3                            Cycle Color Palette (DMG only)
+     F4                            Save Cartridge SRAM to disk
+     F5                            Save State
+     F6                            Load State
+
+   Main Game Window (debug mode only, --debug):
+     Space                         Pause / Unpause emulation
+     F                             Step 1 frame
+     N                             Step N cycles (controlled by B / M)
+     B                             Decrease cycles-per-step by 10
+     M                             Increase cycles-per-step by 10
+
+   VRAM Viewer Window:
+     T                             Toggle Tile Addressing Mode
+     B                             Toggle TileMap Addressing Mode
+     G                             Toggle Grid overlay
+     H                             Toggle Help overlay
+     V                             Toggle VRAM bank 0 / 1 (CGB only)
+
+   Memory Viewer Window:
+     Up / Down                     Scroll by line
+     Left / Right                  Page Up / Page Down
+     Mouse Wheel                   Scroll
+
+   Cartridge Viewer Window:
+     Up / Down                     Scroll by line
+     Left / Right                  Page Up / Page Down
+     [ / ]                         Previous / Next RAM bank
+     Mouse Wheel                   Scroll
+
+ENVIRONMENT VARIABLES:
+   LOG_LEVEL                       Set log verbosity: debug | info | warn | error
+
+EXAMPLES:
+   gobc roms/cpu_instrs.gb                            # shorthand: run a ROM
+   gobc run roms/cpu_instrs.gb --debug                # run with debug windows
+   gobc run roms/cpu_instrs.gb --breakpoints 0x100,0x200
+   gobc run roms/pokemon.gb --force-cgb               # force CGB mode on a DMG ROM
+   gobc run roms/blargg.gb --no-gui                   # headless (for test ROMs in CI)
+   LOG_LEVEL=debug gobc run roms/zelda.gb             # raise log verbosity
+
+   gobc cartdump roms/pokemon.gb                      # write cartdump.txt
+   gobc cartdump roms/pokemon.gb --raw                # print raw header to stdout
+   gobc cartdump roms/pokemon.gb --instruction-set --include-nop -o pokemon.txt
+`
+
 func main() {
+	runFlags := []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "debug",
+			Usage: "Enable debug mode (opens VRAM / Memory / Cart / CPU / IO viewer windows)",
+		},
+		&cli.StringFlag{
+			Name:  "breakpoints",
+			Usage: "Comma-separated list of PC breakpoint addresses (e.g. 0x100,0x200)",
+		},
+		&cli.BoolFlag{
+			Name:  "force-cgb",
+			Usage: "Force CGB mode on a DMG ROM",
+		},
+		&cli.BoolFlag{
+			Name:  "force-dmg",
+			Usage: "Force DMG mode on a CGB ROM",
+		},
+		&cli.BoolFlag{
+			Name:  "no-gui",
+			Usage: "Run without GUI (headless, useful for test ROMs / CI)",
+		},
+		&cli.BoolFlag{
+			Name:  "panic-on-stuck",
+			Usage: "Panic when the CPU is detected as stuck",
+		},
+		&cli.BoolFlag{
+			Name:  "randomize",
+			Usage: "Randomize RAM contents on startup",
+		},
+	}
+
 	app := &cli.App{
-		Name:      "gobc",
-		Version:   "0.0.1",
-		Compiled:  time.Now(),
-		Usage:     "A Gameboy emulator written in Go",
-		UsageText: "gobc ROM_File [options] ",
+		Name:        "gobc",
+		Version:     internal.VERSION,
+		Compiled:    time.Now(),
+		Usage:       "A GameBoy / GameBoy Color emulator written in Go",
+		UsageText:   "gobc [global options] ROM_File           # shorthand for `gobc run ROM_File`\n   gobc [global options] command [command options] [arguments...]",
+		Description: keybindingsHelp,
 		Authors: []*cli.Author{
 			{
 				Name:  "duys",
 				Email: "duys@qubixds.com",
 			},
 		},
-		Action: func(cCtx *cli.Context) error {
-			return mainAction(cCtx)
-		},
-
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "debug",
-				Value: false,
-				Usage: "Enable debug mode",
+		Action: runAction,
+		Flags:  runFlags,
+		Commands: []*cli.Command{
+			{
+				Name:      "run",
+				Usage:     "Run a ROM file (default action if no subcommand is given)",
+				UsageText: "gobc run ROM_File [options]",
+				Description: "Boots the emulator with the given .gb / .gbc ROM. Without --no-gui this opens\n" +
+					"the main game window; with --debug it also opens VRAM, Memory, Cart, CPU and IO\n" +
+					"debugger windows. See `gobc --help` for the full keybinding reference.",
+				Flags:  runFlags,
+				Action: runAction,
 			},
-			&cli.StringFlag{
-				Name:  "breakpoints",
-				Usage: "Define breakpoints",
-			},
-			&cli.BoolFlag{
-				Name:  "force-cgb",
-				Usage: "Force CGB mode",
-			},
-
-			&cli.BoolFlag{
-				Name:  "force-dmg",
-				Usage: "Force DMG mode",
-			},
-			&cli.BoolFlag{
-				Name:  "no-gui",
-				Usage: "Run without GUI",
-			},
-			&cli.BoolFlag{
-				Name:  "panic-on-stuck",
-				Usage: "Panic when CPU is stuck",
-			},
-			&cli.BoolFlag{
-				Name:  "randomize",
-				Usage: "Randomize RAM on startup",
+			{
+				Name:      "cartdump",
+				Usage:     "Dump cartridge header metadata (and optional disassembly) from a ROM",
+				UsageText: "gobc cartdump ROM_File [--raw | --instruction-set [--include-nop]] [-o FILE]",
+				Description: "Inspects a GameBoy ROM (.gb / .gbc) and writes its parsed cartridge header to a\n" +
+					"text file. With --raw the raw header bytes are printed to stdout instead. With\n" +
+					"--instruction-set the full disassembled instruction listing is appended to the\n" +
+					"output file (use --include-nop to also emit NOP opcodes).",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "raw",
+						Usage: "Print the raw header bytes to stdout instead of writing a file",
+					},
+					&cli.BoolFlag{
+						Name:  "instruction-set",
+						Usage: "Append the full instruction-set disassembly to the output file",
+					},
+					&cli.BoolFlag{
+						Name:  "include-nop",
+						Usage: "Include NOP instructions in the disassembly (requires --instruction-set)",
+					},
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Value:   "cartdump.txt",
+						Usage:   "Output file for the cartridge dump",
+					},
+				},
+				Action: cartdumpAction,
 			},
 		},
 	}
 
-	var cmdsMessage string = `
-	Commands: 
-		Arrow Up:                    Up
-		Arrow Down:                  Down
-		Arrow Left:                  Left
-		Arrow Right:                 Right
-		S:                           A
-		A:                           B
-		Enter:                       Start
-		Backspace:                   Select
-
-	FKeys:
-		F1:                          Toggle Grid
-		F2:                          Toggle DebugMode
-		F3:                          Cycle Color Palette (DMG Only)
-	
-	Debug Commands:
-		Space:                       Game Pause
-		F:                           1x Step Frame
-		B:                           10x Step Frame
-		N:                           nX Step Frame (Based on Value set by B,M)
-		M:                           -10x Step Frame
-
-
-	`
-	fmt.Println(cmdsMessage)
 	if err := app.Run(os.Args); err != nil {
-
 		log.Fatal(err)
 	}
 }

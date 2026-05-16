@@ -18,7 +18,6 @@ import (
 )
 
 var SUPPORTED_ROMS = []string{".gbc", ".gb"}
-var logger = internal.Logger
 
 func main() {
 
