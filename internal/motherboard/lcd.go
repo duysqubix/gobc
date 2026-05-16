@@ -23,7 +23,7 @@ var (
 type LCD struct {
 
 	// Matrix of pixel data which is used while the screen is rendering. When the screen is done rendering, this data is copied to the PreparedData matrix.
-	// screenData ScreenData
+	screenData ScreenData
 	bgPriority ScreenPriority
 
 	tileScanline    [internal.GB_SCREEN_WIDTH]uint8
@@ -89,9 +89,8 @@ func NewLCD(mb *Motherboard) *LCD {
 }
 
 func (l *LCD) Reset() {
-	// l.screenData = ScreenData{}
+	l.screenData = ScreenData{}
 	l.bgPriority = ScreenPriority{}
-	// l.PreparedData = ScreenData{}
 	l.clearScreen()
 	l.scanlineCounter = 0
 	l.screenCleared = false
@@ -145,6 +144,7 @@ func (l *LCD) updateGraphics(cycles OpCycles) {
 
 		if l.Mb.Memory.GetIO(IO_LY) == internal.GB_SCREEN_HEIGHT {
 			l.Mb.Cpu.SetInterruptFlag(INTR_VBLANK)
+			l.PreparedData = l.screenData
 		}
 	}
 }
@@ -441,9 +441,9 @@ func (l *LCD) setTilePixel(x, y, tileAttr, colorNum, palette uint8, priority boo
 
 func (l *LCD) setPixel(x, y, r, g, b uint8, priority bool) {
 	if (priority && !l.bgPriority[x][y]) || l.tileScanline[x] == 0 {
-		l.PreparedData[x][y][0] = r
-		l.PreparedData[x][y][1] = g
-		l.PreparedData[x][y][2] = b
+		l.screenData[x][y][0] = r
+		l.screenData[x][y][1] = g
+		l.screenData[x][y][2] = b
 	}
 }
 
