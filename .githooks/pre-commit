@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+staged_go=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.go$' || true)
+if [ -z "$staged_go" ]; then
+    exit 0
+fi
+
+echo "==> pre-commit: gofmt"
+unformatted=$(gofmt -l $staged_go || true)
+if [ -n "$unformatted" ]; then
+    echo "ERROR: the following files are not gofmt-clean:" >&2
+    echo "$unformatted" >&2
+    echo "Fix with:  gofmt -w $unformatted" >&2
+    exit 1
+fi
+
+echo "==> pre-commit: vet + staticcheck"
+if command -v just >/dev/null 2>&1; then
+    just lint
+else
+    go vet ./...
+    if command -v staticcheck >/dev/null 2>&1; then
+        staticcheck ./...
+    else
+        echo "WARN: staticcheck not installed (skipping). Install with: just bootstrap" >&2
+    fi
+fi
