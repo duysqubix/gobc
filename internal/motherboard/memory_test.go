@@ -285,12 +285,14 @@ func TestMemory_VBlankRegionDirectFieldAccess(t *testing.T) {
 	assert.Equal(t, uint8(0x90), mb.GetItem(0xFF44))
 }
 
-// TestMemory_NR52AlwaysReadsAsSoundEnabledBit verifies the stubbed NR52
-// behaviour: the read path returns 0x80 regardless of writes (since sound
-// is not implemented in the emulator).
-func TestMemory_NR52AlwaysReadsAsSoundEnabledBit(t *testing.T) {
+// TestMemory_NR52ReflectsAPUState verifies NR52 reports the live APU
+// state per Pan Docs: bit 7 = APU enable, bits 6-4 = unused (read 1),
+// bits 0-3 = per-channel active flags. After boot the APU is enabled
+// and Channel 1 is active (post boot ROM trigger), so the expected
+// value is 0x80 | 0x70 | 0x01 = 0xF1.
+func TestMemory_NR52ReflectsAPUState(t *testing.T) {
 	mb := newMbForSubsysTest(t)
-	assert.Equal(t, uint8(0x80), mb.GetItem(0xFF26))
+	assert.Equal(t, uint8(0xF1), mb.GetItem(0xFF26))
 }
 
 func TestMemory_DMARegisterReadsZero(t *testing.T) {

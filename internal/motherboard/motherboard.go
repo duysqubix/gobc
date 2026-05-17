@@ -26,6 +26,7 @@ type Motherboard struct {
 	BootRom       *bootrom.BootRom     // Boot ROM
 	Timer         *Timer               // Timer
 	Lcd           *LCD                 // LCD
+	Sound         *APU                 // APU (audio)
 	Input         *Input               // Input
 	Cgb           bool                 // Color Gameboy
 	CpuFreq       uint32               // CPU frequency
@@ -58,6 +59,7 @@ func (m *Motherboard) Serialize() *bytes.Buffer {
 	binary.Write(buf, binary.LittleEndian, m.BGPalette.Serialize().Bytes())     // BG Palette
 	binary.Write(buf, binary.LittleEndian, m.SpritePalette.Serialize().Bytes()) // Sprite Palette
 	binary.Write(buf, binary.LittleEndian, m.Cartridge.Serialize().Bytes())     // Cartridge
+	binary.Write(buf, binary.LittleEndian, m.Sound.Serialize().Bytes())         // APU
 
 	return buf
 }
@@ -97,6 +99,9 @@ func (m *Motherboard) Deserialize(data *bytes.Buffer) error {
 	if err := m.Cartridge.Deserialize(data); err != nil {
 		return err
 	}
+	if err := m.Sound.Deserialize(data); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -109,6 +114,8 @@ type MotherboardParams struct {
 	Breakpoints  []uint16
 	Decouple     bool
 	PanicOnStuck bool
+	AudioEnabled bool
+	AudioSmooth  bool
 }
 
 func NewMotherboard(params *MotherboardParams) *Motherboard {
@@ -158,6 +165,7 @@ func NewMotherboard(params *MotherboardParams) *Motherboard {
 	mb.Cpu = NewCpu(mb)
 	mb.Memory = NewInternalRAM(mb, params.Randomize)
 	mb.Lcd = NewLCD(mb)
+	mb.Sound = NewAPU(mb, params.AudioEnabled, params.AudioSmooth)
 	mb.BootRom = bootrom.NewBootRom(mb.Cgb)
 	mb.BootRom.Enable()
 	// mb.BootRom.Disable()
@@ -177,6 +185,7 @@ func (m *Motherboard) Reset() {
 	m.Cpu.Reset()
 	m.Memory.Reset()
 	m.Lcd.Reset()
+	m.Sound.Reset()
 	m.BootRom.Enable()
 	// m.BootRom.Disable()
 	m.Timer.Reset()
@@ -223,6 +232,7 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 
 	m.Cpu.Mb.Timer.Tick(cycles, m.Cpu)
 	m.Lcd.Tick(cycles)
+	m.Sound.Tick(cycles)
 	cycles += m.Cpu.handleInterrupts()
 	return true, cycles
 }

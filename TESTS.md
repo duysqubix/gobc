@@ -1,3 +1,7 @@
+# Test Compatibility
+
+**Blargg dmg_sound (audio):** 6/12 passing — see [docs/audio_tests.md](docs/audio_tests.md) for the per-test matrix and roadmap.
+
 <table>
     <tbody>
         <tr>

@@ -119,6 +119,11 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 	 */
 	case 0xFF00 <= addr && addr < 0xFF80:
 
+		if 0xFF10 <= addr && addr <= 0xFF3F {
+			m.Sound.Write(addr, v)
+			return
+		}
+
 		switch addr {
 		case 0xFF00: /* P1 */
 			m.Memory.SetIO(IO_P1_JOYP, m.Input.Pull(v))

@@ -176,7 +176,7 @@ type GoBoyColor struct {
 	ForceCgb    bool
 }
 
-func NewGoBoyColor(romfile string, breakpoints []uint16, forceCgb bool, forceDmg bool, panicOnStuck bool, randomize bool) *GoBoyColor {
+func NewGoBoyColor(romfile string, breakpoints []uint16, forceCgb bool, forceDmg bool, panicOnStuck bool, randomize bool, audioEnabled bool, audioSmooth bool) *GoBoyColor {
 	// read cartridge first
 
 	gobc := &GoBoyColor{
@@ -187,6 +187,8 @@ func NewGoBoyColor(romfile string, breakpoints []uint16, forceCgb bool, forceDmg
 			ForceCgb:     forceCgb,
 			ForceDmg:     forceDmg,
 			PanicOnStuck: panicOnStuck,
+			AudioEnabled: audioEnabled,
+			AudioSmooth:  audioSmooth,
 		}),
 		Stopped: false,
 		Paused:  false,

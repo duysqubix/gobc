@@ -79,3 +79,50 @@ jobs:
         output=$(./gobc --no-gui default_rom/blarrg/instr_timing/instr_timing.gb)
         echo "$output" | grep 'Passed'
         echo "$output"
+
+    - name: Test Blargg dmg_sound (all 12)
+      run: |
+        set -e
+        # The dmg_sound suite writes results to cart RAM at $A000 (not serial);
+        # gobc saves cart RAM to <rom>.sav on shutdown. Signature at $A001-$A003
+        # is "DE B0 61"; $A000 = 0x00 means pass. See docs/audio_tests.md for the
+        # full 12-ROM matrix.
+        passing=(
+          "01-registers"
+          "02-len ctr"
+          "03-trigger"
+          "04-sweep"
+          "05-sweep details"
+          "06-overflow on trigger"
+          "07-len sweep period sync"
+          "08-len ctr during power"
+          "09-wave read while on"
+          "10-wave trigger while on"
+          "11-regs after power"
+          "12-wave write while on"
+        )
+        bin="$PWD/gobc"
+        work=$(mktemp -d)
+        trap 'rm -rf "$work"' EXIT
+        fail=0
+        for name in "${passing[@]}"; do
+          cp "default_rom/blarrg/dmg_sound/rom_singles/${name}.gb" "$work/${name}.gb"
+          ( cd "$work" && timeout 60 "$bin" --no-gui "${name}.gb" >/dev/null 2>&1 ) || true
+          sav="$work/${name}.sav"
+          if [[ ! -f "$sav" ]]; then
+            echo "FAIL: $name — no .sav file produced"
+            fail=1; continue
+          fi
+          sig=$(xxd -s 1 -l 3 -p "$sav")
+          code=$(xxd -s 0 -l 1 -p "$sav")
+          if [[ "$sig" != "deb061" ]]; then
+            echo "FAIL: $name — missing Blargg signature (got $sig)"
+            fail=1; continue
+          fi
+          if [[ "$code" != "00" ]]; then
+            echo "FAIL: $name — result code 0x$code (expected 0x00)"
+            fail=1; continue
+          fi
+          echo "PASS: $name"
+        done
+        exit "$fail"

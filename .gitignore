@@ -18,5 +18,9 @@ cartdump.txt
 /Pokemon*.sav
 /Pokemon*.zip
 
+# Auto-saved cart RAM from running ROMs at repo root (e.g. Blargg test outputs)
+*.sav
+*.state
+
 # OpenCode/Sisyphus session state
 .sisyphus/

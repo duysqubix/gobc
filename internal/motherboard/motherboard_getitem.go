@@ -105,6 +105,10 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 	 */
 	case 0xFF00 <= addr && addr < 0xFF80:
 
+		if 0xFF10 <= addr && addr <= 0xFF3F {
+			return m.Sound.Read(addr)
+		}
+
 		switch addr {
 
 		case 0xFF00: /* P1 */
@@ -124,9 +128,6 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 
 		case 0xFF0F: /* IF */
 			return m.Cpu.Interrupts.IF | 0xE0
-
-		case 0xFF26: /* NR52 */
-			return 0x80 // TODO: implement sound
 
 		case 0xFF40: /* LCDC */
 			return m.Memory.GetIO(IO_LCDC)

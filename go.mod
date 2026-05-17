@@ -4,6 +4,7 @@ go 1.26.2
 
 require (
 	github.com/chigopher/pathlib v0.19.1
+	github.com/gopxl/beep/v2 v2.1.1
 	github.com/gopxl/pixel/v2 v2.2.1
 	github.com/olekukonko/tablewriter v1.1.4
 	github.com/sirupsen/logrus v1.9.4
@@ -19,6 +20,8 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.6.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/ebitengine/oto/v3 v3.3.2 // indirect
+	github.com/ebitengine/purego v0.8.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a // indirect

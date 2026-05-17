@@ -14,6 +14,7 @@ import (
 
 	"github.com/duysqubix/gobc/internal"
 	"github.com/duysqubix/gobc/internal/cartridge"
+	"github.com/duysqubix/gobc/internal/motherboard"
 	"github.com/duysqubix/gobc/internal/windows"
 )
 
@@ -21,9 +22,11 @@ var logger = internal.Logger
 var frameTick *time.Ticker
 var g *windows.GoBoyColor
 
-var frameRateMicro int64 = 16670
-
-// var frameRateMicro int64 = 16000
+// 16742 μs per frame = 1 / 59.7275 Hz, the real Game Boy DMG V-Sync rate per
+// Pan Docs (https://gbdev.io/pandocs/Rendering.html). The previous value of
+// 16670 (1/60) made gobc try to run the emulator 0.46% faster than real
+// hardware, over-producing samples by the same ratio.
+var frameRateMicro int64 = 16742
 
 func init() {
 	runtime.LockOSThread()
@@ -60,7 +63,6 @@ func gameLoopGUI() {
 	}
 
 	var fps float64
-	var elasped int64 = 0
 
 	var wins []windows.Window = []windows.Window{
 		windows.NewMainGameWindow(g),
@@ -79,6 +81,14 @@ func gameLoopGUI() {
 		w.SetUp()
 	}
 
+	// PyBoy-style frame pacing: TARGET-time accumulator. Each iteration
+	// advances `target` by an adaptive frame-time (0 when audio queue is
+	// low → run free; ≈ frameRateMicro when audio is full → 60 FPS cap).
+	// Then sleep until `target`. If `target` falls into the past (catch-
+	// up from a low-buffer burst) we reset it to wall-clock to avoid
+	// racing forward when the buffer refills.
+	target := time.Now()
+
 	for !mainWin.Closed() {
 		if windows.IsDebugInfo() && !debugWinsCreated {
 			extra := openDebugWindows()
@@ -90,7 +100,6 @@ func gameLoopGUI() {
 		}
 
 		mainWin.SetTitle(fmt.Sprintf("gobc v%s | %s | FPS: %.2f", internal.VERSION, g.Mb.Cartridge.Filename, fps))
-		elasped = 0
 		start := time.Now()
 
 		for _, w := range wins {
@@ -102,10 +111,36 @@ func gameLoopGUI() {
 			w.Finalize()
 		}
 
-		elasped += time.Since(start).Microseconds()
-
-		if elasped < frameRateMicro {
-			time.Sleep(time.Duration(frameRateMicro-elasped) * time.Microsecond)
+		// PyBoy-style adaptive frame limiter.
+		//
+		//   audio queue > target depth   → advance target by full frame (60 Hz cap)
+		//   audio queue ≤ target depth   → advance target by 0 (no cap, run free)
+		//   audio disabled               → advance target by full frame (real-time)
+		//
+		// The accumulator-vs-now subtraction below produces a sleep equal
+		// to (target - work_finish_time), so total wall time per frame is
+		// max(work_time, frame_time) — never 2×.
+		const audioPrebufferFrames = 5.0
+		var frameInc time.Duration
+		if g.Mb.Sound != nil && g.Mb.Sound.AudioEnabled() {
+			framesBuffered := g.Mb.Sound.AudioQueueFramesBuffered()
+			if framesBuffered > audioPrebufferFrames {
+				overflow := framesBuffered - audioPrebufferFrames
+				if overflow > 1.0 {
+					overflow = 1.0
+				}
+				frameInc = time.Duration(overflow*float64(frameRateMicro)) * time.Microsecond
+			}
+			// else: leave frameInc = 0 → run free, refill queue
+		} else {
+			frameInc = time.Duration(frameRateMicro) * time.Microsecond
+		}
+		target = target.Add(frameInc)
+		now := time.Now()
+		if target.Before(now) {
+			target = now
+		} else if delay := target.Sub(now); delay > 0 {
+			time.Sleep(delay)
 		}
 
 		fps = 1000000.0 / float64(time.Since(start).Microseconds())
@@ -172,7 +207,12 @@ func runAction(ctx *cli.Context) error {
 	}
 
 	romfile := ctx.Args().First()
-	g = windows.NewGoBoyColor(romfile, breakpoints, force_cgb, force_dmg, panicOnStuck, randomize)
+	audioEnabled := !ctx.Bool("no-audio") && !ctx.Bool("no-gui")
+	audioSmooth := ctx.Bool("audio-smooth")
+	if rate := ctx.Int("audio-rate"); rate > 0 {
+		motherboard.SetAudioSampleRateOverride(rate)
+	}
+	g = windows.NewGoBoyColor(romfile, breakpoints, force_cgb, force_dmg, panicOnStuck, randomize, audioEnabled, audioSmooth)
 
 	if ctx.Bool("debug") {
 		windows.SetDebugInfo(true)
@@ -325,6 +365,19 @@ func main() {
 		&cli.BoolFlag{
 			Name:  "no-gui",
 			Usage: "Run without GUI (headless, useful for test ROMs / CI)",
+		},
+		&cli.BoolFlag{
+			Name:  "no-audio",
+			Usage: "Disable audio output",
+		},
+		&cli.IntFlag{
+			Name:  "audio-rate",
+			Usage: "Audio sample rate in Hz (default 32000). Lower this if you hear audio chop on a slow CPU — match it to your actual sustained FPS × 533 (e.g. 57 FPS → 30400).",
+			Value: 0,
+		},
+		&cli.BoolFlag{
+			Name:  "audio-smooth",
+			Usage: "Eliminate audio chop on slow CPUs by measuring host throughput at startup and matching the speaker rate to the producer rate. Costs a ~2% pitch drop on a 98%-speed host (about one third of a semitone — usually below the detectable threshold).",
 		},
 		&cli.BoolFlag{
 			Name:  "panic-on-stuck",

@@ -135,6 +135,41 @@ test-cover-check: test-cover
 bench:
     {{go}} test -bench=. -benchmem -run='^$' {{pkgs}}
 
+# run every Blargg dmg_sound rom under --no-gui and harvest pass/fail
+# from the auto-saved cart RAM ($A000-$A003 signature + result code)
+test-rom-audio: compile
+    #!/usr/bin/env bash
+    set -uo pipefail
+    work=$(mktemp -d)
+    trap 'rm -rf "$work"' EXIT
+    bin="$PWD/{{gobc_bin}}"
+    pass=0; fail=0; total=0
+    printf '%-32s | %-6s | %s\n' "ROM" "RESULT" "OUTPUT"
+    printf '%-32s-+-%-6s-+-%s\n' "--------------------------------" "------" "------------------------------------"
+    for rom in default_rom/blarrg/dmg_sound/rom_singles/*.gb; do
+        total=$((total+1))
+        name=$(basename "$rom" .gb)
+        cp "$rom" "$work/$name.gb"
+        rm -f "$work"/*.sav
+        ( cd "$work" && timeout 45 "$bin" --no-gui "$name.gb" >/dev/null 2>&1 ) || true
+        sav="$work/$name.sav"
+        if [[ ! -f "$sav" ]] || [[ "$(xxd -s 1 -l 3 -p "$sav" 2>/dev/null)" != "deb061" ]]; then
+            printf '%-32s | %-6s | %s\n' "$name" "HANG" "(no Blargg signature)"
+            fail=$((fail+1)); continue
+        fi
+        code=$(xxd -s 0 -l 1 -p "$sav")
+        text=$(tail -c +5 "$sav" | tr -d '\0' | tr '\n' ' ' | head -c 60)
+        if [[ "$code" == "00" ]]; then
+            printf '%-32s | %-6s | %s\n' "$name" "PASS" "$text"
+            pass=$((pass+1))
+        else
+            printf '%-32s | %-6s | code=0x%s %s\n' "$name" "FAIL" "$code" "$text"
+            fail=$((fail+1))
+        fi
+    done
+    printf '\nTotal: %d/%d passed\n' "$pass" "$total"
+    [[ "$fail" -eq 0 ]] || exit 1
+
 # go mod tidy
 tidy:
     {{go}} mod tidy
