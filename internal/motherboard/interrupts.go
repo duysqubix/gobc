@@ -81,29 +81,26 @@ func (c *CPU) SetInterruptFlag(f uint8) {
 }
 
 func (c *CPU) ServiceInterrupt(interrupt uint8) {
-	// if !c.Interrupts.InterruptsOn && c.Halted {
-	// 	c.Halted = false
-	// 	c.Mb.Cpu.Registers.PC++
-	// 	return
-	// }
-
+	// Unhalt the CPU regardless of IME state. HALT (0x76) does not
+	// advance PC, so we step past the HALT byte here.
 	if c.Halted {
-		c.Mb.Cpu.Registers.PC++
 		c.Halted = false
+		c.Registers.PC++
+	}
+
+	// With IME=0 the CPU only unhalts; the interrupt is NOT serviced
+	// (Pan Docs "HALT" — wakes on pending interrupt without jumping).
+	if !c.Interrupts.InterruptsOn {
 		return
 	}
 
-	if c.Interrupts.InterruptsOn {
+	c.Interrupts.InterruptsOn = false
+	internal.ResetBit(&c.Interrupts.IF, interrupt)
+	sp := c.Registers.SP
+	pc := c.Registers.PC
 
-		c.Interrupts.InterruptsOn = false
-		c.Halted = false
-		internal.ResetBit(&c.Interrupts.IF, interrupt)
-		sp := c.Registers.SP
-		pc := c.Registers.PC
-
-		c.Mb.SetItem(sp-1, (pc&0xff00)>>8)
-		c.Mb.SetItem(sp-2, pc&0xFF)
-		c.Registers.SP -= 2
-		c.Registers.PC = interruptAddresses[interrupt]
-	}
+	c.Mb.SetItem(sp-1, (pc&0xff00)>>8)
+	c.Mb.SetItem(sp-2, pc&0xFF)
+	c.Registers.SP -= 2
+	c.Registers.PC = interruptAddresses[interrupt]
 }

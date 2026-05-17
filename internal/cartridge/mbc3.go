@@ -99,6 +99,9 @@ func (c *Mbc3Cartridge) SetItem(addr uint16, value uint8) {
 	case 0xA000 <= addr && addr < 0xC000:
 		if c.parent.RamBankEnabled {
 			if c.parent.RamBankSelected <= 0x07 {
+				if c.parent.RamBankCount == 0 {
+					return
+				}
 				c.parent.RamBanks[c.parent.RamBankSelected%c.parent.RamBankCount][addr-0xA000] = value
 			} else if c.hasRTC && 0x08 <= c.parent.RamBankSelected && c.parent.RamBankSelected <= 0x0C {
 				Grtc.SetItem(c.parent.RamBankSelected, value)
@@ -126,6 +129,9 @@ func (c *Mbc3Cartridge) GetItem(addr uint16) uint8 {
 		}
 
 		if c.parent.RamBankSelected <= 0x07 {
+			if c.parent.RamBankCount == 0 {
+				return 0xFF
+			}
 			return c.parent.RamBanks[c.parent.RamBankSelected%c.parent.RamBankCount][addr-0xA000]
 		} else if c.hasRTC && (0x08 <= c.parent.RamBankSelected && c.parent.RamBankSelected <= 0x0C) {
 			value := Grtc.GetItem(c.parent.RamBankSelected)

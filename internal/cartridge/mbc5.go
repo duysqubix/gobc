@@ -75,7 +75,7 @@ func (c *Mbc5Cartridge) SetItem(addr uint16, value uint8) {
 		c.parent.RamBankSelected = uint16(value & 0x0f)
 	case 0xA000 <= addr && addr < 0xC000:
 		// External RAM
-		if c.parent.RamBankEnabled {
+		if c.parent.RamBankEnabled && c.parent.RamBankCount > 0 {
 			ramBank := c.parent.RamBankSelected & c.parent.RamBankCount
 			c.parent.RamBanks[ramBank][addr-0xA000] = value
 		}
@@ -97,7 +97,7 @@ func (c *Mbc5Cartridge) GetItem(addr uint16) uint8 {
 
 	case 0xA000 <= addr && addr < 0xC000:
 		// External RAM
-		if c.parent.RamBankEnabled {
+		if c.parent.RamBankEnabled && c.parent.RamBankCount > 0 {
 			ramBank := c.parent.RamBankSelected & c.parent.RamBankCount
 
 			return c.parent.RamBanks[ramBank][addr-0xA000]
