@@ -286,8 +286,16 @@ func (a *APU) Close() {
 }
 
 // Tick advances APU state by `cycles` CPU clocks. Called by
-// Motherboard.Tick() every CPU step.
+// Motherboard.Tick() every CPU step. In CGB double-speed mode the
+// APU clock stays at DMG rate while the CPU clock doubles, so the
+// APU ticks at half the rate per CPU cycle. We achieve this by
+// halving the input cycles when `Mb.doubleSpeed` is true (Pan Docs
+// "CGB Speed Switch": peripherals other than DIV/TIMA keep the
+// original clock).
 func (a *APU) Tick(cycles OpCycles) {
+	if a.Mb != nil && a.Mb.doubleSpeed {
+		cycles >>= 1
+	}
 	if a.smoothMode && !a.smoothInitDone && a.audioEnabled {
 		// Defer the benchmark until the boot ROM has finished. Boot ROM
 		// is simpler code that runs ~3% faster than steady-state game code;
