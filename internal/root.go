@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const VERSION string = "1.4"
+const VERSION string = "2.0"
 const FRAMES_PER_SECOND = 60
 const DMG_CLOCK_SPEED = 4194304 // 4.194304 MHz or 4,194,304 cycles per second
 const CGB_CLOCK_SPEED = 4194304 // up to 8.388608 MHz or 8,388,608 cycles per second

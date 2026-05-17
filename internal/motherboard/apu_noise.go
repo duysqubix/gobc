@@ -198,13 +198,6 @@ func (c *noiseChannel) reset() {
 }
 
 func (c *noiseChannel) powerOff() {
-	// DMG quirk: lengthCounter and lengthLoad are PRESERVED across APU
-	// power-off (Blargg dmg_sound tests 08, 11). NR41 specifically is
-	// called out by test 11: "Powering off shouldn't affect NR41".
-	// See apu_square.go for details.
-	preservedLengthCounter := c.lengthCounter
-	preservedLengthLoad := c.lengthLoad
-
 	c.nr41, c.nr42, c.nr43, c.nr44 = 0, 0, 0, 0
 	c.envelopeInit, c.envelopePeriod, c.envelopeTimer, c.envelopeVolume = 0, 0, 0, 0
 	c.envelopeUp = false
@@ -215,9 +208,8 @@ func (c *noiseChannel) powerOff() {
 	c.widthMode7 = false
 	c.periodTimer = 0
 	c.lfsr = 0x7FFF
-
-	c.lengthCounter = preservedLengthCounter
-	c.lengthLoad = preservedLengthLoad
+	c.lengthCounter = 0
+	c.lengthLoad = 0
 }
 
 func (c *noiseChannel) serialize() *bytes.Buffer {

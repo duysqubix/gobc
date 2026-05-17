@@ -308,14 +308,6 @@ func (c *squareChannel) reset() {
 }
 
 func (c *squareChannel) powerOff() {
-	// DMG quirk: lengthCounter and lengthLoad are PRESERVED across APU
-	// power-off (Blargg dmg_sound tests 08, 11). SameBoy implements this
-	// by snapshotting pulse_length, wiping the APU, then restoring
-	// (Core/apu.c lines 1719-1743). We achieve the same effect by simply
-	// not zeroing those two fields.
-	preservedLengthCounter := c.lengthCounter
-	preservedLengthLoad := c.lengthLoad
-
 	c.nrx0, c.nrx1, c.nrx2, c.nrx3, c.nrx4 = 0, 0, 0, 0, 0
 	c.duty = 0
 	c.envelopeInit, c.envelopePeriod, c.envelopeTimer, c.envelopeVolume = 0, 0, 0, 0
@@ -329,9 +321,8 @@ func (c *squareChannel) powerOff() {
 	c.sweepFreq = 0
 	c.periodTimer = 0
 	c.dutyPos = 0
-
-	c.lengthCounter = preservedLengthCounter
-	c.lengthLoad = preservedLengthLoad
+	c.lengthCounter = 0
+	c.lengthLoad = 0
 }
 
 func (c *squareChannel) serialize() *bytes.Buffer {

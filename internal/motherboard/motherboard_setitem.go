@@ -166,7 +166,9 @@ func (m *Motherboard) SetItem(addr uint16, value uint16) {
 			m.doDMATransfer(v)
 
 		case 0xFF4D: /* KEY1 */
-			//TODO: implement double speed mode
+			if m.Cgb {
+				m.Memory.SetIO(IO_KEY1, (m.Memory.GetIO(IO_KEY1)&0x80)|(v&0x01))
+			}
 
 		case 0xFF4F: /* VBK */
 			if m.Cgb && !m.HdmaActive {

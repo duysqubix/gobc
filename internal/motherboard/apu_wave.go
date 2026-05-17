@@ -111,15 +111,12 @@ func (c *waveChannel) clockLength() {
 func (c *waveChannel) trigger() {
 	wasActive := c.enabled
 
-	// DMG wave-RAM-corruption-on-retrigger (Blargg dmg_sound test 10):
-	// retriggering an active channel within the small T-cycle window
-	// when the channel is about to fetch a new sample copies that next
-	// byte into waveRAM[0] (or a 4-byte block if the byte index is 4+).
-	// SameBoy Core/apu.c lines 1978-2003 fires this when sample_countdown
-	// is exactly 0. Our atomic-instruction APU.Tick model offsets that
-	// boundary by 2 T-cycles, so the equivalent check is periodTimer == 2.
-	// The byte-index formula (wavePos+1)/2 matches SameBoy line 1983.
-	if wasActive && c.dacOn && c.periodTimer == 2 {
+	// DMG-only wave-RAM-corruption-on-retrigger (Blargg dmg_sound test 10);
+	// CGB hardware does not exhibit this bug (cgb_sound test 10 verifies
+	// the wave RAM stays intact). See SameBoy Core/apu.c lines 1978-2003
+	// — the corruption is gated on `!GB_is_cgb(gb)`.
+	isDMG := c.apu.Mb == nil || !c.apu.Mb.Cgb
+	if isDMG && wasActive && c.dacOn && c.periodTimer == 2 {
 		offset := byte((c.wavePos + 1) >> 1)
 		offset &= 0x0F
 		if offset < 4 {
@@ -216,11 +213,6 @@ func (c *waveChannel) reset() {
 }
 
 func (c *waveChannel) powerOff() {
-	// DMG quirk: lengthCounter and lengthLoad are PRESERVED across APU
-	// power-off (Blargg dmg_sound tests 08, 11). See apu_square.go.
-	preservedLengthCounter := c.lengthCounter
-	preservedLengthLoad := c.lengthLoad
-
 	c.nr30, c.nr31, c.nr32, c.nr33, c.nr34 = 0, 0, 0, 0, 0
 	c.volumeCode = 0
 	c.frequency = 0
@@ -229,9 +221,8 @@ func (c *waveChannel) powerOff() {
 	c.enabled = false
 	c.periodTimer = 0
 	c.wavePos = 0
-
-	c.lengthCounter = preservedLengthCounter
-	c.lengthLoad = preservedLengthLoad
+	c.lengthCounter = 0
+	c.lengthLoad = 0
 }
 
 func (c *waveChannel) serialize() *bytes.Buffer {

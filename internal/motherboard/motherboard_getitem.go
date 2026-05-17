@@ -142,8 +142,10 @@ func (m *Motherboard) GetItem(addr uint16) uint8 {
 			return 0x00
 
 		case 0xFF4D: /* KEY1 */
-			// TODO: implement double speed mode
-			return 0xFF
+			if !m.Cgb {
+				return 0xFF
+			}
+			return m.Memory.GetIO(IO_KEY1) | 0x7E
 		case 0xFF4F: /* VBK */
 			if m.Cgb {
 				return m.Memory.GetIO(IO_VBK) | 0xFE

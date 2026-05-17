@@ -427,8 +427,12 @@ func (a *APU) Read(addr uint16) uint8 {
 
 	if addr >= 0xFF30 && addr <= 0xFF3F {
 		if a.ch3.enabled {
-			if !a.ch3.waveFormJustRead {
-				return 0xFF
+			isDMG := a.Mb == nil || !a.Mb.Cgb
+			if isDMG {
+				if !a.ch3.waveFormJustRead {
+					return 0xFF
+				}
+				return a.ch3.currentSampleByte()
 			}
 			return a.ch3.currentSampleByte()
 		}
@@ -510,7 +514,12 @@ func (a *APU) Write(addr uint16, v uint8) {
 	// Wave RAM writes are always permitted (even with APU disabled).
 	if addr >= 0xFF30 && addr <= 0xFF3F {
 		if a.ch3.enabled {
-			if a.ch3.waveFormJustRead {
+			isDMG := a.Mb == nil || !a.Mb.Cgb
+			if isDMG {
+				if a.ch3.waveFormJustRead {
+					a.waveRAM[a.ch3.wavePos/2] = v
+				}
+			} else {
 				a.waveRAM[a.ch3.wavePos/2] = v
 			}
 		} else {
@@ -534,24 +543,27 @@ func (a *APU) Write(addr uint16, v uint8) {
 	}
 
 	// DMG quirk (Blargg dmg_sound test 08 "len ctr during power"):
-	// while APU is off, length-load writes to NR11/NR21/NR31/NR41 still
-	// take effect. Square+noise: only the low 6 length bits write through
-	// (the upper bits, including NR11/NR21 duty, are ignored). Wave: full
-	// 8 bits write through.  All other registers stay ignored when off.
+	// while APU is off on DMG, length-load writes to NR11/NR21/NR31/NR41
+	// still take effect. Square+noise: only the low 6 length bits write
+	// through (the upper bits, including NR11/NR21 duty, are ignored).
+	// Wave: full 8 bits write through. On CGB the writes are ignored
+	// entirely (Blargg cgb_sound test 08 verifies this opposite behavior).
 	if !a.enabled {
-		switch addr {
-		case 0xFF11:
-			a.ch1.lengthLoad = v & 0x3F
-			a.ch1.lengthCounter = uint16(64 - int(a.ch1.lengthLoad))
-		case 0xFF16:
-			a.ch2.lengthLoad = v & 0x3F
-			a.ch2.lengthCounter = uint16(64 - int(a.ch2.lengthLoad))
-		case 0xFF1B:
-			a.ch3.lengthLoad = v
-			a.ch3.lengthCounter = uint16(256 - int(v))
-		case 0xFF20:
-			a.ch4.lengthLoad = v & 0x3F
-			a.ch4.lengthCounter = uint16(64 - int(a.ch4.lengthLoad))
+		if a.Mb != nil && !a.Mb.Cgb {
+			switch addr {
+			case 0xFF11:
+				a.ch1.lengthLoad = v & 0x3F
+				a.ch1.lengthCounter = uint16(64 - int(a.ch1.lengthLoad))
+			case 0xFF16:
+				a.ch2.lengthLoad = v & 0x3F
+				a.ch2.lengthCounter = uint16(64 - int(a.ch2.lengthLoad))
+			case 0xFF1B:
+				a.ch3.lengthLoad = v
+				a.ch3.lengthCounter = uint16(256 - int(v))
+			case 0xFF20:
+				a.ch4.lengthLoad = v & 0x3F
+				a.ch4.lengthCounter = uint16(64 - int(a.ch4.lengthLoad))
+			}
 		}
 		return
 	}
@@ -603,7 +615,25 @@ func (a *APU) Write(addr uint16, v uint8) {
 
 // powerOff zeroes all sound registers and disables channels. Triggered
 // when NR52 bit 7 is cleared. Wave RAM is preserved (DMG behavior).
+//
+// SameBoy pattern (Core/apu.c lines 1719-1743): the per-channel
+// length counters survive power-off ONLY on DMG, and the test ROMs
+// require this for Blargg dmg_sound tests 08 and 11. On CGB the
+// length counters are zeroed (Blargg cgb_sound 08 verifies the
+// opposite expectation). We snapshot before, wipe, then restore the
+// length state only when running in DMG mode.
 func (a *APU) powerOff() {
+	isDMG := a.Mb == nil || !a.Mb.Cgb
+
+	var ch1Len, ch2Len, ch3Len, ch4Len uint16
+	var ch1LenLoad, ch2LenLoad, ch4LenLoad, ch3LenLoad byte
+	if isDMG {
+		ch1Len, ch1LenLoad = a.ch1.lengthCounter, a.ch1.lengthLoad
+		ch2Len, ch2LenLoad = a.ch2.lengthCounter, a.ch2.lengthLoad
+		ch3Len, ch3LenLoad = a.ch3.lengthCounter, a.ch3.lengthLoad
+		ch4Len, ch4LenLoad = a.ch4.lengthCounter, a.ch4.lengthLoad
+	}
+
 	a.enabled = false
 	a.nr50 = 0
 	a.nr51 = 0
@@ -612,6 +642,13 @@ func (a *APU) powerOff() {
 	a.ch3.powerOff()
 	a.ch4.powerOff()
 	a.frameSeqStep = 0
+
+	if isDMG {
+		a.ch1.lengthCounter, a.ch1.lengthLoad = ch1Len, ch1LenLoad
+		a.ch2.lengthCounter, a.ch2.lengthLoad = ch2Len, ch2LenLoad
+		a.ch3.lengthCounter, a.ch3.lengthLoad = ch3Len, ch3LenLoad
+		a.ch4.lengthCounter, a.ch4.lengthLoad = ch4Len, ch4LenLoad
+	}
 }
 
 // readWaveRAMByte exposes wave RAM to the wave channel without going

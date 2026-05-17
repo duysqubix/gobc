@@ -1,4 +1,4 @@
-# Audio Test Status — Blargg `dmg_sound`
+# Audio Test Status — Blargg `dmg_sound` + `cgb_sound`
 
 **Suite source:** [Blargg dmg_sound](https://gbdev.gg8.se/files/roms/blargg-gb-tests/dmg_sound.zip) (mirror: [retrio/gb-test-roms](https://github.com/retrio/gb-test-roms))
 **ROMs in repo:** [default_rom/blarrg/dmg_sound/](../default_rom/blarrg/dmg_sound/)
@@ -94,9 +94,22 @@ Pick N from the `pushed` rate divided by 5 (samples/sec). Audio pitch is shifted
 | 11 | regs after power | ✅ PASS | NR41 length-load and the per-channel length counters survive APU power-off (DMG quirk) |
 | 12 | wave write while on | ✅ PASS | Wave-RAM writes only land while the channel is mid-fetch (same `wave_form_just_read` gate as test 09) |
 
-**Current score: 12/12 passing.**
+**Current score: 12/12 passing (DMG).**
 
 All 12 tests are guarded by CI (see `integration-rom-tests` job in `.github/workflows/go.yml`).
+
+## CGB Sound — `cgb_sound`
+
+The same 12-ROM suite recompiled with `REQUIRE_CGB`. The DMG and CGB
+expected CRCs differ for tests 08-12: CGB resets length counters on
+power-off, allows normal wave-RAM access during channel 3 playback, and
+does not exhibit the wave-trigger corruption bug. All 12 pass.
+
+The APU runs the DMG-specific quirks (length preservation across
+NR52 power-off, wave-RAM 0xFF gating, wave retrigger corruption) only
+when `motherboard.Cgb == false`; in CGB mode the same code paths take
+the modern behaviour. The split is documented in `internal/motherboard/apu.go`
+(`powerOff`) and `apu_wave.go` (`trigger`).
 
 ## How verification works
 
