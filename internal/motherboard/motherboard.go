@@ -233,7 +233,19 @@ func (m *Motherboard) Tick() (bool, OpCycles) {
 	m.Cpu.Mb.Timer.Tick(cycles, m.Cpu)
 	m.Lcd.Tick(cycles)
 	m.Sound.Tick(cycles)
-	cycles += m.Cpu.handleInterrupts()
+
+	// Interrupt servicing consumes real wall-clock cycles too (5 M-cycles
+	// per Pan Docs "Interrupt Service Routine"). Without ticking the
+	// peripherals during that window TIMA/DIV/LCD/APU lag behind the
+	// CPU, and Blargg's interrupt_time test sees an 8-cycle interrupt
+	// (JP+RET only) instead of the expected 13.
+	if irq := m.Cpu.handleInterrupts(); irq > 0 {
+		m.Cartridge.Tick(uint64(irq))
+		m.Cpu.Mb.Timer.Tick(irq, m.Cpu)
+		m.Lcd.Tick(irq)
+		m.Sound.Tick(irq)
+		cycles += irq
+	}
 	return true, cycles
 }
 
