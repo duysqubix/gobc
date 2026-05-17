@@ -314,6 +314,23 @@ func NewCartridge(Filename *pathlib.Path) *Cartridge {
 		logger.Panicf("Invalid RAM size: %02X", rom_banks[0][SRAM_SIZE_ADDR])
 	}
 
+	// Some carts (Blargg halt_bug, interrupt_time) declare a +RAM type
+	// in the cartridge type byte but leave the SRAM size byte at 0.
+	// Real hardware in this situation usually has 8 KiB of RAM wired
+	// on the MBC itself, and test ROMs rely on $A000-$A0FF for their
+	// "DE B0 61" signature. Promote 0 banks to 1 bank for any +RAM type.
+	cartType := rom_banks[0][CARTRIDGE_TYPE_ADDR]
+	cartHasRAM := cartType == 0x02 || cartType == 0x03 ||
+		cartType == 0x08 || cartType == 0x09 ||
+		cartType == 0x0C || cartType == 0x0D ||
+		cartType == 0x10 || cartType == 0x12 || cartType == 0x13 ||
+		cartType == 0x1A || cartType == 0x1B ||
+		cartType == 0x1D || cartType == 0x1E ||
+		cartType == 0xFF
+	if cartHasRAM && ramBankCount == 0 {
+		ramBankCount = 1
+	}
+
 	var romBankCount uint16
 	switch rom_banks[0][ROM_SIZE_ADDR] {
 	case 0x00:

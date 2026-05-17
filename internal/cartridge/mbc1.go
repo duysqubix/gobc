@@ -75,7 +75,7 @@ func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
 		// logger.Debugf("Memory model: %d", c.parent.MemoryModel)
 
 	case 0xA000 <= addr && addr < 0xC000:
-		if !c.parent.RamBankEnabled || c.parent.RamBankCount == 0 {
+		if !c.parent.RamBankEnabled {
 			return
 		}
 
@@ -84,7 +84,11 @@ func (c *Mbc1Cartridge) SetItem(addr uint16, value uint8) {
 		} else {
 			c.parent.RamBankSelected = 0
 		}
-		c.parent.RamBanks[c.parent.RamBankSelected%c.parent.RamBankCount][addr-0xA000] = value
+		bank := uint16(0)
+		if c.parent.RamBankCount > 0 {
+			bank = c.parent.RamBankSelected % c.parent.RamBankCount
+		}
+		c.parent.RamBanks[bank][addr-0xA000] = value
 	default:
 		logger.Panicf("Memory write error! Can't write %#x to %#x\n", value, addr)
 	}
@@ -106,7 +110,7 @@ func (c *Mbc1Cartridge) GetItem(addr uint16) uint8 {
 		return c.parent.RomBanks[bank][addr-0x4000]
 
 	case 0xA000 <= addr && addr < 0xC000:
-		if !c.parent.RamBankEnabled || c.parent.RamBankCount == 0 {
+		if !c.parent.RamBankEnabled {
 			return 0xff
 		}
 
@@ -116,7 +120,10 @@ func (c *Mbc1Cartridge) GetItem(addr uint16) uint8 {
 			c.parent.RamBankSelected = 0
 		}
 
-		bank := c.parent.RamBankSelected % c.parent.RamBankCount
+		bank := uint16(0)
+		if c.parent.RamBankCount > 0 {
+			bank = c.parent.RamBankSelected % c.parent.RamBankCount
+		}
 		return c.parent.RamBanks[bank][addr-0xA000]
 	default:
 		logger.Errorf("Memory read error! Can't read from %#x\n", addr)

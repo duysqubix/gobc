@@ -81,11 +81,10 @@ func (c *CPU) SetInterruptFlag(f uint8) {
 }
 
 func (c *CPU) ServiceInterrupt(interrupt uint8) {
-	// Unhalt the CPU regardless of IME state. HALT (0x76) does not
-	// advance PC, so we step past the HALT byte here.
+	// Unhalt the CPU regardless of IME state. HALT (0x76) already
+	// advanced PC past its own byte before halting, so just clear the flag.
 	if c.Halted {
 		c.Halted = false
-		c.Registers.PC++
 	}
 
 	// With IME=0 the CPU only unhalts; the interrupt is NOT serviced

@@ -39,6 +39,7 @@ type Registers struct {
 type CPU struct {
 	Registers  *Registers   // CPU registers
 	Halted     bool         // CPU halted
+	HaltBug    bool         // HALT-bug pending: next opcode byte must be re-read as the first operand (Pan Docs "HALT bug")
 	Interrupts *Interrupts  // Interrupts
 	Mb         *Motherboard // Motherboard
 	IsStuck    bool         // CPU is stuck
@@ -162,6 +163,7 @@ func (c *CPU) initRegisters(cgb bool) {
 func (c *CPU) Reset() {
 	c.initRegisters(c.Mb.Cgb)
 	c.Halted = false
+	c.HaltBug = false
 	c.Interrupts.InterruptsEnabling = false
 	c.Interrupts.InterruptsOn = false
 	c.Interrupts.IE = 0
@@ -231,6 +233,16 @@ func (c *CPU) ExecuteInstruction() OpCycles {
 
 	}
 	c.addToPCHistory(c.Registers.PC, opcode, true)
+
+	// Pan Docs "HALT bug": when HALT executed with IME=0 and a pending
+	// interrupt, the byte after HALT is read as the next opcode but PC
+	// fails to advance one byte. Operand reads for that next instruction
+	// therefore re-use the opcode byte. The PC-- here lets the existing
+	// `PC += length` in each opcode handler land one byte short.
+	if c.HaltBug {
+		c.HaltBug = false
+		c.Registers.PC--
+	}
 
 	pc := c.Registers.PC
 	opcode_len := internal.OPCODE_LENGTHS[opcode]

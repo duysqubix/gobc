@@ -261,10 +261,34 @@ func TestInterrupts_ServiceWhenHaltedClearsHaltedAndAdvancesPC(t *testing.T) {
 
 	mb.Cpu.ServiceInterrupt(INTR_VBLANK)
 
+	// IME=0 + halted: ServiceInterrupt only unhalts; it does NOT push
+	// PC or jump to the vector. HALT itself advanced PC past its own
+	// opcode byte BEFORE the halt was entered, so PC is unchanged here.
 	assert.False(t, mb.Cpu.Halted, "Halted cleared")
-	assert.Equal(t, uint16(0x1235), mb.Cpu.Registers.PC, "PC advances by 1")
+	assert.Equal(t, uint16(0x1234), mb.Cpu.Registers.PC, "PC unchanged (HALT already advanced past its opcode)")
 	assert.Equal(t, uint16(0xFFFE), mb.Cpu.Registers.SP, "SP unchanged (no push)")
 	assert.Equal(t, uint8(0x01), mb.Cpu.Interrupts.IF, "IF unchanged on halt path")
+}
+
+// TestInterrupts_ServiceWhenHaltedWithIMEServicesInterrupt verifies the
+// IME=1 + halted case: ServiceInterrupt must unhalt AND service the
+// interrupt (push PC + jump to vector) — previously only unhalted.
+func TestInterrupts_ServiceWhenHaltedWithIMEServicesInterrupt(t *testing.T) {
+	mb := newMbForSubsysTest(t)
+	mb.Cpu.Halted = true
+	mb.Cpu.Registers.PC = 0x1234
+	mb.Cpu.Registers.SP = 0xFFFE
+	mb.Cpu.Interrupts.InterruptsOn = true
+	mb.Cpu.Interrupts.IE = 0x01
+	mb.Cpu.Interrupts.IF = 0x01
+
+	mb.Cpu.ServiceInterrupt(INTR_VBLANK)
+
+	assert.False(t, mb.Cpu.Halted, "Halted cleared")
+	assert.False(t, mb.Cpu.Interrupts.InterruptsOn, "IME cleared on service")
+	assert.Equal(t, uint16(INTR_VBLANK_ADDR), mb.Cpu.Registers.PC, "PC jumps to VBlank vector")
+	assert.Equal(t, uint16(0xFFFC), mb.Cpu.Registers.SP, "SP decreased by 2 (PC pushed)")
+	assert.Equal(t, uint8(0x00), mb.Cpu.Interrupts.IF&0x01, "VBlank bit cleared in IF")
 }
 
 func TestInterrupts_HandleInterruptsConsumesEnablingFlagOnFirstTick(t *testing.T) {

@@ -553,7 +553,12 @@ func TestNewCartridge_RAMSize(t *testing.T) {
 		wantBanks uint16
 		label     string
 	}{
-		{0x00, 0, "none"},
+		// MBC1+RAM (type 0x02) with SRAM_SIZE=0 in the header is the
+		// "phantom RAM" case: real hardware ships some such carts with
+		// 8 KiB of RAM wired on the MBC itself, and Blargg's halt_bug /
+		// interrupt_time / mem_timing ROMs rely on it for the cart-RAM
+		// pass/fail signature at $A000-$A003. Promote 0 -> 1 bank.
+		{0x00, 1, "phantom 8 KiB (type 0x02 with size byte 0)"},
 		{0x02, 1, "8 KiB"},
 		{0x03, 4, "32 KiB"},
 		{0x04, 16, "128 KiB"},
@@ -567,6 +572,16 @@ func TestNewCartridge_RAMSize(t *testing.T) {
 			assert.Equal(t, tc.wantBanks, cart.RamBankCount)
 		})
 	}
+}
+
+// TestNewCartridge_NoRAMTypeKeepsZero verifies the phantom-RAM
+// promotion only kicks in for +RAM cart types; a plain ROM_ONLY
+// cart with size=0 stays at 0 banks.
+func TestNewCartridge_NoRAMTypeKeepsZero(t *testing.T) {
+	path := makeFakeROM(t, withType(0x00), withRamSize(0x00))
+	cart := NewCartridge(path)
+	require.NotNil(t, cart)
+	assert.Equal(t, uint16(0), cart.RamBankCount)
 }
 
 func TestNewCartridge_PreservesTitle(t *testing.T) {

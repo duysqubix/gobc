@@ -1015,7 +1015,15 @@ var OPCODES = OpCodeMap{
 
 	// HALT - Power down CPU until an interrupt occurs (118)
 	0x76: func(mb *Motherboard, value uint16) OpCycles {
-		mb.Cpu.Halted = true
+		cpu := mb.Cpu
+		pending := (cpu.Interrupts.IE & cpu.Interrupts.IF & 0x1F) != 0
+		if cpu.Interrupts.InterruptsOn || !pending {
+			cpu.Halted = true
+		} else {
+			// IME=0 with pending interrupt -> Pan Docs HALT bug.
+			cpu.HaltBug = true
+		}
+		cpu.Registers.PC += 1
 		return 4
 	},
 

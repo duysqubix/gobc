@@ -854,13 +854,39 @@ func TestHALT_0x76(t *testing.T) {
 	cpu, mb := newTestCPU(t)
 	cpu.Registers.PC = 0xC000
 	cpu.Halted = false
+	cpu.Interrupts.IE = 0
+	cpu.Interrupts.IF = 0
+	cpu.Interrupts.InterruptsOn = true
+
+	cycles := OPCODES[0x76](mb, 0)
+
+	// HALT consumes the opcode byte and sets the halted flag; the
+	// halt-bug edge case requires a pending interrupt with IME=0, so
+	// with IME=1 and no pending interrupt we always enter halt.
+	assert.Equal(t, OpCycles(4), cycles)
+	assert.True(t, cpu.Halted, "HALT must set the Halted flag")
+	assert.False(t, cpu.HaltBug, "no pending interrupt -> no HALT bug")
+	assert.Equal(t, uint16(0xC001), cpu.Registers.PC, "HALT advances PC past its opcode")
+}
+
+// TestHALT_0x76_HaltBug verifies the IME=0 + pending-interrupt edge
+// case: HALT does NOT enter the halted state and instead arms the
+// HALT bug for the next instruction.
+func TestHALT_0x76_HaltBug(t *testing.T) {
+	cpu, mb := newTestCPU(t)
+	cpu.Registers.PC = 0xC000
+	cpu.Halted = false
+	cpu.HaltBug = false
+	cpu.Interrupts.InterruptsOn = false
+	cpu.Interrupts.IE = 0x01
+	cpu.Interrupts.IF = 0x01
 
 	cycles := OPCODES[0x76](mb, 0)
 
 	assert.Equal(t, OpCycles(4), cycles)
-	assert.True(t, cpu.Halted, "HALT must set the Halted flag")
-	assert.Equal(t, uint16(0xC000), cpu.Registers.PC,
-		"HALT does NOT advance PC in this impl (PC bump happens on wake-from-interrupt)")
+	assert.False(t, cpu.Halted, "HALT bug case: CPU does NOT halt")
+	assert.True(t, cpu.HaltBug, "HALT bug must be armed")
+	assert.Equal(t, uint16(0xC001), cpu.Registers.PC, "HALT advances PC past its opcode")
 }
 
 // ---------------------------------------------------------------------------
