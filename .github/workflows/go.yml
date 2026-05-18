@@ -80,20 +80,25 @@ jobs:
         echo "$output" | grep 'Passed'
         echo "$output"
 
-    - name: Test Blargg halt_bug (cart-RAM signature)
+    - name: Test Blargg halt_bug + interrupt_time (cart-RAM signature)
       run: |
         set -e
         bin="$PWD/gobc"
         work=$(mktemp -d)
         trap 'rm -rf "$work"' EXIT
-        cp default_rom/blarrg/halt_bug/halt_bug.gb "$work/halt_bug.gb"
-        ( cd "$work" && timeout 30 "$bin" --no-gui halt_bug.gb >/dev/null 2>&1 ) || true
-        sav="$work/halt_bug.sav"
-        sig=$(xxd -s 1 -l 3 -p "$sav")
-        code=$(xxd -s 0 -l 1 -p "$sav")
-        if [[ "$sig" != "deb061" ]]; then echo "FAIL: halt_bug missing signature"; exit 1; fi
-        if [[ "$code" != "00" ]]; then echo "FAIL: halt_bug code=0x$code"; exit 1; fi
-        echo "PASS: halt_bug"
+        fail=0
+        for rom in halt_bug interrupt_time; do
+          cp "default_rom/blarrg/${rom}/${rom}.gb" "$work/${rom}.gb"
+          ( cd "$work" && timeout 60 "$bin" --no-gui "${rom}.gb" >/dev/null 2>&1 ) || true
+          sav="$work/${rom}.sav"
+          if [[ ! -f "$sav" ]]; then echo "FAIL: $rom — no .sav"; fail=1; continue; fi
+          sig=$(xxd -s 1 -l 3 -p "$sav")
+          code=$(xxd -s 0 -l 1 -p "$sav")
+          if [[ "$sig" != "deb061" ]]; then echo "FAIL: $rom missing signature"; fail=1; continue; fi
+          if [[ "$code" != "00" ]]; then echo "FAIL: $rom code=0x$code"; fail=1; continue; fi
+          echo "PASS: $rom"
+        done
+        exit "$fail"
 
     - name: Test Blargg cgb_sound (all 12)
       run: |
