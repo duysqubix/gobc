@@ -310,8 +310,8 @@ var OPCODES = OpCodeMap{
 		var pch, pcl uint8
 		sp := mb.Cpu.Registers.SP
 		spadd1 := sp + 1
-		mb.OAMBugTrigger(sp, 0)
-		mb.OAMBugTrigger(spadd1, 0)
+		mb.OAMBugTriggerRead(sp, 0)
+		mb.OAMBugTriggerRead(spadd1, 0)
 		pch = mb.GetItem(spadd1)
 		pcl = mb.GetItem(sp)
 
@@ -328,8 +328,8 @@ var OPCODES = OpCodeMap{
 		var pch, pcl uint8
 		sp := mb.Cpu.Registers.SP
 		spadd1 := sp + 1
-		mb.OAMBugTrigger(sp, 0)
-		mb.OAMBugTrigger(spadd1, 0)
+		mb.OAMBugTriggerRead(sp, 0)
+		mb.OAMBugTriggerRead(spadd1, 0)
 		pch = mb.GetItem(spadd1)
 		pcl = mb.GetItem(sp)
 
@@ -346,8 +346,8 @@ var OPCODES = OpCodeMap{
 		var pch, pcl uint8
 		sp := mb.Cpu.Registers.SP
 		spadd1 := sp + 1
-		mb.OAMBugTrigger(sp, 0)
-		mb.OAMBugTrigger(spadd1, 0)
+		mb.OAMBugTriggerRead(sp, 0)
+		mb.OAMBugTriggerRead(spadd1, 0)
 		pch = mb.GetItem(spadd1)
 		pcl = mb.GetItem(sp)
 
@@ -363,8 +363,8 @@ var OPCODES = OpCodeMap{
 
 		sp := mb.Cpu.Registers.SP
 		spadd1 := sp + 1
-		mb.OAMBugTrigger(sp, 0)
-		mb.OAMBugTrigger(spadd1, 0)
+		mb.OAMBugTriggerRead(sp, 0)
+		mb.OAMBugTriggerRead(spadd1, 0)
 		mb.Cpu.Registers.A = mb.GetItem(spadd1)
 		mb.Cpu.Registers.F = mb.GetItem(sp) & 0xF0 & 0xF0
 

@@ -309,6 +309,7 @@ func (m *Motherboard) OAMBugTrigger(addr uint16, cycleOffset OpCycles) {
 	}
 }
 
+// debugOAMTriggerRead is for temporary instrumentation.
 // OAMBugTriggerRead models the read-side OAM bug used by POP and LD A,(HL+/-).
 // Three sub-variants depend on row's bits 3-4, all derived from SameBoy
 // GB_trigger_oam_bug_read / oam_bug_*_read_corruption:
@@ -339,14 +340,11 @@ func (m *Motherboard) OAMBugTriggerRead(addr uint16, cycleOffset OpCycles) {
 	case 0x10:
 		if row >= 0x10 && int(row)+8 <= len(m.Memory.Oam) {
 			d := uint16(m.Memory.Oam[row-2]) | uint16(m.Memory.Oam[row-1])<<8
-			e := uint16(m.Memory.Oam[row-16]) | uint16(m.Memory.Oam[row-15])<<8
-			_ = e
-			// bitwise_glitch_read_secondary(a, b, c, d) = (b & (a | c | d)) | (a & c & d)
 			glitched := (b & (a | c | d)) | (a & c & d)
 			m.Memory.Oam[row-4] = uint8(glitched & 0xFF)
 			m.Memory.Oam[row-3] = uint8(glitched >> 8)
 			for i := 0; i < 8; i++ {
-				m.Memory.Oam[int(row)-0x10+i] = m.Memory.Oam[int(row)-0x08+i]
+				m.Memory.Oam[int(row)+i] = m.Memory.Oam[int(row)-8+i]
 			}
 			return
 		}
@@ -355,8 +353,8 @@ func (m *Motherboard) OAMBugTriggerRead(addr uint16, cycleOffset OpCycles) {
 	glitched := b | (a & c)
 	m.Memory.Oam[row] = uint8(glitched & 0xFF)
 	m.Memory.Oam[row+1] = uint8(glitched >> 8)
-	m.Memory.Oam[row-4] = uint8(glitched & 0xFF)
-	m.Memory.Oam[row-3] = uint8(glitched >> 8)
+	m.Memory.Oam[row-8] = uint8(glitched & 0xFF)
+	m.Memory.Oam[row-7] = uint8(glitched >> 8)
 
 	for i := 0; i < 8; i++ {
 		m.Memory.Oam[int(row)+i] = m.Memory.Oam[int(row)-8+i]

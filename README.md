@@ -87,7 +87,7 @@ Legend: ✅ = full hardware accuracy (regression-guarded in CI) &nbsp;·&nbsp; �
 
 ### Blargg test ROM scorecard (regression-guarded in CI)
 
-| Suite | gobc v2.0 | Notes |
+| Suite | gobc v2.2 | Notes |
 |---|:-:|---|
 | `cpu_instrs` | ✅ PASS | All 11 sub-tests. |
 | `instr_timing` | ✅ PASS | |
@@ -95,7 +95,7 @@ Legend: ✅ = full hardware accuracy (regression-guarded in CI) &nbsp;·&nbsp; �
 | `interrupt_time` | ✅ PASS | Both DMG and CGB double-speed iterations. |
 | `dmg_sound` | ✅ **12/12** | All 6 DMG quirks (length-clock-on-trigger, NR41 power-off, wave RAM bus contention, wave retrigger corruption, etc.). |
 | `cgb_sound` | ✅ **12/12** | DMG-vs-CGB-aware quirks; same code paths gated on `mb.Cgb`. |
-| `oam_bug` | 🟡 2/8 | Scaffolding in place ([commit](https://github.com/duysqubix/gobc/commits/master)); tuning tracked in [#19](https://github.com/duysqubix/gobc/issues/19). |
+| `oam_bug` | 🟡 **6/8** with `--force-dmg` | Sub-tests 2–7 PASS. Sub-test 1 (LCD-on cycle sync) + sub-test 8 (POP CRC under cumulative delay-loop corruption) tracked in [#19](https://github.com/duysqubix/gobc/issues/19). Use `gobc --no-gui --force-dmg oam_bug.gb` — the test ROM's header is CGB-flagged but it exercises DMG-only hardware quirks. |
 | `mem_timing` / `mem_timing-2` | ❌ | Requires sub-instruction T-cycle accurate CPU. Tracked in [#18](https://github.com/duysqubix/gobc/issues/18). |
 
 ## Installing

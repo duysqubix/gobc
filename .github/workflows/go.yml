@@ -100,6 +100,26 @@ jobs:
         done
         exit "$fail"
 
+    - name: Test Blargg oam_bug (6 of 8 sub-tests with --force-dmg)
+      run: |
+        set -e
+        bin="$PWD/gobc"
+        work=$(mktemp -d)
+        trap 'rm -rf "$work"' EXIT
+        cp default_rom/blarrg/oam_bug/oam_bug.gb "$work/oam_bug.gb"
+        ( cd "$work" && timeout 60 "$bin" --no-gui --force-dmg oam_bug.gb >/dev/null 2>&1 ) || true
+        sav="$work/oam_bug.sav"
+        if [[ ! -f "$sav" ]]; then echo "FAIL: oam_bug — no .sav"; exit 1; fi
+        msg=$(xxd -s 4 -l 80 -p "$sav" | xxd -r -p | tr -d '\0' | tr '\n' ' ')
+        # Sub-tests 1 (LCD-sync) and 8 (POP CRC) tracked in #19; everything else must pass.
+        for st in "02:ok" "03:ok" "04:ok" "05:ok" "06:ok" "07:ok"; do
+          if ! grep -q "$st" <<< "$msg"; then
+            echo "FAIL: oam_bug missing $st — msg: $msg"
+            exit 1
+          fi
+        done
+        echo "PASS: oam_bug 6/8 (msg: $msg)"
+
     - name: Test Blargg cgb_sound (all 12)
       run: |
         set -e
