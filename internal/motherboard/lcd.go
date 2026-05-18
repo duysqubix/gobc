@@ -36,6 +36,7 @@ type LCD struct {
 	CurrentPixelPosition uint8 // current pixel position in the scanline
 	CurrentScanline      uint8 // current scanline being rendered
 	WindowLY             uint8 // current window scanline being rendered
+	lastEnabled          bool  // PPU enable state from the previous tick
 }
 
 func (l *LCD) Serialize() *bytes.Buffer {
@@ -124,9 +125,21 @@ func (l *LCD) ReportOnLCDC(bit uint8, on, off string) []string {
 
 func (l *LCD) updateGraphics(cycles OpCycles) {
 
-	if !l.isLCDEnabled() {
+	enabled := l.isLCDEnabled()
+	if !enabled {
+		if l.lastEnabled {
+			// Detected off transition this tick. Reset PPU state once so the
+			// next enable starts cleanly at LY=0 sc=456. Pan Docs: LCD
+			// enable restarts the PPU "from the very beginning of OAM
+			// search". Without this, gobc carries over whatever LY/sc
+			// disable_lcd left behind (LY=144 mid-vblank) and Blargg's
+			// oam_bug timing tests calibrate against the wrong moment.
+			l.setLCDStatus()
+			l.lastEnabled = false
+		}
 		return
 	}
+	l.lastEnabled = true
 	l.scanlineCounter -= cycles
 
 	l.setLCDStatus()
@@ -235,6 +248,60 @@ func (l *LCD) setLCDStatus() {
 func (l *LCD) isLCDEnabled() bool {
 	return internal.IsBitSet(l.Mb.Memory.GetIO(IO_LCDC), LCDC_ENABLE)
 }
+
+// OAMBugRow returns the OAM byte offset currently exposed to the increment/
+// decrement unit during PPU mode 2 ("OAM scan"). The DMG OAM corruption bug
+// fires whenever a 16-bit register inc/dec/push/pop drives an address in
+// $FE00-$FEFF onto the bus during this window. The corruption then writes
+// to the 8-byte block at this offset.
+//
+// Returns 0xFF when the bug cannot fire (CGB, LCD off, vblank, or
+// mode-2-prefix where the scan row hasn't latched yet).
+//
+// Row tracking matches SameBoy/Core/display.c:
+//   - At mode-2 entry the latch is 0 (treated as invalid, < 8).
+//   - Every 2 T-cycles the latch updates to (idx & ~1) * 4 + 8, so the
+//     sequence is 8, 8, 16, 16, ... 152, 152, 160, 160.
+//   - Mode 3 starts at elapsed=80 and the latch becomes 0xFF.
+//
+// The +cycleOffset parameter advances the virtual scanline counter to
+// model where the address bus operation actually lands inside a multi-
+// cycle opcode. Game Boy SM83 puts the inc/dec unit operand on the bus
+// during the second M-cycle of the instruction, so the natural offset
+// is +4 T-cycles past the start of the opcode handler. The caller picks
+// the offset; see OAMBugTrigger.
+func (l *LCD) OAMBugRowAt(cycleOffset OpCycles) uint8 {
+	if l.Mb.Cgb {
+		return 0xFF
+	}
+	if !l.isLCDEnabled() {
+		return 0xFF
+	}
+
+	virtSc := l.scanlineCounter - cycleOffset
+	virtLY := int(l.Mb.Memory.GetIO(IO_LY))
+	for virtSc <= 0 {
+		virtSc += 456
+		virtLY++
+		if virtLY > 153 {
+			virtLY = 0
+		}
+	}
+	if virtLY >= internal.GB_SCREEN_HEIGHT {
+		return 0xFF
+	}
+
+	elapsed := int(456) - int(virtSc)
+	if elapsed < 2 || elapsed >= 80 {
+		return 0xFF
+	}
+
+	idx := elapsed/2 - 1
+	row := uint8((idx & ^1)*4) + 8
+	return row
+}
+
+func (l *LCD) OAMBugRow() uint8 { return l.OAMBugRowAt(0) }
 
 func (l *LCD) drawScanline() {
 	control := l.Mb.Memory.GetIO(IO_LCDC)

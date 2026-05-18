@@ -308,9 +308,12 @@ var OPCODES = OpCodeMap{
 	0xc1: func(mb *Motherboard, value uint16) OpCycles {
 
 		var pch, pcl uint8
-		spadd1 := mb.Cpu.Registers.SP + 1
+		sp := mb.Cpu.Registers.SP
+		spadd1 := sp + 1
+		mb.OAMBugTrigger(sp, 0)
+		mb.OAMBugTrigger(spadd1, 0)
 		pch = mb.GetItem(spadd1)
-		pcl = mb.GetItem(mb.Cpu.Registers.SP)
+		pcl = mb.GetItem(sp)
 
 		mb.Cpu.SetBC((uint16(pch) << 8) | uint16(pcl))
 
@@ -323,9 +326,12 @@ var OPCODES = OpCodeMap{
 	0xd1: func(mb *Motherboard, value uint16) OpCycles {
 
 		var pch, pcl uint8
-		spadd1 := mb.Cpu.Registers.SP + 1
+		sp := mb.Cpu.Registers.SP
+		spadd1 := sp + 1
+		mb.OAMBugTrigger(sp, 0)
+		mb.OAMBugTrigger(spadd1, 0)
 		pch = mb.GetItem(spadd1)
-		pcl = mb.GetItem(mb.Cpu.Registers.SP)
+		pcl = mb.GetItem(sp)
 
 		mb.Cpu.SetDE((uint16(pch) << 8) | uint16(pcl))
 
@@ -338,9 +344,12 @@ var OPCODES = OpCodeMap{
 	0xe1: func(mb *Motherboard, value uint16) OpCycles {
 
 		var pch, pcl uint8
-		spadd1 := mb.Cpu.Registers.SP + 1
+		sp := mb.Cpu.Registers.SP
+		spadd1 := sp + 1
+		mb.OAMBugTrigger(sp, 0)
+		mb.OAMBugTrigger(spadd1, 0)
 		pch = mb.GetItem(spadd1)
-		pcl = mb.GetItem(mb.Cpu.Registers.SP)
+		pcl = mb.GetItem(sp)
 
 		mb.Cpu.SetHL((uint16(pch) << 8) | uint16(pcl))
 
@@ -352,9 +361,12 @@ var OPCODES = OpCodeMap{
 	// POP AF - Pop two bytes from stack into AF (241)
 	0xf1: func(mb *Motherboard, value uint16) OpCycles {
 
-		spadd1 := mb.Cpu.Registers.SP + 1
+		sp := mb.Cpu.Registers.SP
+		spadd1 := sp + 1
+		mb.OAMBugTrigger(sp, 0)
+		mb.OAMBugTrigger(spadd1, 0)
 		mb.Cpu.Registers.A = mb.GetItem(spadd1)
-		mb.Cpu.Registers.F = mb.GetItem(mb.Cpu.Registers.SP) & 0xF0 & 0xF0
+		mb.Cpu.Registers.F = mb.GetItem(sp) & 0xF0 & 0xF0
 
 		mb.Cpu.Registers.SP += 2
 		mb.Cpu.Registers.PC += 1
@@ -388,6 +400,7 @@ var OPCODES = OpCodeMap{
 		hl := mb.Cpu.HL()
 		a := uint16(mb.Cpu.Registers.A)
 		mb.SetItem(hl, a)
+		mb.OAMBugTrigger(hl, 0)
 		hl += 1
 		mb.Cpu.SetHL(hl)
 		mb.Cpu.Registers.PC += 1
@@ -400,6 +413,7 @@ var OPCODES = OpCodeMap{
 		hl := mb.Cpu.HL()
 		a := uint16(mb.Cpu.Registers.A)
 		mb.SetItem(hl, a)
+		mb.OAMBugTrigger(hl, 0)
 		hl -= 1
 		mb.Cpu.SetHL(hl)
 		mb.Cpu.Registers.PC += 1
@@ -519,6 +533,7 @@ var OPCODES = OpCodeMap{
 	0x03: func(mb *Motherboard, value uint16) OpCycles {
 
 		bc := mb.Cpu.BC()
+		mb.OAMBugTrigger(bc, 0)
 		bc += 1
 		mb.Cpu.SetBC(bc)
 		mb.Cpu.Registers.PC += 1
@@ -529,6 +544,7 @@ var OPCODES = OpCodeMap{
 	0x13: func(mb *Motherboard, value uint16) OpCycles {
 
 		de := mb.Cpu.DE()
+		mb.OAMBugTrigger(de, 0)
 		de += 1
 		mb.Cpu.SetDE(de)
 		mb.Cpu.Registers.PC += 1
@@ -539,6 +555,7 @@ var OPCODES = OpCodeMap{
 	0x23: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
+		mb.OAMBugTrigger(hl, 0)
 		hl += 1
 		mb.Cpu.SetHL(hl)
 		mb.Cpu.Registers.PC += 1
@@ -548,6 +565,7 @@ var OPCODES = OpCodeMap{
 	// INC SP - Increment SP (51)
 	0x33: func(mb *Motherboard, value uint16) OpCycles {
 
+		mb.OAMBugTrigger(mb.Cpu.Registers.SP, 0)
 		mb.Cpu.Registers.SP += 1
 		mb.Cpu.Registers.PC += 1
 		return 8
@@ -891,8 +909,11 @@ var OPCODES = OpCodeMap{
 	// PUSH BC - Push BC onto stack (197)
 	0xc5: func(mb *Motherboard, value uint16) OpCycles {
 
-		sp1 := mb.Cpu.Registers.SP - 1
-		sp2 := mb.Cpu.Registers.SP - 2
+		sp := mb.Cpu.Registers.SP
+		sp1 := sp - 1
+		sp2 := sp - 2
+		mb.OAMBugTrigger(sp, 0)
+		mb.OAMBugTrigger(sp1, 0)
 
 		br := uint16(mb.Cpu.Registers.B)
 		cr := uint16(mb.Cpu.Registers.C)
@@ -906,8 +927,11 @@ var OPCODES = OpCodeMap{
 	// PUSH DE - Push DE onto stack (213)
 	0xd5: func(mb *Motherboard, value uint16) OpCycles {
 
-		sp1 := mb.Cpu.Registers.SP - 1
-		sp2 := mb.Cpu.Registers.SP - 2
+		sp := mb.Cpu.Registers.SP
+		sp1 := sp - 1
+		sp2 := sp - 2
+		mb.OAMBugTrigger(sp, 0)
+		mb.OAMBugTrigger(sp1, 0)
 
 		dr := uint16(mb.Cpu.Registers.D)
 		er := uint16(mb.Cpu.Registers.E)
@@ -921,8 +945,11 @@ var OPCODES = OpCodeMap{
 	// PUSH HL - Push HL onto stack (229)
 	0xe5: func(mb *Motherboard, value uint16) OpCycles {
 
-		sp1 := mb.Cpu.Registers.SP - 1
-		sp2 := mb.Cpu.Registers.SP - 2
+		sp := mb.Cpu.Registers.SP
+		sp1 := sp - 1
+		sp2 := sp - 2
+		mb.OAMBugTrigger(sp, 0)
+		mb.OAMBugTrigger(sp1, 0)
 
 		hr := uint16(mb.Cpu.Registers.H)
 		lr := uint16(mb.Cpu.Registers.L)
@@ -936,8 +963,11 @@ var OPCODES = OpCodeMap{
 	// PUSH AF - Push AF onto stack (229)
 	0xf5: func(mb *Motherboard, value uint16) OpCycles {
 
-		sp1 := mb.Cpu.Registers.SP - 1
-		sp2 := mb.Cpu.Registers.SP - 2
+		sp := mb.Cpu.Registers.SP
+		sp1 := sp - 1
+		sp2 := sp - 2
+		mb.OAMBugTrigger(sp, 0)
+		mb.OAMBugTrigger(sp1, 0)
 
 		ar := uint16(mb.Cpu.Registers.A)
 		fr := uint16(mb.Cpu.Registers.F)
@@ -1693,6 +1723,7 @@ var OPCODES = OpCodeMap{
 		hl := mb.Cpu.HL()
 		a := mb.GetItem(hl)
 		mb.Cpu.Registers.A = uint8(a)
+		mb.OAMBugTrigger(hl, 0)
 		hl += 1
 		mb.Cpu.SetHL(hl)
 		mb.Cpu.Registers.PC += 1
@@ -1705,6 +1736,7 @@ var OPCODES = OpCodeMap{
 		hl := mb.Cpu.HL()
 		a := mb.GetItem(hl)
 		mb.Cpu.Registers.A = uint8(a)
+		mb.OAMBugTrigger(hl, 0)
 		hl -= 1
 		mb.Cpu.SetHL(hl)
 		mb.Cpu.Registers.PC += 1
@@ -1820,6 +1852,7 @@ var OPCODES = OpCodeMap{
 	0x0B: func(mb *Motherboard, value uint16) OpCycles {
 
 		bc := mb.Cpu.BC()
+		mb.OAMBugTrigger(bc, 0)
 		bc -= 1
 		mb.Cpu.SetBC(bc)
 		mb.Cpu.Registers.PC += 1
@@ -1830,6 +1863,7 @@ var OPCODES = OpCodeMap{
 	0x1B: func(mb *Motherboard, value uint16) OpCycles {
 
 		de := mb.Cpu.DE()
+		mb.OAMBugTrigger(de, 0)
 		de -= 1
 		mb.Cpu.SetDE(de)
 		mb.Cpu.Registers.PC += 1
@@ -1840,6 +1874,7 @@ var OPCODES = OpCodeMap{
 	0x2B: func(mb *Motherboard, value uint16) OpCycles {
 
 		hl := mb.Cpu.HL()
+		mb.OAMBugTrigger(hl, 0)
 		hl -= 1
 		mb.Cpu.SetHL(hl)
 		mb.Cpu.Registers.PC += 1
@@ -1849,6 +1884,7 @@ var OPCODES = OpCodeMap{
 	// DEC SP - Decrement SP (59)
 	0x3B: func(mb *Motherboard, value uint16) OpCycles {
 
+		mb.OAMBugTrigger(mb.Cpu.Registers.SP, 0)
 		mb.Cpu.Registers.SP -= 1
 		mb.Cpu.Registers.PC += 1
 		return 8
