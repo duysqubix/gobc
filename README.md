@@ -10,6 +10,8 @@
 <a href="https://github.com/duysqubix/gobc/releases/latest"><img src="https://img.shields.io/github/v/release/duysqubix/gobc" alt="Latest Release"></a>
 </p>
 
+> 🦀 **Curious what happens when you hand the same project to an AI team?** Check out [**rubc**](https://github.com/duysqubix/rubc) — a sister Game Boy / Game Boy Color emulator written in Rust, built almost entirely by an AI as an experiment. It went a good bit further on hardware accuracy than this one did. `gobc` is the hand-written, human original that started it all.
+
 **gobc** is a Game Boy / Game Boy Color emulator written in Go. Standing on the
 shoulders of giants — Pan Docs, SameBoy, PyBoy, mooneye, gbdev — it aims to be
 a fast, hackable, hardware-accurate emulator with a real focus on passing the
